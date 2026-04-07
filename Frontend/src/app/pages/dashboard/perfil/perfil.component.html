@@ -1,0 +1,79 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Mi Perfil</h1>
+      <p class="page-sub">CU3 — Datos personales y seguridad</p>
+    </div>
+  </div>
+
+  @if (success()) { <div class="alert success">{{ success() }}</div> }
+  @if (error())   { <div class="alert danger">{{ error() }}</div> }
+
+  @if (loading()) {
+    <div class="loading-row">Cargando perfil...</div>
+  } @else if (usuario()) {
+    <div class="perfil-layout">
+
+      <!-- Avatar card -->
+      <div class="avatar-card">
+        <div class="avatar-circle">{{ usuario()!.nombres.charAt(0) }}{{ usuario()!.apellidos.charAt(0) }}</div>
+        <h2 class="avatar-name">{{ usuario()!.nombres }} {{ usuario()!.apellidos }}</h2>
+        <span class="badge badge-blue">{{ auth.rol }}</span>
+        <div class="avatar-email">{{ usuario()!.email }}</div>
+        <div class="avatar-meta">
+          <span class="badge" [class.badge-green]="usuario()!.estado === 'ACTIVO'" [class.badge-red]="usuario()!.estado !== 'ACTIVO'">
+            {{ usuario()!.estado }}
+          </span>
+        </div>
+      </div>
+
+      <div class="perfil-forms">
+
+        <!-- Datos personales -->
+        <div class="form-card">
+          <h2 class="form-card-title">Datos personales</h2>
+          <form [formGroup]="form" (ngSubmit)="guardarPerfil()" class="grid-form">
+            <div class="field-group">
+              <label class="field-label">Nombres *</label>
+              <input formControlName="nombres" class="field-input"/>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Apellidos *</label>
+              <input formControlName="apellidos" class="field-input"/>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Teléfono</label>
+              <input formControlName="telefono" class="field-input" placeholder="+591 7XXXXXXX"/>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn-primary" [disabled]="saving()">
+                {{ saving() ? 'Guardando...' : 'Actualizar perfil' }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Cambiar contraseña -->
+        <div class="form-card">
+          <h2 class="form-card-title">Cambiar contraseña</h2>
+          <form [formGroup]="pwForm" (ngSubmit)="cambiarPassword()" class="grid-form">
+            <div class="field-group">
+              <label class="field-label">Contraseña actual *</label>
+              <input formControlName="password_actual" type="password" class="field-input" placeholder="••••••"/>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Nueva contraseña *</label>
+              <input formControlName="password_nuevo" type="password" class="field-input" placeholder="••••••"/>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn-secondary" [disabled]="saving()">
+                Cambiar contraseña
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  }
+</div>

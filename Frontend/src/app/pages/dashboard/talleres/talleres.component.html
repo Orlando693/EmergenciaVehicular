@@ -1,0 +1,117 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Talleres</h1>
+      <p class="page-sub">Registro, aprobación y administración de talleres</p>
+    </div>
+    <button class="btn-primary" (click)="showForm.set(!showForm())">
+      {{ showForm() ? '✕ Cancelar' : '+ Registrar taller' }}
+    </button>
+  </div>
+
+  @if (success()) { <div class="alert success">{{ success() }}</div> }
+  @if (error())   { <div class="alert danger">{{ error() }}</div> }
+
+  @if (showForm()) {
+    <div class="form-card">
+      <h2 class="form-card-title">Registrar nuevo taller</h2>
+      <form [formGroup]="form" (ngSubmit)="guardar()" class="grid-form">
+        <div class="field-group">
+          <label class="field-label">Razón social *</label>
+          <input formControlName="razon_social" class="field-input" placeholder="Taller S.R.L."/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Nombre comercial *</label>
+          <input formControlName="nombre_comercial" class="field-input" placeholder="Taller Rápido"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">NIT</label>
+          <input formControlName="nit" class="field-input" placeholder="1234567890"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Teléfono</label>
+          <input formControlName="telefono_atencion" class="field-input" placeholder="+591 2XXXXXXX"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Email de atención</label>
+          <input formControlName="email_atencion" type="email" class="field-input" placeholder="taller@mail.com"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Dirección *</label>
+          <input formControlName="direccion" class="field-input" placeholder="Av. Siempre Viva 123"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Referencia</label>
+          <input formControlName="referencia" class="field-input" placeholder="Frente al parque"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Capacidad máxima *</label>
+          <input formControlName="capacidad_maxima" type="number" min="1" class="field-input"/>
+        </div>
+        <div class="field-group" style="justify-content:flex-end">
+          <label class="field-label">Acepta remolque</label>
+          <label class="toggle-label">
+            <input formControlName="acepta_remolque" type="checkbox" class="toggle-cb"/>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Guardando...' : 'Registrar taller' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <div class="table-card">
+    @if (loading()) {
+      <div class="loading-row">Cargando talleres...</div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>NIT</th>
+            <th>Dirección</th>
+            <th>Capacidad</th>
+            <th>Remolque</th>
+            <th>Estado</th>
+            @if (esAdmin) { <th>Acciones</th> }
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of talleres(); track t.id_taller) {
+            <tr>
+              <td>
+                <span class="user-name-cell">{{ t.nombre_comercial }}</span>
+                <br/><span class="cell-muted" style="font-size:0.75rem">{{ t.razon_social }}</span>
+              </td>
+              <td class="cell-muted">{{ t.nit ?? '—' }}</td>
+              <td class="cell-muted">{{ t.direccion }}</td>
+              <td class="cell-muted">{{ t.capacidad_maxima }}</td>
+              <td>
+                <span class="badge" [class.badge-green]="t.acepta_remolque" [class.badge-gray]="!t.acepta_remolque">
+                  {{ t.acepta_remolque ? 'Sí' : 'No' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="estadoBadge(t.estado_registro)">{{ t.estado_registro }}</span>
+              </td>
+              @if (esAdmin) {
+                <td class="actions-cell">
+                  @if (t.estado_registro === 'PENDIENTE') {
+                    <button class="btn-action" (click)="aprobar(t)">Aprobar</button>
+                    <button class="btn-danger-action" (click)="rechazar(t)">Rechazar</button>
+                  }
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr><td [attr.colspan]="esAdmin ? 7 : 6" class="empty-row">No hay talleres registrados</td></tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

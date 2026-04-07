@@ -1,0 +1,822 @@
+-- ==========================================================
+-- Base de datos PostgreSQL
+-- Plataforma Inteligente de Atención de Emergencias Vehiculares
+-- Basada en el enunciado del examen y adaptada a los 17 CUs corregidos
+-- ==========================================================
+
+BEGIN;
+
+-- ----------------------------------------------------------
+-- 1) TIPOS ENUM
+-- ----------------------------------------------------------
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_usuario_enum') THEN
+        CREATE TYPE estado_usuario_enum AS ENUM ('ACTIVO', 'INACTIVO', 'BLOQUEADO');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_taller_enum') THEN
+        CREATE TYPE estado_taller_enum AS ENUM ('PENDIENTE', 'APROBADO', 'SUSPENDIDO', 'RECHAZADO');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_tecnico_enum') THEN
+        CREATE TYPE estado_tecnico_enum AS ENUM ('DISPONIBLE', 'OCUPADO', 'INACTIVO');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_incidente_enum') THEN
+        CREATE TYPE tipo_incidente_enum AS ENUM ('BATERIA', 'LLANTA', 'CHOQUE', 'MOTOR', 'LLAVES', 'SOBRECALENTAMIENTO', 'OTRO', 'INCIERTO');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'prioridad_incidente_enum') THEN
+        CREATE TYPE prioridad_incidente_enum AS ENUM ('ALTA', 'MEDIA', 'BAJA');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_incidente_enum') THEN
+        CREATE TYPE estado_incidente_enum AS ENUM ('PENDIENTE', 'EN_EVALUACION', 'ASIGNADO', 'EN_PROCESO', 'ATENDIDO', 'CANCELADO');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_evidencia_enum') THEN
+        CREATE TYPE tipo_evidencia_enum AS ENUM ('IMAGEN', 'AUDIO', 'TEXTO');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_ia_enum') THEN
+        CREATE TYPE estado_ia_enum AS ENUM ('PENDIENTE', 'PROCESADO', 'REQUIERE_MAS_INFO', 'ERROR');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_solicitud_taller_enum') THEN
+        CREATE TYPE estado_solicitud_taller_enum AS ENUM ('PENDIENTE', 'ACEPTADA', 'RECHAZADA', 'EXPIRADA', 'CANCELADA');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_asignacion_enum') THEN
+        CREATE TYPE estado_asignacion_enum AS ENUM ('ACTIVA', 'FINALIZADA', 'REASIGNADA', 'CANCELADA');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_notificacion_enum') THEN
+        CREATE TYPE tipo_notificacion_enum AS ENUM ('NUEVA_SOLICITUD', 'CAMBIO_ESTADO', 'ASIGNACION', 'PAGO', 'ALERTA', 'MENSAJE');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'plataforma_dispositivo_enum') THEN
+        CREATE TYPE plataforma_dispositivo_enum AS ENUM ('ANDROID', 'IOS', 'WEB');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_mensaje_enum') THEN
+        CREATE TYPE tipo_mensaje_enum AS ENUM ('TEXTO', 'IMAGEN', 'AUDIO', 'SISTEMA');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'metodo_pago_enum') THEN
+        CREATE TYPE metodo_pago_enum AS ENUM ('TARJETA', 'QR', 'TRANSFERENCIA', 'EFECTIVO', 'OTRO');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_pago_enum') THEN
+        CREATE TYPE estado_pago_enum AS ENUM ('PENDIENTE', 'PAGADO', 'FALLIDO', 'REEMBOLSADO', 'ANULADO');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_comision_enum') THEN
+        CREATE TYPE estado_comision_enum AS ENUM ('PENDIENTE', 'PAGADA', 'ANULADA');
+    END IF;
+END$$;
+
+-- ----------------------------------------------------------
+-- 2) FUNCION AUXILIAR PARA UPDATED_AT
+-- ----------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION fn_set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ----------------------------------------------------------
+-- 3) SEGURIDAD: USUARIOS, ROLES, PERMISOS
+-- ----------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS roles (
+    id_rol              BIGSERIAL PRIMARY KEY,
+    nombre              VARCHAR(50) NOT NULL UNIQUE,
+    descripcion         VARCHAR(255),
+    activo              BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at          TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS permisos (
+    id_permiso          BIGSERIAL PRIMARY KEY,
+    codigo              VARCHAR(80) NOT NULL UNIQUE,
+    descripcion         VARCHAR(255),
+    created_at          TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS rol_permiso (
+    id_rol              BIGINT NOT NULL,
+    id_permiso          BIGINT NOT NULL,
+    PRIMARY KEY (id_rol, id_permiso),
+    CONSTRAINT fk_rol_permiso_rol
+        FOREIGN KEY (id_rol) REFERENCES roles(id_rol)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_rol_permiso_permiso
+        FOREIGN KEY (id_permiso) REFERENCES permisos(id_permiso)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS usuarios (
+    id_usuario          BIGSERIAL PRIMARY KEY,
+    nombres             VARCHAR(100) NOT NULL,
+    apellidos           VARCHAR(100) NOT NULL,
+    email               VARCHAR(150) NOT NULL UNIQUE,
+    telefono            VARCHAR(30),
+    password_hash       TEXT NOT NULL,
+    estado              estado_usuario_enum NOT NULL DEFAULT 'ACTIVO',
+    ultimo_acceso       TIMESTAMP,
+    created_at          TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_usuarios_email_formato
+        CHECK (position('@' in email) > 1)
+);
+
+CREATE TABLE IF NOT EXISTS usuario_rol (
+    id_usuario          BIGINT NOT NULL,
+    id_rol              BIGINT NOT NULL,
+    PRIMARY KEY (id_usuario, id_rol),
+    CONSTRAINT fk_usuario_rol_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_usuario_rol_rol
+        FOREIGN KEY (id_rol) REFERENCES roles(id_rol)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- ----------------------------------------------------------
+-- 4) ENTIDADES PRINCIPALES
+-- ----------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS clientes (
+    id_cliente          BIGSERIAL PRIMARY KEY,
+    id_usuario          BIGINT NOT NULL UNIQUE,
+    ci                  VARCHAR(30),
+    direccion           VARCHAR(255),
+    referencia          VARCHAR(255),
+    created_at          TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_cliente_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS talleres (
+    id_taller               BIGSERIAL PRIMARY KEY,
+    id_usuario              BIGINT NOT NULL UNIQUE,
+    razon_social            VARCHAR(150) NOT NULL,
+    nombre_comercial        VARCHAR(150) NOT NULL,
+    nit                     VARCHAR(30) UNIQUE,
+    telefono_atencion       VARCHAR(30),
+    email_atencion          VARCHAR(150),
+    direccion               VARCHAR(255) NOT NULL,
+    referencia              VARCHAR(255),
+    latitud                 NUMERIC(10,7),
+    longitud                NUMERIC(10,7),
+    capacidad_maxima        INTEGER NOT NULL DEFAULT 1,
+    acepta_remolque         BOOLEAN NOT NULL DEFAULT FALSE,
+    estado_registro         estado_taller_enum NOT NULL DEFAULT 'PENDIENTE',
+    calificacion_promedio   NUMERIC(3,2),
+    created_at              TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_taller_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT chk_taller_capacidad
+        CHECK (capacidad_maxima > 0),
+    CONSTRAINT chk_taller_latitud
+        CHECK (latitud IS NULL OR (latitud BETWEEN -90 AND 90)),
+    CONSTRAINT chk_taller_longitud
+        CHECK (longitud IS NULL OR (longitud BETWEEN -180 AND 180))
+);
+
+CREATE TABLE IF NOT EXISTS tecnicos (
+    id_tecnico           BIGSERIAL PRIMARY KEY,
+    id_taller            BIGINT NOT NULL,
+    nombres              VARCHAR(100) NOT NULL,
+    apellidos            VARCHAR(100) NOT NULL,
+    telefono             VARCHAR(30),
+    especialidad         VARCHAR(120),
+    latitud              NUMERIC(10,7),
+    longitud             NUMERIC(10,7),
+    estado               estado_tecnico_enum NOT NULL DEFAULT 'DISPONIBLE',
+    activo               BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at           TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at           TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_tecnico_taller
+        FOREIGN KEY (id_taller) REFERENCES talleres(id_taller)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT chk_tecnico_latitud
+        CHECK (latitud IS NULL OR (latitud BETWEEN -90 AND 90)),
+    CONSTRAINT chk_tecnico_longitud
+        CHECK (longitud IS NULL OR (longitud BETWEEN -180 AND 180))
+);
+
+CREATE TABLE IF NOT EXISTS vehiculos (
+    id_vehiculo          BIGSERIAL PRIMARY KEY,
+    id_cliente           BIGINT NOT NULL,
+    placa                VARCHAR(20) NOT NULL UNIQUE,
+    marca                VARCHAR(80) NOT NULL,
+    modelo               VARCHAR(80) NOT NULL,
+    anio                 INTEGER,
+    color                VARCHAR(50),
+    tipo_vehiculo        VARCHAR(50),
+    vin                  VARCHAR(50),
+    activo               BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at           TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at           TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_vehiculo_cliente
+        FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT chk_vehiculo_anio
+        CHECK (anio IS NULL OR anio BETWEEN 1950 AND 2100)
+);
+
+-- ----------------------------------------------------------
+-- 5) INCIDENTES, EVIDENCIAS, IA
+-- ----------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS incidentes (
+    id_incidente                 BIGSERIAL PRIMARY KEY,
+    id_cliente                   BIGINT NOT NULL,
+    id_vehiculo                  BIGINT NOT NULL,
+    codigo                       VARCHAR(30) NOT NULL UNIQUE,
+    tipo_reportado               tipo_incidente_enum NOT NULL DEFAULT 'OTRO',
+    tipo_final                   tipo_incidente_enum,
+    descripcion_usuario          TEXT,
+    ubicacion_texto              VARCHAR(255),
+    latitud                      NUMERIC(10,7) NOT NULL,
+    longitud                     NUMERIC(10,7) NOT NULL,
+    prioridad_actual             prioridad_incidente_enum,
+    estado_actual                estado_incidente_enum NOT NULL DEFAULT 'PENDIENTE',
+    resumen_incidente            TEXT,
+    requiere_intervencion_manual BOOLEAN NOT NULL DEFAULT FALSE,
+    tiempo_estimado_llegada_min  INTEGER,
+    precio_estimado              NUMERIC(12,2),
+    precio_final                 NUMERIC(12,2),
+    fecha_reporte                TIMESTAMP NOT NULL DEFAULT NOW(),
+    fecha_cierre                 TIMESTAMP,
+    created_at                   TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at                   TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_incidente_cliente
+        FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_incidente_vehiculo
+        FOREIGN KEY (id_vehiculo) REFERENCES vehiculos(id_vehiculo)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT chk_incidente_latitud
+        CHECK (latitud BETWEEN -90 AND 90),
+    CONSTRAINT chk_incidente_longitud
+        CHECK (longitud BETWEEN -180 AND 180),
+    CONSTRAINT chk_incidente_tiempo_llegada
+        CHECK (tiempo_estimado_llegada_min IS NULL OR tiempo_estimado_llegada_min >= 0),
+    CONSTRAINT chk_incidente_precios
+        CHECK (
+            (precio_estimado IS NULL OR precio_estimado >= 0)
+            AND (precio_final IS NULL OR precio_final >= 0)
+        )
+);
+
+CREATE TABLE IF NOT EXISTS evidencias_incidente (
+    id_evidencia         BIGSERIAL PRIMARY KEY,
+    id_incidente         BIGINT NOT NULL,
+    tipo_evidencia       tipo_evidencia_enum NOT NULL,
+    url_archivo          TEXT,
+    texto_contenido      TEXT,
+    mime_type            VARCHAR(120),
+    orden_visualizacion  INTEGER NOT NULL DEFAULT 1,
+    created_at           TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_evidencia_incidente
+        FOREIGN KEY (id_incidente) REFERENCES incidentes(id_incidente)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT chk_evidencia_contenido
+        CHECK (url_archivo IS NOT NULL OR texto_contenido IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS procesamiento_ia_incidente (
+    id_procesamiento         BIGSERIAL PRIMARY KEY,
+    id_incidente             BIGINT NOT NULL UNIQUE,
+    transcripcion_audio      TEXT,
+    clasificacion_ia         tipo_incidente_enum,
+    confianza_clasificacion  NUMERIC(5,2),
+    prioridad_ia             prioridad_incidente_enum,
+    resumen_ia               TEXT,
+    danios_visibles          TEXT,
+    estado_procesamiento     estado_ia_enum NOT NULL DEFAULT 'PENDIENTE',
+    requiere_mas_info        BOOLEAN NOT NULL DEFAULT FALSE,
+    observaciones            TEXT,
+    modelo_audio             VARCHAR(120),
+    modelo_imagen            VARCHAR(120),
+    modelo_nlp               VARCHAR(120),
+    fecha_procesamiento      TIMESTAMP,
+    created_at               TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at               TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_procesamiento_ia_incidente
+        FOREIGN KEY (id_incidente) REFERENCES incidentes(id_incidente)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT chk_confianza_ia
+        CHECK (confianza_clasificacion IS NULL OR (confianza_clasificacion BETWEEN 0 AND 100))
+);
+
+-- ----------------------------------------------------------
+-- 6) FLUJO OPERATIVO: SOLICITUDES, ASIGNACION, HISTORIAL
+-- ----------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS solicitudes_taller (
+    id_solicitud_taller      BIGSERIAL PRIMARY KEY,
+    id_incidente             BIGINT NOT NULL,
+    id_taller                BIGINT NOT NULL,
+    score_asignacion         NUMERIC(8,2),
+    distancia_km             NUMERIC(10,2),
+    tiempo_estimado_min      INTEGER,
+    estado_solicitud         estado_solicitud_taller_enum NOT NULL DEFAULT 'PENDIENTE',
+    fecha_envio              TIMESTAMP NOT NULL DEFAULT NOW(),
+    fecha_respuesta          TIMESTAMP,
+    observaciones            TEXT,
+    CONSTRAINT fk_solicitud_incidente
+        FOREIGN KEY (id_incidente) REFERENCES incidentes(id_incidente)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_solicitud_taller
+        FOREIGN KEY (id_taller) REFERENCES talleres(id_taller)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT uq_solicitud_incidente_taller UNIQUE (id_incidente, id_taller),
+    CONSTRAINT chk_solicitud_distancia
+        CHECK (distancia_km IS NULL OR distancia_km >= 0),
+    CONSTRAINT chk_solicitud_tiempo
+        CHECK (tiempo_estimado_min IS NULL OR tiempo_estimado_min >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS asignaciones_servicio (
+    id_asignacion            BIGSERIAL PRIMARY KEY,
+    id_incidente             BIGINT NOT NULL,
+    id_solicitud_taller      BIGINT,
+    id_taller                BIGINT NOT NULL,
+    id_tecnico               BIGINT,
+    estado_asignacion        estado_asignacion_enum NOT NULL DEFAULT 'ACTIVA',
+    fecha_asignacion         TIMESTAMP NOT NULL DEFAULT NOW(),
+    fecha_inicio_servicio    TIMESTAMP,
+    fecha_fin_servicio       TIMESTAMP,
+    motivo_reasignacion      TEXT,
+    CONSTRAINT fk_asignacion_incidente
+        FOREIGN KEY (id_incidente) REFERENCES incidentes(id_incidente)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_asignacion_solicitud
+        FOREIGN KEY (id_solicitud_taller) REFERENCES solicitudes_taller(id_solicitud_taller)
+        ON UPDATE CASCADE ON DELETE SET NULL,
+    CONSTRAINT fk_asignacion_taller
+        FOREIGN KEY (id_taller) REFERENCES talleres(id_taller)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_asignacion_tecnico
+        FOREIGN KEY (id_tecnico) REFERENCES tecnicos(id_tecnico)
+        ON UPDATE CASCADE ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS historial_servicio (
+    id_historial            BIGSERIAL PRIMARY KEY,
+    id_incidente            BIGINT NOT NULL,
+    estado                  estado_incidente_enum NOT NULL,
+    detalle                 TEXT,
+    id_usuario_responsable  BIGINT,
+    id_taller               BIGINT,
+    id_tecnico              BIGINT,
+    fecha_evento            TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_historial_incidente
+        FOREIGN KEY (id_incidente) REFERENCES incidentes(id_incidente)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_historial_usuario
+        FOREIGN KEY (id_usuario_responsable) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE SET NULL,
+    CONSTRAINT fk_historial_taller
+        FOREIGN KEY (id_taller) REFERENCES talleres(id_taller)
+        ON UPDATE CASCADE ON DELETE SET NULL,
+    CONSTRAINT fk_historial_tecnico
+        FOREIGN KEY (id_tecnico) REFERENCES tecnicos(id_tecnico)
+        ON UPDATE CASCADE ON DELETE SET NULL
+);
+
+-- ----------------------------------------------------------
+-- 7) COMUNICACION Y NOTIFICACIONES
+-- ----------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS dispositivos_usuario (
+    id_dispositivo         BIGSERIAL PRIMARY KEY,
+    id_usuario             BIGINT NOT NULL,
+    token_push             TEXT NOT NULL,
+    plataforma             plataforma_dispositivo_enum NOT NULL,
+    activo                 BOOLEAN NOT NULL DEFAULT TRUE,
+    ultimo_uso             TIMESTAMP,
+    created_at             TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_dispositivo_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT uq_dispositivo_token UNIQUE (token_push)
+);
+
+CREATE TABLE IF NOT EXISTS notificaciones (
+    id_notificacion        BIGSERIAL PRIMARY KEY,
+    id_usuario            BIGINT NOT NULL,
+    id_incidente          BIGINT,
+    tipo_notificacion     tipo_notificacion_enum NOT NULL,
+    titulo                VARCHAR(150) NOT NULL,
+    mensaje               TEXT NOT NULL,
+    leida                 BOOLEAN NOT NULL DEFAULT FALSE,
+    enviada               BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_envio           TIMESTAMP,
+    created_at            TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_notificacion_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_notificacion_incidente
+        FOREIGN KEY (id_incidente) REFERENCES incidentes(id_incidente)
+        ON UPDATE CASCADE ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS mensajes_incidente (
+    id_mensaje             BIGSERIAL PRIMARY KEY,
+    id_incidente           BIGINT NOT NULL,
+    id_emisor_usuario      BIGINT NOT NULL,
+    id_receptor_usuario    BIGINT NOT NULL,
+    tipo_mensaje           tipo_mensaje_enum NOT NULL DEFAULT 'TEXTO',
+    contenido              TEXT NOT NULL,
+    leido                  BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_envio            TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_mensaje_incidente
+        FOREIGN KEY (id_incidente) REFERENCES incidentes(id_incidente)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_mensaje_emisor
+        FOREIGN KEY (id_emisor_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_mensaje_receptor
+        FOREIGN KEY (id_receptor_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT chk_mensaje_emisor_receptor
+        CHECK (id_emisor_usuario <> id_receptor_usuario)
+);
+
+-- ----------------------------------------------------------
+-- 8) PAGOS Y COMISIONES
+-- ----------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS pagos (
+    id_pago                BIGSERIAL PRIMARY KEY,
+    id_incidente           BIGINT NOT NULL,
+    id_cliente             BIGINT NOT NULL,
+    id_taller              BIGINT NOT NULL,
+    monto_servicio         NUMERIC(12,2) NOT NULL,
+    metodo_pago            metodo_pago_enum NOT NULL,
+    estado_pago            estado_pago_enum NOT NULL DEFAULT 'PENDIENTE',
+    referencia_externa     VARCHAR(120),
+    fecha_pago             TIMESTAMP,
+    created_at             TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at             TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_pago_incidente
+        FOREIGN KEY (id_incidente) REFERENCES incidentes(id_incidente)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_pago_cliente
+        FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_pago_taller
+        FOREIGN KEY (id_taller) REFERENCES talleres(id_taller)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT chk_pago_monto_servicio
+        CHECK (monto_servicio >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS comisiones_taller (
+    id_comision              BIGSERIAL PRIMARY KEY,
+    id_pago                  BIGINT NOT NULL UNIQUE,
+    id_taller                BIGINT NOT NULL,
+    porcentaje_comision      NUMERIC(5,2) NOT NULL DEFAULT 10.00,
+    monto_comision           NUMERIC(12,2) NOT NULL,
+    estado_comision          estado_comision_enum NOT NULL DEFAULT 'PENDIENTE',
+    fecha_generada           TIMESTAMP NOT NULL DEFAULT NOW(),
+    fecha_pago_comision      TIMESTAMP,
+    CONSTRAINT fk_comision_pago
+        FOREIGN KEY (id_pago) REFERENCES pagos(id_pago)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_comision_taller
+        FOREIGN KEY (id_taller) REFERENCES talleres(id_taller)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT chk_comision_porcentaje
+        CHECK (porcentaje_comision >= 0 AND porcentaje_comision <= 100),
+    CONSTRAINT chk_comision_monto
+        CHECK (monto_comision >= 0)
+);
+
+-- ----------------------------------------------------------
+-- 9) BITACORA Y REPORTES
+-- ----------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS bitacora (
+    id_bitacora             BIGSERIAL PRIMARY KEY,
+    id_usuario              BIGINT,
+    modulo                  VARCHAR(80) NOT NULL,
+    accion                  VARCHAR(80) NOT NULL,
+    descripcion             TEXT,
+    tabla_afectada          VARCHAR(80),
+    id_registro_afectado    BIGINT,
+    ip_origen               VARCHAR(50),
+    fecha_evento            TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_bitacora_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS reportes_generados (
+    id_reporte              BIGSERIAL PRIMARY KEY,
+    id_usuario_admin        BIGINT NOT NULL,
+    nombre_reporte          VARCHAR(150) NOT NULL,
+    parametros              JSONB,
+    fecha_generacion        TIMESTAMP NOT NULL DEFAULT NOW(),
+    ruta_archivo            TEXT,
+    CONSTRAINT fk_reporte_usuario_admin
+        FOREIGN KEY (id_usuario_admin) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+-- ----------------------------------------------------------
+-- 10) INDICES
+-- ----------------------------------------------------------
+
+CREATE INDEX IF NOT EXISTS idx_usuario_email ON usuarios(email);
+CREATE INDEX IF NOT EXISTS idx_tecnico_taller_estado ON tecnicos(id_taller, estado);
+CREATE INDEX IF NOT EXISTS idx_vehiculo_cliente ON vehiculos(id_cliente);
+CREATE INDEX IF NOT EXISTS idx_incidente_cliente ON incidentes(id_cliente);
+CREATE INDEX IF NOT EXISTS idx_incidente_vehiculo ON incidentes(id_vehiculo);
+CREATE INDEX IF NOT EXISTS idx_incidente_estado_prioridad ON incidentes(estado_actual, prioridad_actual);
+CREATE INDEX IF NOT EXISTS idx_incidente_tipo_final ON incidentes(tipo_final);
+CREATE INDEX IF NOT EXISTS idx_incidente_fecha_reporte ON incidentes(fecha_reporte);
+CREATE INDEX IF NOT EXISTS idx_solicitud_taller_incidente ON solicitudes_taller(id_incidente);
+CREATE INDEX IF NOT EXISTS idx_solicitud_taller_taller_estado ON solicitudes_taller(id_taller, estado_solicitud);
+CREATE INDEX IF NOT EXISTS idx_asignacion_incidente ON asignaciones_servicio(id_incidente);
+CREATE INDEX IF NOT EXISTS idx_historial_incidente_fecha ON historial_servicio(id_incidente, fecha_evento);
+CREATE INDEX IF NOT EXISTS idx_notificacion_usuario_leida ON notificaciones(id_usuario, leida);
+CREATE INDEX IF NOT EXISTS idx_mensaje_incidente_fecha ON mensajes_incidente(id_incidente, fecha_envio);
+CREATE INDEX IF NOT EXISTS idx_pago_incidente ON pagos(id_incidente);
+CREATE INDEX IF NOT EXISTS idx_pago_estado ON pagos(estado_pago);
+CREATE INDEX IF NOT EXISTS idx_bitacora_modulo_fecha ON bitacora(modulo, fecha_evento);
+
+-- ----------------------------------------------------------
+-- 11) TRIGGERS UPDATED_AT
+-- ----------------------------------------------------------
+
+DROP TRIGGER IF EXISTS trg_roles_updated_at ON roles;
+CREATE TRIGGER trg_roles_updated_at
+BEFORE UPDATE ON roles
+FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_usuarios_updated_at ON usuarios;
+CREATE TRIGGER trg_usuarios_updated_at
+BEFORE UPDATE ON usuarios
+FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_clientes_updated_at ON clientes;
+CREATE TRIGGER trg_clientes_updated_at
+BEFORE UPDATE ON clientes
+FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_talleres_updated_at ON talleres;
+CREATE TRIGGER trg_talleres_updated_at
+BEFORE UPDATE ON talleres
+FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_tecnicos_updated_at ON tecnicos;
+CREATE TRIGGER trg_tecnicos_updated_at
+BEFORE UPDATE ON tecnicos
+FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_vehiculos_updated_at ON vehiculos;
+CREATE TRIGGER trg_vehiculos_updated_at
+BEFORE UPDATE ON vehiculos
+FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_incidentes_updated_at ON incidentes;
+CREATE TRIGGER trg_incidentes_updated_at
+BEFORE UPDATE ON incidentes
+FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_procesamiento_ia_updated_at ON procesamiento_ia_incidente;
+CREATE TRIGGER trg_procesamiento_ia_updated_at
+BEFORE UPDATE ON procesamiento_ia_incidente
+FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_pagos_updated_at ON pagos;
+CREATE TRIGGER trg_pagos_updated_at
+BEFORE UPDATE ON pagos
+FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+-- ----------------------------------------------------------
+-- 12) FUNCION PARA GENERAR CODIGO DE INCIDENTE
+-- ----------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION fn_generar_codigo_incidente()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.id_incidente IS NULL THEN
+        NEW.id_incidente := nextval('incidentes_id_incidente_seq');
+    END IF;
+
+    IF NEW.codigo IS NULL OR NEW.codigo = '' THEN
+        NEW.codigo := 'INC-' || to_char(NOW(), 'YYYYMMDD') || '-' || lpad(NEW.id_incidente::text, 6, '0');
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_generar_codigo_incidente ON incidentes;
+CREATE TRIGGER trg_generar_codigo_incidente
+BEFORE INSERT ON incidentes
+FOR EACH ROW EXECUTE FUNCTION fn_generar_codigo_incidente();
+
+-- ----------------------------------------------------------
+-- 13) FUNCION PARA CALCULAR COMISION 10%
+-- ----------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION fn_generar_comision_pago()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_porcentaje NUMERIC(5,2) := 10.00;
+BEGIN
+    INSERT INTO comisiones_taller (
+        id_pago,
+        id_taller,
+        porcentaje_comision,
+        monto_comision,
+        estado_comision,
+        fecha_generada
+    ) VALUES (
+        NEW.id_pago,
+        NEW.id_taller,
+        v_porcentaje,
+        ROUND((NEW.monto_servicio * v_porcentaje) / 100.0, 2),
+        'PENDIENTE',
+        NOW()
+    )
+    ON CONFLICT (id_pago) DO NOTHING;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_generar_comision_pago ON pagos;
+CREATE TRIGGER trg_generar_comision_pago
+AFTER INSERT ON pagos
+FOR EACH ROW
+WHEN (NEW.estado_pago IN ('PENDIENTE', 'PAGADO'))
+EXECUTE FUNCTION fn_generar_comision_pago();
+
+-- ----------------------------------------------------------
+-- 14) SEMILLA BASICA DE ROLES Y PERMISOS
+-- ----------------------------------------------------------
+
+INSERT INTO roles (nombre, descripcion)
+VALUES
+    ('CLIENTE', 'Usuario móvil que reporta incidentes y realiza pagos'),
+    ('TALLER', 'Proveedor de asistencia vehicular y gestión de técnicos'),
+    ('ADMINISTRADOR', 'Gestiona roles, bitácora, reportes y supervisión general')
+ON CONFLICT (nombre) DO NOTHING;
+
+INSERT INTO permisos (codigo, descripcion)
+VALUES
+    ('auth.login', 'Iniciar sesión en el sistema'),
+    ('usuarios.registrar', 'Registrar usuarios clientes'),
+    ('usuarios.perfil', 'Gestionar perfil del usuario'),
+    ('roles.gestionar', 'Gestionar roles y permisos'),
+    ('vehiculos.gestionar', 'Registrar y administrar vehículos'),
+    ('incidentes.reportar', 'Registrar incidentes y evidencias'),
+    ('incidentes.consultar_historial', 'Consultar historial de incidentes'),
+    ('talleres.gestionar', 'Registrar y gestionar talleres'),
+    ('tecnicos.gestionar', 'Registrar técnicos y disponibilidad'),
+    ('solicitudes.visualizar', 'Visualizar solicitudes disponibles'),
+    ('asignacion.ejecutar', 'Asignar taller adecuado'),
+    ('servicios.estado', 'Gestionar estado e historial del servicio'),
+    ('notificaciones.gestionar', 'Gestionar notificaciones y alertas'),
+    ('mensajes.gestionar', 'Comunicación usuario-taller'),
+    ('pagos.gestionar', 'Gestionar pagos'),
+    ('bitacora.gestionar', 'Gestionar bitácora'),
+    ('reportes.generar', 'Generar reportes')
+ON CONFLICT (codigo) DO NOTHING;
+
+INSERT INTO rol_permiso (id_rol, id_permiso)
+SELECT r.id_rol, p.id_permiso
+FROM roles r
+JOIN permisos p ON p.codigo IN (
+    'auth.login',
+    'usuarios.registrar',
+    'usuarios.perfil',
+    'vehiculos.gestionar',
+    'incidentes.reportar',
+    'incidentes.consultar_historial',
+    'notificaciones.gestionar',
+    'mensajes.gestionar',
+    'pagos.gestionar'
+)
+WHERE r.nombre = 'CLIENTE'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO rol_permiso (id_rol, id_permiso)
+SELECT r.id_rol, p.id_permiso
+FROM roles r
+JOIN permisos p ON p.codigo IN (
+    'auth.login',
+    'talleres.gestionar',
+    'tecnicos.gestionar',
+    'solicitudes.visualizar',
+    'servicios.estado',
+    'notificaciones.gestionar',
+    'mensajes.gestionar',
+    'pagos.gestionar'
+)
+WHERE r.nombre = 'TALLER'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO rol_permiso (id_rol, id_permiso)
+SELECT r.id_rol, p.id_permiso
+FROM roles r
+JOIN permisos p ON p.codigo IN (
+    'auth.login',
+    'roles.gestionar',
+    'asignacion.ejecutar',
+    'bitacora.gestionar',
+    'reportes.generar',
+    'notificaciones.gestionar',
+    'incidentes.consultar_historial'
+)
+WHERE r.nombre = 'ADMINISTRADOR'
+ON CONFLICT DO NOTHING;
+
+-- ----------------------------------------------------------
+-- 15) VISTAS DE REPORTE
+-- ----------------------------------------------------------
+
+CREATE OR REPLACE VIEW vw_incidentes_resumen AS
+SELECT
+    i.id_incidente,
+    i.codigo,
+    i.fecha_reporte,
+    i.estado_actual,
+    i.prioridad_actual,
+    i.tipo_reportado,
+    i.tipo_final,
+    c.id_cliente,
+    u.nombres || ' ' || u.apellidos AS cliente,
+    v.placa,
+    t.nombre_comercial AS taller_asignado,
+    te.nombres || ' ' || te.apellidos AS tecnico_asignado,
+    i.precio_final
+FROM incidentes i
+JOIN clientes c ON c.id_cliente = i.id_cliente
+JOIN usuarios u ON u.id_usuario = c.id_usuario
+JOIN vehiculos v ON v.id_vehiculo = i.id_vehiculo
+LEFT JOIN (
+    SELECT DISTINCT ON (a.id_incidente)
+        a.id_incidente,
+        a.id_taller,
+        a.id_tecnico,
+        a.fecha_asignacion
+    FROM asignaciones_servicio a
+    ORDER BY a.id_incidente, a.fecha_asignacion DESC
+) ua ON ua.id_incidente = i.id_incidente
+LEFT JOIN talleres t ON t.id_taller = ua.id_taller
+LEFT JOIN tecnicos te ON te.id_tecnico = ua.id_tecnico;
+
+CREATE OR REPLACE VIEW vw_metricas_taller AS
+SELECT
+    t.id_taller,
+    t.nombre_comercial,
+    (SELECT COUNT(*) FROM solicitudes_taller st WHERE st.id_taller = t.id_taller) AS solicitudes_recibidas,
+    (SELECT COUNT(*) FROM solicitudes_taller st WHERE st.id_taller = t.id_taller AND st.estado_solicitud = 'ACEPTADA') AS solicitudes_aceptadas,
+    (SELECT COUNT(*)
+       FROM asignaciones_servicio a
+       JOIN incidentes i ON i.id_incidente = a.id_incidente
+      WHERE a.id_taller = t.id_taller
+        AND i.estado_actual = 'ATENDIDO') AS servicios_atendidos,
+    (SELECT COALESCE(SUM(p.monto_servicio), 0)
+       FROM pagos p
+      WHERE p.id_taller = t.id_taller
+        AND p.estado_pago = 'PAGADO') AS ingresos_generados,
+    (SELECT COALESCE(SUM(ct.monto_comision), 0)
+       FROM comisiones_taller ct
+      WHERE ct.id_taller = t.id_taller
+        AND ct.estado_comision IN ('PENDIENTE', 'PAGADA')) AS comision_total
+FROM talleres t;
+
+CREATE OR REPLACE VIEW vw_metricas_generales AS
+SELECT
+    COUNT(*) AS total_incidentes,
+    COUNT(*) FILTER (WHERE estado_actual = 'PENDIENTE') AS incidentes_pendientes,
+    COUNT(*) FILTER (WHERE estado_actual = 'EN_PROCESO') AS incidentes_en_proceso,
+    COUNT(*) FILTER (WHERE estado_actual = 'ATENDIDO') AS incidentes_atendidos,
+    COUNT(*) FILTER (WHERE prioridad_actual = 'ALTA') AS prioridad_alta,
+    COUNT(*) FILTER (WHERE prioridad_actual = 'MEDIA') AS prioridad_media,
+    COUNT(*) FILTER (WHERE prioridad_actual = 'BAJA') AS prioridad_baja,
+    COALESCE(AVG(tiempo_estimado_llegada_min), 0) AS promedio_tiempo_llegada_min,
+    COALESCE(SUM(precio_final), 0) AS monto_total_servicios
+FROM incidentes;
+
+COMMIT;

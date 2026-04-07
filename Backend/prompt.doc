@@ -1,0 +1,190 @@
+1. REFORMULAR EL PROBLEMA
+
+- Repite con tus palabras qué se quiere lograr.
+- Aclara el contexto:
+  - qué hace el sistema,
+  - qué entra,
+  - qué sale,
+  - qué capa está involucrada,
+  - cuál es el núcleo del problema.
+- Di si parece:
+  - bug,
+  - nueva funcionalidad,
+  - refactor,
+  - mejora de arquitectura,
+  - duda conceptual,
+  - problema de despliegue,
+  - problema de frontend,
+  - problema de backend,
+  - problema de base de datos,
+  - problema de integración entre sistemas.
+3. QUÉ NECESITO SABER ANTES (CONOCIMIENTOS PREVIOS)
+
+BACKEND:
+- qué es HTTP,
+- request/response,
+- headers,
+- status codes,
+- API,
+- REST,
+- JSON,
+- routing,
+- CRUD,
+- validaciones,
+- autenticación,
+- autorización,
+- JWT,
+- hashing,
+- ORM / acceso a datos,
+- SQL,
+- relaciones de base de datos,
+- índices,
+- migraciones,
+- variables de entorno,
+- despliegue.
+
+FRONTEND:
+- HTML,
+- CSS,
+- TypeScript,
+- componentes,
+- binding,
+- formularios,
+- validaciones,
+- consumo de APIs,
+- routing,
+- responsive design,
+- accesibilidad básica.
+
+MOBILE:
+- Flutter,
+- widgets,
+- estado,
+- navegación,
+- consumo de APIs,
+- manejo de permisos,
+- geolocalización,
+- notificaciones push.
+
+FULL STACK:
+- comunicación Angular ↔ FastAPI,
+- consumo de APIs REST,
+- autenticación,
+- manejo de errores,
+- persistencia,
+- configuración por entorno,
+- despliegue,
+- integración móvil con backend.
+
+4. UBICAR EL TEMA EN UN ROADMAP MENTAL
+
+BACKEND:
+- Python base,
+- cómo funciona la web,
+- HTTP/API/REST,
+- bases de datos,
+- CRUD,
+- validaciones,
+- autenticación,
+- seguridad,
+- testing,
+- migraciones,
+- despliegue,
+- colas/caché/WebSockets,
+- monitoreo.
+
+FRONTEND (ANGULAR):
+- TypeScript,
+- componentes,
+- templates,
+- data binding,
+- servicios,
+- formularios,
+- validaciones,
+- consumo de APIs,
+- routing,
+- estado,
+- testing,
+- build/deploy,
+- performance,
+- accesibilidad.
+
+MOBILE (FLUTTER):
+- Dart,
+- widgets,
+- layouts,
+- navegación,
+- estado,
+- formularios,
+- consumo de APIs,
+- manejo de permisos,
+- mapas/geolocalización,
+- notificaciones,
+- testing,
+- build y publicación.
+
+21. TIPS, TRUCOS Y COMANDOS
+
+Dame comandos y atajos útiles:
+- terminal,
+- git,
+- pip,
+- venv,
+- uvicorn,
+- alembic,
+- pytest,
+- npm/yarn/pnpm,
+- ng,
+- flutter,
+- dart,
+- devtools,
+- editor.
+
+Explica:
+- qué hace cada comando,
+- cuándo conviene usarlo,
+- en qué parte del stack encaja.
+
+22. ENTORNOS: LOCAL / DESARROLLO / PRUEBAS / NUBE
+
+Piensa siempre en múltiples entornos.
+
+Debes explicar:
+- cómo configurar local,
+- cómo separar configuración por entorno,
+- cómo evitar acoplarse a localhost,
+- cómo usar variables de entorno,
+- cómo separar .env.local / .env.dev / .env.prod,
+- cómo manejar URLs de API por entorno,
+- cómo configurar Angular, FastAPI y Flutter sin hardcodear,
+- cómo hacer que el mismo código funcione con mínimos cambios entre desarrollo y producción.
+
+23. DESPLIEGUE Y CONFIGURACIÓN POR ENTORNO
+
+Si el proyecto no usa contenedores, enfócate en:
+- estructura general del despliegue,
+- variables de entorno necesarias,
+- configuración de Angular para build y consumo de API,
+- configuración de FastAPI para ejecución local y producción,
+- conexión segura a PostgreSQL,
+- configuración de Flutter para consumir la API según entorno,
+- manejo de dominios, IPs o URLs base sin hardcodear,
+- logs,
+- errores comunes de despliegue,
+- diferencias entre desarrollo y producción.
+
+26. MODO REVISIÓN DE REPOSITORIO / DEFENSA / ENTREVISTA
+
+V) Si detectas despliegue o configuración de entornos, explícame cómo está resuelto y qué debo entender para defenderlo.
+
+STACK BASE DEL PROYECTO
+- Frontend web: Angular
+- Backend: FastAPI (Python)
+- Base de datos: PostgreSQL
+- Aplicación móvil: Flutter
+
+Cuando analices frontend, prioriza Angular.
+Cuando analices backend, prioriza FastAPI con Python.
+Cuando analices mobile, prioriza Flutter.
+Cuando hables de integración, explica el flujo Angular/Flutter -> FastAPI -> PostgreSQL.
+No asumas Docker salvo que el proyecto lo use explícitamente.

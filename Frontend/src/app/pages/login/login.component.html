@@ -1,0 +1,142 @@
+<div class="login-root">
+
+  <!-- Panel izquierdo -->
+  <div class="left-panel">
+    <img src="login-hero.jpg" alt="" class="bg-img" />
+    <div class="left-overlay"></div>
+    <div class="left-content">
+      <div class="left-logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+        <span>EmergenciaVehicular</span>
+      </div>
+
+      <div class="left-body">
+        <h1 class="left-title">Atención de emergencias<br/>en tiempo real</h1>
+        <p class="left-desc">Plataforma inteligente que conecta conductores con talleres certificados al instante.</p>
+
+        <div class="features">
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <span>Asignación automática de talleres</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <span>Seguimiento en tiempo real</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <span>Diagnóstico asistido por IA</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <span>Gestión de pagos integrada</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="left-footer">
+        <div class="stat-row">
+          <div class="stat-item">
+            <span class="stat-val">3</span>
+            <span class="stat-lbl">Roles de acceso</span>
+          </div>
+          <div class="stat-sep"></div>
+          <div class="stat-item">
+            <span class="stat-val">17</span>
+            <span class="stat-lbl">Módulos funcionales</span>
+          </div>
+          <div class="stat-sep"></div>
+          <div class="stat-item">
+            <span class="stat-val">24/7</span>
+            <span class="stat-lbl">Disponibilidad</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel derecho: formulario -->
+  <div class="right-panel">
+    <div class="form-wrapper">
+
+      <div class="form-top">
+        <div class="form-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </div>
+        <h2 class="form-title">Iniciar sesión</h2>
+        <p class="form-sub">Ingresa tus credenciales para acceder al panel</p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="form-body" novalidate>
+
+        <div class="field">
+          <label class="label">Correo electrónico</label>
+          <div class="input-box" [class.error]="emailCtrl.invalid && emailCtrl.touched">
+            <svg class="i-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/>
+            </svg>
+            <input formControlName="email" type="email" placeholder="correo@empresa.com" autocomplete="email" />
+          </div>
+          @if (emailCtrl.touched && emailCtrl.hasError('required')) {
+            <span class="err">Campo requerido</span>
+          } @else if (emailCtrl.touched && emailCtrl.hasError('email')) {
+            <span class="err">Formato inválido</span>
+          }
+        </div>
+
+        <div class="field">
+          <label class="label">Contraseña</label>
+          <div class="input-box" [class.error]="passwordCtrl.invalid && passwordCtrl.touched">
+            <svg class="i-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <input formControlName="password" [type]="showPassword() ? 'text' : 'password'"
+                   placeholder="••••••••" autocomplete="current-password" />
+            <button type="button" class="eye-btn" (click)="togglePassword()">
+              @if (showPassword()) {
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              } @else {
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              }
+            </button>
+          </div>
+          @if (passwordCtrl.touched && passwordCtrl.hasError('required')) {
+            <span class="err">Campo requerido</span>
+          }
+        </div>
+
+        @if (error()) {
+          <div class="alert-err">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {{ error() }}
+          </div>
+        }
+
+        <button type="submit" class="btn-login" [disabled]="loading()">
+          @if (loading()) {
+            <span class="spin"></span> Verificando...
+          } @else {
+            Ingresar
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          }
+        </button>
+
+      </form>
+
+      <p class="form-hint">¿Primer acceso? Solicita credenciales al administrador</p>
+    </div>
+  </div>
+
+</div>

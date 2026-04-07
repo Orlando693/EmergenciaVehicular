@@ -1,0 +1,59 @@
+# ============================================================
+# EmergenciaVehicular - .gitignore
+# ============================================================
+
+# Variables de entorno (contienen credenciales sensibles)
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+*.pytest_cache/
+.mypy_cache/
+.dmypy.json
+
+# Alembic (versiones compiladas)
+*.pyc
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+*.js.map
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

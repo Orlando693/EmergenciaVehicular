@@ -1,0 +1,61 @@
+<div class="home-page">
+
+  <!-- Header de bienvenida -->
+  <div class="home-header">
+    <div class="welcome-block">
+      <p class="welcome-time">{{ fecha | titlecase }}</p>
+      <h1 class="welcome-title">Bienvenido, {{ auth.nombreCompleto.split(' ')[0] }}</h1>
+      <p class="welcome-sub">Panel de administración · <strong>{{ auth.rol }}</strong></p>
+    </div>
+    <div class="header-badge">
+      <span class="badge-dot"></span>
+      Sistema operativo
+    </div>
+  </div>
+
+  <!-- Stats cards (solo ADMIN) -->
+  @if (auth.rol === 'ADMINISTRADOR') {
+    @if (loading()) {
+      <div class="stats-grid">
+        @for (i of [1,2,3,4]; track i) {
+          <div class="stat-card skeleton"></div>
+        }
+      </div>
+    } @else {
+      <div class="stats-grid">
+        @for (s of stats(); track s.label) {
+          <div class="stat-card" [attr.data-color]="s.color">
+            <div class="stat-icon" [innerHTML]="getIcon(s.icon)"></div>
+            <div class="stat-body">
+              <span class="stat-val">{{ s.value }}</span>
+              <span class="stat-label">{{ s.label }}</span>
+              <span class="stat-sub">{{ s.sub }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- Accesos rápidos -->
+  <div class="section-header">
+    <h2 class="section-title">Acceso rápido</h2>
+    <p class="section-sub">Módulos disponibles para tu rol</p>
+  </div>
+
+  <div class="accesos-grid">
+    @for (a of accesos; track a.route) {
+      <a [routerLink]="a.route" class="acceso-card">
+        <div class="acceso-icon" [innerHTML]="getIcon(a.icon)"></div>
+        <div class="acceso-body">
+          <span class="acceso-label">{{ a.label }}</span>
+          <span class="acceso-desc">{{ a.desc }}</span>
+        </div>
+        <svg class="acceso-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+    }
+  </div>
+
+</div>

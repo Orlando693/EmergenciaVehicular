@@ -1,0 +1,80 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Técnicos</h1>
+      <p class="page-sub">Personal técnico registrado en el taller</p>
+    </div>
+    @if (idTaller()) {
+      <button class="btn-primary" (click)="showForm.set(!showForm())">
+        {{ showForm() ? '✕ Cancelar' : '+ Nuevo técnico' }}
+      </button>
+    }
+  </div>
+
+  @if (success()) { <div class="alert success">{{ success() }}</div> }
+  @if (error())   { <div class="alert danger">{{ error() }}</div> }
+
+  @if (showForm()) {
+    <div class="form-card">
+      <h2 class="form-card-title">Registrar técnico</h2>
+      <form [formGroup]="form" (ngSubmit)="guardar()" class="grid-form">
+        <div class="field-group">
+          <label class="field-label">Nombres *</label>
+          <input formControlName="nombres" class="field-input" placeholder="Pedro"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Apellidos *</label>
+          <input formControlName="apellidos" class="field-input" placeholder="López"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Teléfono</label>
+          <input formControlName="telefono" class="field-input" placeholder="+591 7XXXXXXX"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Especialidad</label>
+          <input formControlName="especialidad" class="field-input" placeholder="Motor, Electricidad, etc."/>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Guardando...' : 'Registrar técnico' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <div class="table-card">
+    @if (loading()) {
+      <div class="loading-row">Cargando técnicos...</div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Teléfono</th>
+            <th>Especialidad</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of tecnicos(); track t.id_tecnico) {
+            <tr>
+              <td><span class="user-name-cell">{{ t.nombres }} {{ t.apellidos }}</span></td>
+              <td class="cell-muted">{{ t.telefono ?? '—' }}</td>
+              <td class="cell-muted">{{ t.especialidad ?? '—' }}</td>
+              <td>
+                <span class="badge" [ngClass]="estadoBadge(t.estado)">{{ t.estado }}</span>
+              </td>
+              <td>
+                <button class="btn-danger-action" (click)="desactivar(t)">Desactivar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="empty-row">No hay técnicos registrados</td></tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

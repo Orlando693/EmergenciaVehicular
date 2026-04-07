@@ -1,0 +1,89 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Roles y Permisos</h1>
+      <p class="page-sub">Control de acceso al sistema</p>
+    </div>
+    <button class="btn-primary" (click)="showForm.set(!showForm())">
+      {{ showForm() ? '✕ Cancelar' : '+ Nuevo rol' }}
+    </button>
+  </div>
+
+  @if (success()) { <div class="alert success">{{ success() }}</div> }
+  @if (error())   { <div class="alert danger">{{ error() }}</div> }
+
+  @if (showForm()) {
+    <div class="form-card">
+      <h2 class="form-card-title">Crear nuevo rol</h2>
+      <form [formGroup]="form" (ngSubmit)="guardar()" class="grid-form">
+        <div class="field-group">
+          <label class="field-label">Nombre del rol *</label>
+          <input formControlName="nombre" class="field-input" placeholder="SUPERVISOR"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Descripción</label>
+          <input formControlName="descripcion" class="field-input" placeholder="Descripción del rol..."/>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Guardando...' : 'Crear rol' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <div class="roles-grid">
+    @if (loading()) {
+      <div class="loading-row">Cargando roles...</div>
+    } @else {
+      @for (rol of roles(); track rol.id_rol) {
+        <div class="rol-card">
+          <div class="rol-header">
+            <div class="rol-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="rol-nombre">{{ rol.nombre }}</h3>
+              <span class="rol-desc">{{ rol.descripcion ?? 'Sin descripción' }}</span>
+            </div>
+            <span class="badge" [class.badge-green]="rol.activo" [class.badge-red]="!rol.activo">
+              {{ rol.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          <div class="permisos-list">
+            <span class="permisos-label">Permisos ({{ rol.permisos.length }}):</span>
+            @for (p of rol.permisos; track p.id_permiso) {
+              <span class="badge badge-blue">{{ p.codigo }}</span>
+            } @empty {
+              <span class="cell-muted">Sin permisos asignados</span>
+            }
+          </div>
+        </div>
+      } @empty {
+        <div class="loading-row">No hay roles registrados</div>
+      }
+    }
+  </div>
+
+  <!-- Permisos disponibles -->
+  <div class="section-title" style="margin-top:1.5rem">Permisos del sistema</div>
+  <div class="table-card">
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Código</th><th>Descripción</th></tr></thead>
+      <tbody>
+        @for (p of permisos(); track p.id_permiso) {
+          <tr>
+            <td class="cell-muted">{{ p.id_permiso }}</td>
+            <td><span class="badge badge-blue">{{ p.codigo }}</span></td>
+            <td class="cell-muted">{{ p.descripcion ?? '—' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="3" class="empty-row">Sin permisos</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

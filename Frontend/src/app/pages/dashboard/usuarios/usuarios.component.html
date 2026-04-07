@@ -1,0 +1,100 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Usuarios</h1>
+      <p class="page-sub">Registro y gestión de cuentas de usuario</p>
+    </div>
+    <button class="btn-primary" (click)="showForm.set(!showForm())">
+      {{ showForm() ? '✕ Cancelar' : '+ Nuevo usuario' }}
+    </button>
+  </div>
+
+  @if (success()) { <div class="alert success">{{ success() }}</div> }
+  @if (error())   { <div class="alert danger">{{ error() }}</div> }
+
+  @if (showForm()) {
+    <div class="form-card">
+      <h2 class="form-card-title">Registrar nuevo usuario</h2>
+      <form [formGroup]="form" (ngSubmit)="guardar()" class="grid-form">
+        <div class="field-group">
+          <label class="field-label">Nombres *</label>
+          <input formControlName="nombres" class="field-input" placeholder="Juan"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Apellidos *</label>
+          <input formControlName="apellidos" class="field-input" placeholder="Pérez"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Email *</label>
+          <input formControlName="email" type="email" class="field-input" placeholder="juan@mail.com"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Contraseña *</label>
+          <input formControlName="password" type="password" class="field-input" placeholder="••••••"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Teléfono</label>
+          <input formControlName="telefono" class="field-input" placeholder="+591 7XXXXXXX"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Rol *</label>
+          <select formControlName="rol" class="field-input">
+            <option value="CLIENTE">Cliente</option>
+            <option value="TALLER">Taller</option>
+            <option value="ADMINISTRADOR">Administrador</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Guardando...' : 'Guardar usuario' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <div class="table-card">
+    @if (loading()) {
+      <div class="loading-row">Cargando usuarios...</div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+            <th>Roles</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of usuarios(); track u.id_usuario) {
+            <tr>
+              <td><span class="user-name-cell">{{ u.nombres }} {{ u.apellidos }}</span></td>
+              <td class="cell-muted">{{ u.email }}</td>
+              <td class="cell-muted">{{ u.telefono ?? '—' }}</td>
+              <td>
+                @for (r of u.roles; track r) {
+                  <span class="badge badge-blue">{{ r }}</span>
+                }
+              </td>
+              <td>
+                <span class="badge" [class.badge-green]="u.estado === 'ACTIVO'" [class.badge-red]="u.estado !== 'ACTIVO'">
+                  {{ u.estado }}
+                </span>
+              </td>
+              <td>
+                <button class="btn-action" (click)="toggleEstado(u)">
+                  {{ u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty-row">No hay usuarios registrados</td></tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
