@@ -1,23 +1,136 @@
-.actions-cell { display: flex; gap: 0.4rem; align-items: center; }
+/* uses global Tailwind + styles.css */
 
-.toggle-label { display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+/* ── Botones de acción en tabla ── */
+.usr-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border: 1px solid transparent;
+}
+.usr-edit-btn { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.usr-edit-btn:hover { background: #dbeafe; }
+
+.btn-success-action {
+  display: inline-flex; align-items: center;
+  padding: 5px 11px; border-radius: 8px;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;
+  transition: background 0.15s;
+}
+.btn-success-action:hover { background: #dcfce7; }
+
+.btn-danger-action {
+  display: inline-flex; align-items: center;
+  padding: 5px 11px; border-radius: 8px;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3;
+  transition: background 0.15s;
+}
+.btn-danger-action:hover { background: #ffe4e6; }
+
+/* ── Overlay ── */
+.usr-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 40;
+  animation: tFadeIn 0.15s ease;
+}
+
+/* ── Panel lateral deslizante ── */
+.usr-panel {
+  position: fixed;
+  top: 0; right: 0;
+  height: 100vh;
+  width: 100%;
+  max-width: 460px;
+  background: #fff;
+  box-shadow: -8px 0 32px rgba(15, 23, 42, 0.12);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  animation: tSlideIn 0.2s ease;
+}
+
+@keyframes tFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+.usr-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.usr-panel-title { font-size: 16px; font-weight: 700; color: #0f172a; }
+.usr-panel-sub   { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+
+.usr-panel-close {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #64748b;
+  transition: background 0.15s;
+}
+.usr-panel-close:hover { background: #f1f5f9; }
+
+.usr-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.usr-panel-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ── Botón secundario ── */
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 10px;
+  background: #f1f5f9; color: #475569;
+  font-size: 13px; font-weight: 500;
+  border: 1px solid #e2e8f0;
+  cursor: pointer; transition: background 0.15s;
+}
+.btn-secondary:hover { background: #e2e8f0; }
+
+/* ── Toggle acepta remolque ── */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
 .toggle-cb { display: none; }
 .toggle-track {
-  width: 38px; height: 20px;
-  background: #e2e8f0;
-  border-radius: 99px;
   position: relative;
+  width: 40px; height: 22px;
+  background: #cbd5e1;
+  border-radius: 999px;
   transition: background 0.2s;
+  flex-shrink: 0;
 }
 .toggle-track::after {
   content: '';
   position: absolute;
-  top: 2px; left: 2px;
+  left: 3px; top: 3px;
   width: 16px; height: 16px;
-  background: #fff;
   border-radius: 50%;
+  background: white;
   transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
-.toggle-cb:checked + .toggle-track { background: #1d4ed8; }
+.toggle-cb:checked + .toggle-track { background: #10b981; }
 .toggle-cb:checked + .toggle-track::after { transform: translateX(18px); }

@@ -1,35 +1,63 @@
-<div class="home-page">
+<div class="space-y-6 max-w-6xl mx-auto">
 
-  <!-- Header de bienvenida -->
-  <div class="home-header">
-    <div class="welcome-block">
-      <p class="welcome-time">{{ fecha | titlecase }}</p>
-      <h1 class="welcome-title">Bienvenido, {{ auth.nombreCompleto.split(' ')[0] }}</h1>
-      <p class="welcome-sub">Panel de administración · <strong>{{ auth.rol }}</strong></p>
+  <!-- ── Header de bienvenida ─────────────────────────── -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-white border border-slate-100 shadow-sm rounded-3xl">
+    <div class="flex items-center gap-5">
+      <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 font-bold text-xl ring-4 ring-white shadow-sm">
+        {{ auth.nombreCompleto.charAt(0).toUpperCase() }}
+      </div>
+      <div>
+        <p class="text-sm text-slate-500 font-medium tracking-wide uppercase">{{ fecha | titlecase }}</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">
+          ¡Hola, {{ auth.nombreCompleto.split(' ')[0] }}! 
+        </h1>
+        <p class="text-slate-500 text-sm mt-1.5 flex items-center gap-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-blue-500 hidden sm:inline-block"></span>
+          Resumen de panel · <span class="font-bold text-blue-600 px-2 py-0.5 bg-blue-50 rounded-md">{{ auth.rol }}</span>
+        </p>
+      </div>
     </div>
-    <div class="header-badge">
-      <span class="badge-dot"></span>
-      Sistema operativo
+    <div class="flex items-center gap-2.5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm">
+      <span class="relative flex h-2.5 w-2.5">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+      </span>
+      Sistema Operativo en línea
     </div>
   </div>
 
-  <!-- Stats cards (solo ADMIN) -->
+  <!-- ── Stats (solo ADMINISTRADOR) ──────────────────── -->
   @if (auth.rol === 'ADMINISTRADOR') {
+    <div class="mt-8 mb-4 flex items-center justify-between">
+      <h2 class="text-lg font-bold text-slate-900">Estadísticas Generales</h2>
+    </div>
     @if (loading()) {
-      <div class="stats-grid">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         @for (i of [1,2,3,4]; track i) {
-          <div class="stat-card skeleton"></div>
+          <div class="skeleton h-[130px] rounded-3xl"></div>
         }
       </div>
     } @else {
-      <div class="stats-grid">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         @for (s of stats(); track s.label) {
-          <div class="stat-card" [attr.data-color]="s.color">
-            <div class="stat-icon" [innerHTML]="getIcon(s.icon)"></div>
-            <div class="stat-body">
-              <span class="stat-val">{{ s.value }}</span>
-              <span class="stat-label">{{ s.label }}</span>
-              <span class="stat-sub">{{ s.sub }}</span>
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-lg transition-shadow duration-300 p-6 relative overflow-hidden group">
+            <div class="absolute -right-6 -top-6 opacity-[0.03] text-9xl group-hover:scale-110 transition-transform duration-500" [innerHTML]="getIcon(s.icon)"></div>
+            <div class="flex items-start justify-between mb-4">
+              <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors"
+                   [ngClass]="{
+                     'bg-blue-50/80 text-blue-600':   s.color === 'blue',
+                     'bg-emerald-50/80 text-emerald-600': s.color === 'green',
+                     'bg-amber-50/80 text-amber-600': s.color === 'yellow',
+                     'bg-teal-50/80 text-teal-600':   s.color === 'teal'
+                   }"
+                   [innerHTML]="getIcon(s.icon)">
+              </div>
+              <span class="px-2.5 py-1 bg-slate-50 text-[10px] font-bold uppercase tracking-widest text-slate-500 rounded-lg">HOY</span>
+            </div>
+            <div>
+              <p class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ s.value }}</p>
+              <p class="text-sm font-semibold text-slate-600 mt-1">{{ s.label }}</p>
+              <p class="text-xs text-slate-400 mt-1 opacity-80">{{ s.sub }}</p>
             </div>
           </div>
         }
@@ -37,25 +65,37 @@
     }
   }
 
-  <!-- Accesos rápidos -->
-  <div class="section-header">
-    <h2 class="section-title">Acceso rápido</h2>
-    <p class="section-sub">Módulos disponibles para tu rol</p>
-  </div>
+  <!-- ── Acceso rápido ─────────────────────────────────── -->
+  <div class="mt-10">
+    <div class="mb-5">
+      <h2 class="text-lg font-bold text-slate-900">Accesos Rápidos</h2>
+      <p class="text-sm text-slate-500 mt-1">Explora los módulos disponibles para tu rol</p>
+    </div>
 
-  <div class="accesos-grid">
-    @for (a of accesos; track a.route) {
-      <a [routerLink]="a.route" class="acceso-card">
-        <div class="acceso-icon" [innerHTML]="getIcon(a.icon)"></div>
-        <div class="acceso-body">
-          <span class="acceso-label">{{ a.label }}</span>
-          <span class="acceso-desc">{{ a.desc }}</span>
-        </div>
-        <svg class="acceso-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-        </svg>
-      </a>
-    }
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (a of accesos; track a.route) {
+        <a [routerLink]="a.route"
+           class="group flex flex-col p-5 bg-white border border-slate-100 hover:border-blue-200 shadow-sm hover:shadow-md rounded-3xl transition-all duration-300 relative overflow-hidden">
+          <div class="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+          
+          <div class="flex items-start justify-between mb-3">
+            <div class="w-12 h-12 rounded-2xl bg-slate-50 group-hover:bg-blue-50 flex items-center justify-center text-slate-500 group-hover:text-blue-600 transition-colors shrink-0"
+                 [innerHTML]="getIcon(a.icon)">
+            </div>
+            <div class="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-blue-600 flex items-center justify-center text-slate-400 group-hover:text-white transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </div>
+          </div>
+          
+          <div class="mt-auto pt-2">
+            <p class="font-bold text-slate-900 text-base group-hover:text-blue-700 transition-colors">{{ a.label }}</p>
+            <p class="text-sm text-slate-500 mt-1 line-clamp-2 leading-relaxed">{{ a.desc }}</p>
+          </div>
+        </a>
+      }
+    </div>
   </div>
 
 </div>

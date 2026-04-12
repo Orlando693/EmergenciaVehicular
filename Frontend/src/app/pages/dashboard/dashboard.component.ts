@@ -1,6 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
+import { Component, signal, computed, ViewEncapsulation, OnInit } from '@angular/core';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { filter } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 
 interface NavItem {
@@ -10,31 +11,78 @@ interface NavItem {
   roles: string[];
 }
 
+interface NavGroup {
+  section: string;
+  items: NavItem[];
+  expanded?: boolean;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
+  encapsulation: ViewEncapsulation.None,
 })
-export class DashboardComponent {
-  sidebarOpen = signal(true);
+export class DashboardComponent implements OnInit {
+  sidebarOpen = signal(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
 
-  navItems: NavItem[] = [
-    { label: 'Inicio',          icon: 'home',   route: '/dashboard',           roles: ['ADMINISTRADOR','TALLER','CLIENTE'] },
-    { label: 'Usuarios',        icon: 'users',  route: '/dashboard/usuarios',  roles: ['ADMINISTRADOR'] },
-    { label: 'Roles y Permisos',icon: 'shield', route: '/dashboard/roles',     roles: ['ADMINISTRADOR'] },
-    { label: 'Talleres',        icon: 'wrench', route: '/dashboard/talleres',  roles: ['ADMINISTRADOR','TALLER'] },
-    { label: 'Técnicos',        icon: 'tool',   route: '/dashboard/tecnicos',  roles: ['ADMINISTRADOR','TALLER'] },
-    { label: 'Mi Perfil',       icon: 'user',   route: '/dashboard/perfil',    roles: ['ADMINISTRADOR','TALLER','CLIENTE'] },
-  ];
+  navGroups = signal<NavGroup[]>([
+    {
+      section: 'GENERAL',
+      expanded: true,
+      items: [
+        { label: 'Inicio', icon: 'home', route: '/dashboard', roles: ['ADMINISTRADOR', 'TALLER', 'CLIENTE'] },
+      ],
+    },
+    {
+      section: 'ADMINISTRACIÓN',
+      expanded: true,
+      items: [
+        { label: 'Usuarios',        icon: 'users',  route: '/dashboard/usuarios', roles: ['ADMINISTRADOR'] },
+        { label: 'Roles y Permisos',icon: 'shield', route: '/dashboard/roles',    roles: ['ADMINISTRADOR'] },
+      ],
+    },
+    {
+      section: 'OPERACIONES',
+      expanded: true,
+      items: [
+        { label: 'Talleres', icon: 'wrench', route: '/dashboard/talleres', roles: ['ADMINISTRADOR', 'TALLER'] },
+        { label: 'Técnicos', icon: 'tool',   route: '/dashboard/tecnicos', roles: ['ADMINISTRADOR', 'TALLER'] },
+      ],
+    },
+    {
+      section: 'MI CUENTA',
+      expanded: true,
+      items: [
+        { label: 'Mi Perfil', icon: 'user', route: '/dashboard/perfil', roles: ['ADMINISTRADOR', 'TALLER', 'CLIENTE'] },
+      ],
+    },
+  ]);
 
-  visibleNav = computed(() => {
+  visibleGroups = computed(() => {
     const rol = this.auth.rol;
-    return this.navItems.filter(item => item.roles.includes(rol));
+    return this.navGroups()
+      .map(g => ({ ...g, items: g.items.filter(i => i.roles.includes(rol)) }))
+      .filter(g => g.items.length > 0);
   });
 
   constructor(public auth: AuthService, private router: Router) {}
+
+  ngOnInit() {
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        this.sidebarOpen.set(false);
+      }
+    });
+  }
+
+  toggleGroup(group: NavGroup) {
+    this.navGroups.update(groups => 
+      groups.map(g => g.section === group.section ? { ...g, expanded: !g.expanded } : g)
+    );
+  }
 
   logout() { this.auth.logout(); }
   toggleSidebar() { this.sidebarOpen.update(v => !v); }

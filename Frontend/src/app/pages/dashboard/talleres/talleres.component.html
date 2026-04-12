@@ -1,11 +1,19 @@
-<div class="page">
+<div class="space-y-5">
+
+  <!-- Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">Talleres</h1>
       <p class="page-sub">Registro, aprobación y administración de talleres</p>
     </div>
     <button class="btn-primary" (click)="showForm.set(!showForm())">
-      {{ showForm() ? '✕ Cancelar' : '+ Registrar taller' }}
+      @if (showForm()) {
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Cancelar
+      } @else {
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Registrar taller
+      }
     </button>
   </div>
 
@@ -29,7 +37,7 @@
           <input formControlName="nit" class="field-input" placeholder="1234567890"/>
         </div>
         <div class="field-group">
-          <label class="field-label">Teléfono</label>
+          <label class="field-label">Teléfono de atención</label>
           <input formControlName="telefono_atencion" class="field-input" placeholder="+591 2XXXXXXX"/>
         </div>
         <div class="field-group">
@@ -48,16 +56,18 @@
           <label class="field-label">Capacidad máxima *</label>
           <input formControlName="capacidad_maxima" type="number" min="1" class="field-input"/>
         </div>
-        <div class="field-group" style="justify-content:flex-end">
+        <div class="field-group">
           <label class="field-label">Acepta remolque</label>
-          <label class="toggle-label">
+          <label class="toggle-wrap mt-1">
             <input formControlName="acepta_remolque" type="checkbox" class="toggle-cb"/>
             <span class="toggle-track"></span>
+            <span class="text-sm text-slate-600">Sí, acepta remolque</span>
           </label>
         </div>
         <div class="form-actions">
           <button type="submit" class="btn-primary" [disabled]="saving()">
-            {{ saving() ? 'Guardando...' : 'Registrar taller' }}
+            @if (saving()) { <span class="spinner"></span> Guardando... }
+            @else { Registrar taller }
           </button>
         </div>
       </form>
@@ -71,25 +81,39 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Nombre</th>
+            <th>Taller</th>
             <th>NIT</th>
-            <th>Dirección</th>
+            <th>Contacto</th>
             <th>Capacidad</th>
             <th>Remolque</th>
             <th>Estado</th>
-            @if (esAdmin) { <th>Acciones</th> }
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           @for (t of talleres(); track t.id_taller) {
             <tr>
               <td>
-                <span class="user-name-cell">{{ t.nombre_comercial }}</span>
-                <br/><span class="cell-muted" style="font-size:0.75rem">{{ t.razon_social }}</span>
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="user-name-cell">{{ t.nombre_comercial }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ t.razon_social }}</p>
+                  </div>
+                </div>
               </td>
               <td class="cell-muted">{{ t.nit ?? '—' }}</td>
-              <td class="cell-muted">{{ t.direccion }}</td>
-              <td class="cell-muted">{{ t.capacidad_maxima }}</td>
+              <td class="cell-muted text-sm">{{ t.direccion }}</td>
+              <td>
+                <span class="inline-flex items-center gap-1 text-sm font-semibold text-slate-700">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-400"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  {{ t.capacidad_maxima }}
+                </span>
+              </td>
               <td>
                 <span class="badge" [class.badge-green]="t.acepta_remolque" [class.badge-gray]="!t.acepta_remolque">
                   {{ t.acepta_remolque ? 'Sí' : 'No' }}
@@ -98,20 +122,85 @@
               <td>
                 <span class="badge" [ngClass]="estadoBadge(t.estado_registro)">{{ t.estado_registro }}</span>
               </td>
-              @if (esAdmin) {
-                <td class="actions-cell">
-                  @if (t.estado_registro === 'PENDIENTE') {
-                    <button class="btn-action" (click)="aprobar(t)">Aprobar</button>
+              <td>
+                <div class="flex items-center gap-1.5">
+                  @if (esAdmin && t.estado_registro === 'PENDIENTE') {
+                    <button class="btn-success-action" (click)="aprobar(t)">Aprobar</button>
                     <button class="btn-danger-action" (click)="rechazar(t)">Rechazar</button>
                   }
-                </td>
-              }
+                  <button class="usr-action-btn usr-edit-btn" title="Editar taller" (click)="abrirEdicion(t)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Editar
+                  </button>
+                </div>
+              </td>
             </tr>
           } @empty {
-            <tr><td [attr.colspan]="esAdmin ? 7 : 6" class="empty-row">No hay talleres registrados</td></tr>
+            <tr><td colspan="7" class="empty-row">No hay talleres registrados</td></tr>
           }
         </tbody>
       </table>
     }
   </div>
+
+  @if (tallerEditando()) {
+    <div class="usr-overlay" (click)="cerrarEdicion()"></div>
+    <div class="usr-panel">
+      <div class="usr-panel-header">
+        <div>
+          <h2 class="usr-panel-title">Editar taller</h2>
+          <p class="usr-panel-sub">{{ tallerEditando()!.nombre_comercial }}</p>
+        </div>
+        <button class="usr-panel-close" (click)="cerrarEdicion()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="usr-panel-body">
+        <form [formGroup]="editForm" class="space-y-4">
+          <div class="field-group">
+            <label class="field-label">Razón social *</label>
+            <input formControlName="razon_social" class="field-input"/>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Nombre comercial *</label>
+            <input formControlName="nombre_comercial" class="field-input"/>
+          </div>
+          <div class="field-group">
+            <label class="field-label">NIT</label>
+            <input formControlName="nit" class="field-input"/>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Dirección *</label>
+            <input formControlName="direccion" class="field-input"/>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Capacidad máxima *</label>
+            <input formControlName="capacidad_maxima" type="number" min="1" class="field-input"/>
+          </div>
+          <div class="field-group">
+            <label class="toggle-wrap mt-1">
+              <input formControlName="acepta_remolque" type="checkbox" class="toggle-cb"/>
+              <span class="toggle-track"></span>
+              <span class="text-sm text-slate-600">Acepta remolque</span>
+            </label>
+          </div>
+        </form>
+      </div>
+
+      <div class="usr-panel-footer">
+        <button class="btn-secondary" (click)="cerrarEdicion()">Cancelar</button>
+        <button class="btn-primary" [disabled]="savingEdit()" (click)="guardarEdicion()">
+          @if (savingEdit()) { <span class="spinner"></span> }
+          @else { <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Guardar }
+        </button>
+      </div>
+    </div>
+  }
+
 </div>

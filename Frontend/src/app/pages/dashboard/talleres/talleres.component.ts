@@ -21,6 +21,10 @@ export class TalleresComponent implements OnInit {
   error    = signal('');
   saving   = signal(false);
 
+  tallerEditando = signal<Taller | null>(null);
+  savingEdit     = signal(false);
+  editForm: FormGroup;
+
   form: FormGroup;
   esAdmin: boolean;
 
@@ -31,6 +35,17 @@ export class TalleresComponent implements OnInit {
   ) {
     this.esAdmin = this.auth.rol === 'ADMINISTRADOR';
     this.form = this.fb.group({
+      razon_social:     ['', Validators.required],
+      nombre_comercial: ['', Validators.required],
+      nit:              [''],
+      telefono_atencion:[''],
+      email_atencion:   [''],
+      direccion:        ['', Validators.required],
+      referencia:       [''],
+      capacidad_maxima: [1, [Validators.required, Validators.min(1)]],
+      acepta_remolque:  [false],
+    });
+    this.editForm = this.fb.group({
       razon_social:     ['', Validators.required],
       nombre_comercial: ['', Validators.required],
       nit:              [''],
@@ -65,6 +80,54 @@ export class TalleresComponent implements OnInit {
         setTimeout(() => this.success.set(''), 4000);
       },
       error: (e) => { this.error.set(e.error?.detail ?? 'Error'); this.saving.set(false); },
+    });
+  }
+
+  abrirEdicion(t: Taller) {
+    this.tallerEditando.set(t);
+    this.editForm.patchValue({
+      razon_social:     t.razon_social,
+      nombre_comercial: t.nombre_comercial,
+      nit:              t.nit ?? '',
+      telefono_atencion:t.telefono_atencion ?? '',
+      email_atencion:   t.email_atencion ?? '',
+      direccion:        t.direccion,
+      referencia:       t.referencia ?? '',
+      capacidad_maxima: t.capacidad_maxima,
+      acepta_remolque:  t.acepta_remolque,
+    });
+    this.error.set('');
+    this.showForm.set(false);
+  }
+
+  cerrarEdicion() {
+    this.tallerEditando.set(null);
+    this.error.set('');
+  }
+
+  guardarEdicion() {
+    if (this.editForm.invalid) { this.editForm.markAllAsTouched(); return; }
+    const t = this.tallerEditando();
+    if (!t) return;
+    this.savingEdit.set(true);
+    this.error.set('');
+    const data = this.editForm.value;
+    
+    // Si es administrador, usa actualizarTallerAdmin, sino el de taller personal
+    const req = this.esAdmin ? this.srv.actualizarTallerAdmin(t.id_taller, data) : this.srv.actualizar(data);
+    
+    req.subscribe({
+      next: (updated) => {
+        this.talleres.update(list => list.map(x => x.id_taller === t.id_taller ? updated : x));
+        this.success.set('Taller actualizado correctamente');
+        this.cerrarEdicion();
+        this.savingEdit.set(false);
+        setTimeout(() => this.success.set(''), 3000);
+      },
+      error: (err) => {
+        this.error.set(err.error?.detail ?? 'Error al actualizar taller');
+        this.savingEdit.set(false);
+      },
     });
   }
 

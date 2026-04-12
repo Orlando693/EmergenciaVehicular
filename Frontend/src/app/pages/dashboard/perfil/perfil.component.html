@@ -1,8 +1,10 @@
-<div class="page">
+<div class="space-y-5">
+
+  <!-- Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">Mi Perfil</h1>
-      <p class="page-sub">CU3 — Datos personales y seguridad</p>
+      <p class="page-sub">Datos personales y seguridad de la cuenta</p>
     </div>
   </div>
 
@@ -12,22 +14,44 @@
   @if (loading()) {
     <div class="loading-row">Cargando perfil...</div>
   } @else if (usuario()) {
-    <div class="perfil-layout">
+
+    <div class="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5">
 
       <!-- Avatar card -->
-      <div class="avatar-card">
-        <div class="avatar-circle">{{ usuario()!.nombres.charAt(0) }}{{ usuario()!.apellidos.charAt(0) }}</div>
-        <h2 class="avatar-name">{{ usuario()!.nombres }} {{ usuario()!.apellidos }}</h2>
-        <span class="badge badge-blue">{{ auth.rol }}</span>
-        <div class="avatar-email">{{ usuario()!.email }}</div>
-        <div class="avatar-meta">
-          <span class="badge" [class.badge-green]="usuario()!.estado === 'ACTIVO'" [class.badge-red]="usuario()!.estado !== 'ACTIVO'">
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col items-center text-center">
+        <div class="w-20 h-20 rounded-full bg-blue-600 text-white flex items-center justify-center text-2xl font-bold mb-4 ring-4 ring-blue-100">
+          {{ usuario()!.nombres.charAt(0) }}{{ usuario()!.apellidos.charAt(0) }}
+        </div>
+        <h2 class="font-bold text-slate-900 text-lg leading-tight">
+          {{ usuario()!.nombres }} {{ usuario()!.apellidos }}
+        </h2>
+        <p class="text-slate-500 text-sm mt-1 mb-3">{{ usuario()!.email }}</p>
+        <div class="flex items-center gap-2 flex-wrap justify-center">
+          <span class="badge badge-orange">{{ auth.rol }}</span>
+          <span class="badge"
+                [class.badge-green]="usuario()!.estado === 'ACTIVO'"
+                [class.badge-red]="usuario()!.estado !== 'ACTIVO'">
             {{ usuario()!.estado }}
           </span>
         </div>
+
+        <!-- Info adicional -->
+        <div class="w-full mt-5 pt-5 border-t border-slate-100 space-y-3 text-left">
+          <div class="flex items-center gap-2.5 text-sm text-slate-500">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 text-slate-400"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
+            <span class="truncate">{{ usuario()!.email }}</span>
+          </div>
+          @if (usuario()!.telefono) {
+            <div class="flex items-center gap-2.5 text-sm text-slate-500">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 text-slate-400"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <span>{{ usuario()!.telefono }}</span>
+            </div>
+          }
+        </div>
       </div>
 
-      <div class="perfil-forms">
+      <!-- Formularios -->
+      <div class="space-y-5">
 
         <!-- Datos personales -->
         <div class="form-card">
@@ -41,13 +65,14 @@
               <label class="field-label">Apellidos *</label>
               <input formControlName="apellidos" class="field-input"/>
             </div>
-            <div class="field-group">
+            <div class="field-group sm:col-span-2">
               <label class="field-label">Teléfono</label>
               <input formControlName="telefono" class="field-input" placeholder="+591 7XXXXXXX"/>
             </div>
             <div class="form-actions">
               <button type="submit" class="btn-primary" [disabled]="saving()">
-                {{ saving() ? 'Guardando...' : 'Actualizar perfil' }}
+                @if (saving()) { <span class="spinner"></span> Guardando... }
+                @else { Actualizar perfil }
               </button>
             </div>
           </form>
@@ -76,4 +101,5 @@
       </div>
     </div>
   }
+
 </div>

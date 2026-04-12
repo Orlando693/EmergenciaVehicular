@@ -1,17 +1,26 @@
-<div class="page">
+<div class="space-y-5">
+
+  <!-- Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">Roles y Permisos</h1>
       <p class="page-sub">Control de acceso al sistema</p>
     </div>
     <button class="btn-primary" (click)="showForm.set(!showForm())">
-      {{ showForm() ? '✕ Cancelar' : '+ Nuevo rol' }}
+      @if (showForm()) {
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Cancelar
+      } @else {
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo rol
+      }
     </button>
   </div>
 
   @if (success()) { <div class="alert success">{{ success() }}</div> }
   @if (error())   { <div class="alert danger">{{ error() }}</div> }
 
+  <!-- Formulario crear rol -->
   @if (showForm()) {
     <div class="form-card">
       <h2 class="form-card-title">Crear nuevo rol</h2>
@@ -26,64 +35,188 @@
         </div>
         <div class="form-actions">
           <button type="submit" class="btn-primary" [disabled]="saving()">
-            {{ saving() ? 'Guardando...' : 'Crear rol' }}
+            @if (saving()) { <span class="spinner"></span> Guardando... }
+            @else { Crear rol }
           </button>
         </div>
       </form>
     </div>
   }
 
-  <div class="roles-grid">
-    @if (loading()) {
-      <div class="loading-row">Cargando roles...</div>
-    } @else {
+  <!-- Grid de roles -->
+  @if (loading()) {
+    <div class="loading-row">Cargando roles...</div>
+  } @else {
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       @for (rol of roles(); track rol.id_rol) {
-        <div class="rol-card">
-          <div class="rol-header">
-            <div class="rol-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              </svg>
-            </div>
-            <div>
-              <h3 class="rol-nombre">{{ rol.nombre }}</h3>
-              <span class="rol-desc">{{ rol.descripcion ?? 'Sin descripción' }}</span>
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 text-sm">{{ rol.nombre }}</h3>
+                <p class="text-xs text-slate-400 mt-0.5">{{ rol.descripcion || 'Sin descripción' }}</p>
+              </div>
             </div>
             <span class="badge" [class.badge-green]="rol.activo" [class.badge-red]="!rol.activo">
               {{ rol.activo ? 'Activo' : 'Inactivo' }}
             </span>
           </div>
-          <div class="permisos-list">
-            <span class="permisos-label">Permisos ({{ rol.permisos.length }}):</span>
-            @for (p of rol.permisos; track p.id_permiso) {
-              <span class="badge badge-blue">{{ p.codigo }}</span>
-            } @empty {
-              <span class="cell-muted">Sin permisos asignados</span>
-            }
+
+          <div class="mb-3">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+              Permisos ({{ rol.permisos.length }})
+            </p>
+            <div class="flex flex-wrap gap-1.5">
+              @for (p of rol.permisos; track p.id_permiso) {
+                <span class="badge badge-blue text-[10px]">{{ p.codigo }}</span>
+              } @empty {
+                <span class="text-xs text-slate-400 italic">Sin permisos</span>
+              }
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="flex items-center gap-2 pt-3 border-t border-slate-100">
+            <button class="roles-action-btn roles-edit-btn" title="Editar rol" (click)="abrirEdicion(rol)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              Editar
+            </button>
+            <button class="roles-action-btn roles-delete-btn" title="Eliminar rol"
+                    [disabled]="deletingId() === rol.id_rol"
+                    (click)="eliminarRol(rol)">
+              @if (deletingId() === rol.id_rol) {
+                <span class="spinner"></span>
+              } @else {
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                  <path d="M10 11v6"/><path d="M14 11v6"/>
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+              }
+              Eliminar
+            </button>
           </div>
         </div>
       } @empty {
-        <div class="loading-row">No hay roles registrados</div>
+        <div class="sm:col-span-2 lg:col-span-3 loading-row">No hay roles registrados</div>
       }
-    }
+    </div>
+  }
+
+  <!-- Panel edición de rol -->
+  @if (rolEditando()) {
+    <div class="roles-overlay" (click)="cerrarEdicion()"></div>
+    <div class="roles-panel">
+      <div class="roles-panel-header">
+        <div>
+          <h2 class="roles-panel-title">Editar rol</h2>
+          <p class="roles-panel-sub">{{ rolEditando()!.nombre }}</p>
+        </div>
+        <button class="roles-panel-close" (click)="cerrarEdicion()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="roles-panel-body">
+        <!-- Datos del rol -->
+        <form [formGroup]="editForm" class="space-y-4">
+          <div class="field-group">
+            <label class="field-label">Nombre del rol *</label>
+            <input formControlName="nombre" class="field-input" placeholder="SUPERVISOR"/>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Descripción</label>
+            <input formControlName="descripcion" class="field-input" placeholder="Descripción..."/>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="field-label mb-0">Estado</label>
+            <label class="roles-toggle">
+              <input type="checkbox" formControlName="activo"/>
+              <span class="roles-toggle-track"></span>
+            </label>
+            <span class="text-sm" [class.text-emerald-600]="editForm.get('activo')?.value" [class.text-slate-400]="!editForm.get('activo')?.value">
+              {{ editForm.get('activo')?.value ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+        </form>
+
+        <!-- Permisos -->
+        <div class="mt-5">
+          <p class="text-sm font-semibold text-slate-700 mb-3">Permisos asignados</p>
+          @if (permisos().length === 0) {
+            <p class="text-sm text-slate-400 italic">No hay permisos disponibles en el sistema</p>
+          } @else {
+            <div class="roles-permisos-grid">
+              @for (p of permisos(); track p.id_permiso) {
+                <label class="roles-permiso-item" [class.roles-permiso-active]="tienePermiso(p.id_permiso)">
+                  <input type="checkbox"
+                         class="roles-permiso-check"
+                         [checked]="tienePermiso(p.id_permiso)"
+                         (change)="togglePermiso(p.id_permiso)"/>
+                  <span class="roles-permiso-codigo">{{ p.codigo }}</span>
+                  @if (p.descripcion) {
+                    <span class="roles-permiso-desc">{{ p.descripcion }}</span>
+                  }
+                </label>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="roles-panel-footer">
+        <button class="btn-secondary" (click)="cerrarEdicion()">Cancelar</button>
+        <button class="btn-primary" [disabled]="savingEdit()" (click)="guardarEdicion()">
+          @if (savingEdit()) { <span class="spinner"></span> Guardando... }
+          @else {
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Guardar cambios
+          }
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Permisos del sistema -->
+  <div>
+    <div class="mb-3">
+      <h2 class="text-base font-bold text-slate-900">Permisos del sistema</h2>
+      <p class="text-sm text-slate-500 mt-0.5">Todos los permisos disponibles</p>
+    </div>
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Código</th>
+            <th>Descripción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of permisos(); track p.id_permiso) {
+            <tr>
+              <td class="cell-muted">{{ p.id_permiso }}</td>
+              <td><span class="badge badge-blue">{{ p.codigo }}</span></td>
+              <td class="cell-muted">{{ p.descripcion || '—' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="3" class="empty-row">Sin permisos</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Permisos disponibles -->
-  <div class="section-title" style="margin-top:1.5rem">Permisos del sistema</div>
-  <div class="table-card">
-    <table class="data-table">
-      <thead><tr><th>#</th><th>Código</th><th>Descripción</th></tr></thead>
-      <tbody>
-        @for (p of permisos(); track p.id_permiso) {
-          <tr>
-            <td class="cell-muted">{{ p.id_permiso }}</td>
-            <td><span class="badge badge-blue">{{ p.codigo }}</span></td>
-            <td class="cell-muted">{{ p.descripcion ?? '—' }}</td>
-          </tr>
-        } @empty {
-          <tr><td colspan="3" class="empty-row">Sin permisos</td></tr>
-        }
-      </tbody>
-    </table>
-  </div>
 </div>

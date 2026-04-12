@@ -42,6 +42,12 @@ async def obtener_usuario(id_usuario: int, db: DBDep):
     return await usuario_service.obtener_usuario(id_usuario, db)
 
 
+@router.put("/{id_usuario}", response_model=UsuarioOut, summary="Admin - Actualizar usuario",
+            dependencies=[Depends(require_roles("ADMINISTRADOR"))])
+async def actualizar_usuario(id_usuario: int, data: UsuarioUpdate, db: DBDep):
+    return await usuario_service.actualizar_perfil(id_usuario, data, db)
+
+
 @router.patch("/{id_usuario}/estado", response_model=UsuarioOut, summary="Admin - Cambiar estado usuario",
               dependencies=[Depends(require_roles("ADMINISTRADOR"))])
 async def cambiar_estado(id_usuario: int, data: UsuarioEstadoUpdate, db: DBDep):

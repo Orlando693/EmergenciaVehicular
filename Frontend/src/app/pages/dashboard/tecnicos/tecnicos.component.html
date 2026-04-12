@@ -1,4 +1,6 @@
-<div class="page">
+<div class="space-y-5">
+
+  <!-- Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">Técnicos</h1>
@@ -6,7 +8,13 @@
     </div>
     @if (idTaller()) {
       <button class="btn-primary" (click)="showForm.set(!showForm())">
-        {{ showForm() ? '✕ Cancelar' : '+ Nuevo técnico' }}
+        @if (showForm()) {
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Cancelar
+        } @else {
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuevo técnico
+        }
       </button>
     }
   </div>
@@ -36,7 +44,8 @@
         </div>
         <div class="form-actions">
           <button type="submit" class="btn-primary" [disabled]="saving()">
-            {{ saving() ? 'Guardando...' : 'Registrar técnico' }}
+            @if (saving()) { <span class="spinner"></span> Guardando... }
+            @else { Registrar técnico }
           </button>
         </div>
       </form>
@@ -50,7 +59,7 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Nombre</th>
+            <th>Técnico</th>
             <th>Teléfono</th>
             <th>Especialidad</th>
             <th>Estado</th>
@@ -60,14 +69,36 @@
         <tbody>
           @for (t of tecnicos(); track t.id_tecnico) {
             <tr>
-              <td><span class="user-name-cell">{{ t.nombres }} {{ t.apellidos }}</span></td>
+              <td>
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold shrink-0">
+                    {{ t.nombres.charAt(0) }}{{ t.apellidos.charAt(0) }}
+                  </div>
+                  <p class="user-name-cell">{{ t.nombres }} {{ t.apellidos }}</p>
+                </div>
+              </td>
               <td class="cell-muted">{{ t.telefono ?? '—' }}</td>
-              <td class="cell-muted">{{ t.especialidad ?? '—' }}</td>
+              <td>
+                @if (t.especialidad) {
+                  <span class="badge badge-blue">{{ t.especialidad }}</span>
+                } @else {
+                  <span class="cell-muted">—</span>
+                }
+              </td>
               <td>
                 <span class="badge" [ngClass]="estadoBadge(t.estado)">{{ t.estado }}</span>
               </td>
               <td>
-                <button class="btn-danger-action" (click)="desactivar(t)">Desactivar</button>
+                <div class="flex items-center gap-1.5">
+                  <button class="usr-action-btn usr-edit-btn" title="Editar técnico" (click)="abrirEdicion(t)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Editar
+                  </button>
+                  <button class="btn-danger-action" (click)="desactivar(t)">Desactivar</button>
+                </div>
               </td>
             </tr>
           } @empty {
@@ -77,4 +108,51 @@
       </table>
     }
   </div>
+
+  @if (tecnicoEditando()) {
+    <div class="usr-overlay" (click)="cerrarEdicion()"></div>
+    <div class="usr-panel">
+      <div class="usr-panel-header">
+        <div>
+          <h2 class="usr-panel-title">Editar técnico</h2>
+          <p class="usr-panel-sub">{{ tecnicoEditando()!.nombres }} {{ tecnicoEditando()!.apellidos }}</p>
+        </div>
+        <button class="usr-panel-close" (click)="cerrarEdicion()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="usr-panel-body">
+        <form [formGroup]="editForm" class="space-y-4">
+          <div class="field-group">
+            <label class="field-label">Nombres *</label>
+            <input formControlName="nombres" class="field-input"/>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Apellidos *</label>
+            <input formControlName="apellidos" class="field-input"/>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Teléfono</label>
+            <input formControlName="telefono" class="field-input"/>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Especialidad</label>
+            <input formControlName="especialidad" class="field-input"/>
+          </div>
+        </form>
+      </div>
+
+      <div class="usr-panel-footer">
+        <button class="btn-secondary" (click)="cerrarEdicion()">Cancelar</button>
+        <button class="btn-primary" [disabled]="savingEdit()" (click)="guardarEdicion()">
+          @if (savingEdit()) { <span class="spinner"></span> }
+          @else { <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Guardar }
+        </button>
+      </div>
+    </div>
+  }
+
 </div>

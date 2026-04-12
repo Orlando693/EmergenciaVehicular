@@ -1,41 +1,83 @@
-<div class="page">
+<div class="space-y-5">
+
+  <!-- Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">Usuarios</h1>
-      <p class="page-sub">Registro y gestión de cuentas de usuario</p>
+      <p class="page-sub">Gestión de cuentas y accesos del sistema</p>
     </div>
-    <button class="btn-primary" (click)="showForm.set(!showForm())">
-      {{ showForm() ? '✕ Cancelar' : '+ Nuevo usuario' }}
+    <button class="btn-primary" (click)="showForm() ? showForm.set(false) : abrirNuevo()">
+      @if (showForm()) {
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Cancelar
+      } @else {
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo usuario
+      }
     </button>
   </div>
 
+  <!-- Alertas -->
   @if (success()) { <div class="alert success">{{ success() }}</div> }
   @if (error())   { <div class="alert danger">{{ error() }}</div> }
 
+  <!-- Formulario crear -->
   @if (showForm()) {
     <div class="form-card">
       <h2 class="form-card-title">Registrar nuevo usuario</h2>
       <form [formGroup]="form" (ngSubmit)="guardar()" class="grid-form">
+
         <div class="field-group">
           <label class="field-label">Nombres *</label>
-          <input formControlName="nombres" class="field-input" placeholder="Juan"/>
+          <input formControlName="nombres" class="field-input"
+                 [class.field-error]="hasError('nombres','required')"
+                 placeholder="Juan"/>
+          @if (hasError('nombres','required')) {
+            <p class="field-error-msg">El nombre es obligatorio</p>
+          }
         </div>
+
         <div class="field-group">
           <label class="field-label">Apellidos *</label>
-          <input formControlName="apellidos" class="field-input" placeholder="Pérez"/>
+          <input formControlName="apellidos" class="field-input"
+                 [class.field-error]="hasError('apellidos','required')"
+                 placeholder="Pérez"/>
+          @if (hasError('apellidos','required')) {
+            <p class="field-error-msg">Los apellidos son obligatorios</p>
+          }
         </div>
+
         <div class="field-group">
           <label class="field-label">Email *</label>
-          <input formControlName="email" type="email" class="field-input" placeholder="juan@mail.com"/>
+          <input formControlName="email" type="email" class="field-input"
+                 [class.field-error]="hasError('email','required') || hasError('email','email')"
+                 placeholder="juan@mail.com"/>
+          @if (hasError('email','required')) {
+            <p class="field-error-msg">El email es obligatorio</p>
+          }
+          @if (hasError('email','email')) {
+            <p class="field-error-msg">Ingresa un email válido</p>
+          }
         </div>
+
         <div class="field-group">
           <label class="field-label">Contraseña *</label>
-          <input formControlName="password" type="password" class="field-input" placeholder="••••••"/>
+          <input formControlName="password" type="password" class="field-input"
+                 [class.field-error]="hasError('password','required') || hasError('password','minlength')"
+                 placeholder="••••••"/>
+          @if (hasError('password','required')) {
+            <p class="field-error-msg">La contraseña es obligatoria</p>
+          }
+          @if (hasError('password','minlength')) {
+            <p class="field-error-msg">Mínimo 6 caracteres</p>
+          }
         </div>
+
         <div class="field-group">
           <label class="field-label">Teléfono</label>
           <input formControlName="telefono" class="field-input" placeholder="+591 7XXXXXXX"/>
         </div>
+
         <div class="field-group">
           <label class="field-label">Rol *</label>
           <select formControlName="rol" class="field-input">
@@ -44,15 +86,18 @@
             <option value="ADMINISTRADOR">Administrador</option>
           </select>
         </div>
+
         <div class="form-actions">
           <button type="submit" class="btn-primary" [disabled]="saving()">
-            {{ saving() ? 'Guardando...' : 'Guardar usuario' }}
+            @if (saving()) { <span class="spinner"></span> Guardando... }
+            @else { Guardar usuario }
           </button>
         </div>
       </form>
     </div>
   }
 
+  <!-- Tabla -->
   <div class="table-card">
     @if (loading()) {
       <div class="loading-row">Cargando usuarios...</div>
@@ -60,9 +105,8 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Teléfono</th>
+            <th>Usuario</th>
+            <th>Contacto</th>
             <th>Roles</th>
             <th>Estado</th>
             <th>Acciones</th>
@@ -71,30 +115,149 @@
         <tbody>
           @for (u of usuarios(); track u.id_usuario) {
             <tr>
-              <td><span class="user-name-cell">{{ u.nombres }} {{ u.apellidos }}</span></td>
-              <td class="cell-muted">{{ u.email }}</td>
-              <td class="cell-muted">{{ u.telefono ?? '—' }}</td>
+              <!-- Avatar + nombre -->
               <td>
-                @for (r of u.roles; track r) {
-                  <span class="badge badge-blue">{{ r }}</span>
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold shrink-0">
+                    {{ u.nombres.charAt(0) }}{{ u.apellidos.charAt(0) }}
+                  </div>
+                  <div>
+                    <p class="user-name-cell">{{ u.nombres }} {{ u.apellidos }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ u.email }}</p>
+                  </div>
+                </div>
+              </td>
+              <!-- Contacto -->
+              <td>
+                @if (u.telefono) {
+                  <span class="flex items-center gap-1.5 text-xs text-slate-500">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    {{ u.telefono }}
+                  </span>
+                } @else {
+                  <span class="text-xs text-slate-300 italic">Sin teléfono</span>
                 }
               </td>
+              <!-- Roles -->
               <td>
-                <span class="badge" [class.badge-green]="u.estado === 'ACTIVO'" [class.badge-red]="u.estado !== 'ACTIVO'">
+                <div class="flex flex-wrap gap-1">
+                  @for (r of u.roles; track r) {
+                    <span class="badge"
+                          [class.badge-orange]="r === 'ADMINISTRADOR'"
+                          [class.badge-blue]="r === 'TALLER'"
+                          [class.badge-gray]="r === 'CLIENTE'">
+                      {{ r }}
+                    </span>
+                  }
+                </div>
+              </td>
+              <!-- Estado -->
+              <td>
+                <span class="badge"
+                      [class.badge-green]="u.estado === 'ACTIVO'"
+                      [class.badge-red]="u.estado !== 'ACTIVO'">
+                  <span class="w-1.5 h-1.5 rounded-full mr-1 inline-block"
+                        [class.bg-emerald-500]="u.estado === 'ACTIVO'"
+                        [class.bg-red-500]="u.estado !== 'ACTIVO'"></span>
                   {{ u.estado }}
                 </span>
               </td>
+              <!-- Acciones -->
               <td>
-                <button class="btn-action" (click)="toggleEstado(u)">
-                  {{ u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
-                </button>
+                <div class="flex items-center gap-2">
+                  <button class="usr-action-btn usr-edit-btn" title="Editar usuario"
+                          (click)="abrirEdicion(u)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Editar
+                  </button>
+                  <button class="usr-action-btn"
+                          [class.usr-deact-btn]="u.estado === 'ACTIVO'"
+                          [class.usr-act-btn]="u.estado !== 'ACTIVO'"
+                          (click)="toggleEstado(u)">
+                    {{ u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="6" class="empty-row">No hay usuarios registrados</td></tr>
+            <tr><td colspan="5" class="empty-row">No hay usuarios registrados</td></tr>
           }
         </tbody>
       </table>
     }
   </div>
+
+  <!-- Panel edición de usuario -->
+  @if (usuarioEditando()) {
+    <div class="usr-overlay" (click)="cerrarEdicion()"></div>
+    <div class="usr-panel">
+      <div class="usr-panel-header">
+        <div>
+          <h2 class="usr-panel-title">Editar usuario</h2>
+          <p class="usr-panel-sub">{{ usuarioEditando()!.email }}</p>
+        </div>
+        <button class="usr-panel-close" (click)="cerrarEdicion()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="usr-panel-body">
+        <form [formGroup]="editForm" class="space-y-4">
+          <div class="field-group">
+            <label class="field-label">Nombres *</label>
+            <input formControlName="nombres" class="field-input"
+                   [class.field-error]="editForm.get('nombres')?.touched && editForm.get('nombres')?.hasError('required')"
+                   placeholder="Juan"/>
+            @if (editForm.get('nombres')?.touched && editForm.get('nombres')?.hasError('required')) {
+              <p class="field-error-msg">El nombre es obligatorio</p>
+            }
+          </div>
+          <div class="field-group">
+            <label class="field-label">Apellidos *</label>
+            <input formControlName="apellidos" class="field-input"
+                   [class.field-error]="editForm.get('apellidos')?.touched && editForm.get('apellidos')?.hasError('required')"
+                   placeholder="Pérez"/>
+            @if (editForm.get('apellidos')?.touched && editForm.get('apellidos')?.hasError('required')) {
+              <p class="field-error-msg">Los apellidos son obligatorios</p>
+            }
+          </div>
+          <div class="field-group">
+            <label class="field-label">Teléfono</label>
+            <input formControlName="telefono" class="field-input" placeholder="+591 7XXXXXXX"/>
+          </div>
+        </form>
+
+        <!-- Cambiar estado rápido -->
+        <div class="mt-5 p-4 rounded-xl bg-slate-50 border border-slate-100">
+          <p class="text-sm font-semibold text-slate-700 mb-3">Estado de la cuenta</p>
+          <div class="flex gap-2">
+            <button class="usr-estado-btn"
+                    [class.usr-estado-active]="usuarioEditando()!.estado === 'ACTIVO'"
+                    (click)="toggleEstado(usuarioEditando()!); cerrarEdicion()">
+              {{ usuarioEditando()!.estado === 'ACTIVO' ? '⊘ Desactivar cuenta' : '✓ Activar cuenta' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="usr-panel-footer">
+        <button class="btn-secondary" (click)="cerrarEdicion()">Cancelar</button>
+        <button class="btn-primary" [disabled]="savingEdit()" (click)="guardarEdicion()">
+          @if (savingEdit()) { <span class="spinner"></span> Guardando... }
+          @else {
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Guardar cambios
+          }
+        </button>
+      </div>
+    </div>
+  }
+
 </div>

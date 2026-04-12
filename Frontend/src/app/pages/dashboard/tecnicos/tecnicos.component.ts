@@ -23,6 +23,10 @@ export class TecnicosComponent implements OnInit {
   saving    = signal(false);
   idTaller  = signal(0);
 
+  tecnicoEditando = signal<Tecnico | null>(null);
+  savingEdit      = signal(false);
+  editForm: FormGroup;
+
   form: FormGroup;
 
   constructor(
@@ -32,6 +36,12 @@ export class TecnicosComponent implements OnInit {
     private fb: FormBuilder,
   ) {
     this.form = this.fb.group({
+      nombres:     ['', Validators.required],
+      apellidos:   ['', Validators.required],
+      telefono:    [''],
+      especialidad:[''],
+    });
+    this.editForm = this.fb.group({
       nombres:     ['', Validators.required],
       apellidos:   ['', Validators.required],
       telefono:    [''],
@@ -67,6 +77,45 @@ export class TecnicosComponent implements OnInit {
         setTimeout(() => this.success.set(''), 3000);
       },
       error: (e) => { this.error.set(e.error?.detail ?? 'Error'); this.saving.set(false); },
+    });
+  }
+
+  abrirEdicion(t: Tecnico) {
+    this.tecnicoEditando.set(t);
+    this.editForm.patchValue({
+      nombres:     t.nombres,
+      apellidos:   t.apellidos,
+      telefono:    t.telefono ?? '',
+      especialidad:t.especialidad ?? '',
+    });
+    this.error.set('');
+    this.showForm.set(false);
+  }
+
+  cerrarEdicion() {
+    this.tecnicoEditando.set(null);
+    this.error.set('');
+  }
+
+  guardarEdicion() {
+    if (this.editForm.invalid) { this.editForm.markAllAsTouched(); return; }
+    const t = this.tecnicoEditando();
+    if (!t) return;
+    this.savingEdit.set(true);
+    this.error.set('');
+    
+    this.srv.actualizar(this.idTaller(), t.id_tecnico, this.editForm.value).subscribe({
+      next: (updated) => {
+        this.tecnicos.update(list => list.map(x => x.id_tecnico === t.id_tecnico ? updated : x));
+        this.success.set('Técnico actualizado correctamente');
+        this.cerrarEdicion();
+        this.savingEdit.set(false);
+        setTimeout(() => this.success.set(''), 3000);
+      },
+      error: (err) => {
+        this.error.set(err.error?.detail ?? 'Error al actualizar técnico');
+        this.savingEdit.set(false);
+      },
     });
   }
 

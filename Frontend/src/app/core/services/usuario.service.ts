@@ -32,4 +32,8 @@ export class UsuarioService {
   cambiarEstado(id: number, estado: string) {
     return this.http.patch<Usuario>(`${this.api}/${id}/estado`, { estado });
   }
+
+  actualizar(id: number, data: UsuarioUpdate) {
+    return this.http.put<Usuario>(`${this.api}/${id}`, data);
+  }
 }

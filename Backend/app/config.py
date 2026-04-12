@@ -8,7 +8,13 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     APP_NAME: str = "EmergenciaVehicular API"
     APP_VERSION: str = "1.0.0"
-    DEBUG: bool = True
+    DEBUG: bool = False
+
+    # SSL para proveedores cloud como Aiven (ponlo en True en producción con Aiven)
+    DB_SSL_REQUIRED: bool = False
+
+    # Orígenes permitidos para CORS (separados por coma si son varios)
+    CORS_ORIGINS: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

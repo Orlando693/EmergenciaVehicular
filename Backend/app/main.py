@@ -24,9 +24,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS: en desarrollo permite todo; en producción usa la variable CORS_ORIGINS
+if settings.CORS_ORIGINS:
+    origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+else:
+    origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

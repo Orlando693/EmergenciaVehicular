@@ -30,6 +30,10 @@ export class TallerService {
     return this.http.put<Taller>(`${this.api}/mi-taller`, data);
   }
 
+  actualizarTallerAdmin(id: number, data: Partial<TallerCreate>) {
+    return this.http.put<Taller>(`${this.api}/${id}`, data);
+  }
+
   cambiarEstado(id: number, estado: string) {
     return this.http.patch<Taller>(`${this.api}/${id}/estado`, { estado_registro: estado });
   }
