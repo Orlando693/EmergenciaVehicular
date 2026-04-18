@@ -17,8 +17,10 @@ export class AuthService {
   constructor(private http: HttpClient, private router: Router) {}
 
   login(credentials: LoginRequest) {
+    console.log(credentials);
     return this.http.post<TokenResponse>(`${this.api}/auth/login`, credentials).pipe(
       tap(res => {
+        console.log(res);
         localStorage.setItem(TOKEN_KEY, res.access_token);
         localStorage.setItem(SESSION_KEY, JSON.stringify(res));
         this.session.set(res);

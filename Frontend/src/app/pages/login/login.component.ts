@@ -4,6 +4,14 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 
+export interface DemoCredential {
+  role: string;
+  email: string;
+  password: string;
+  color: string;
+  icon: string;
+}
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -11,11 +19,16 @@ import { AuthService } from '../../core/services/auth.service';
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })
+
 export class LoginComponent {
   form: FormGroup;
   loading = signal(false);
   error = signal('');
   showPassword = signal(false);
+
+  demoCredentials: DemoCredential[] = [
+    { role: 'Administrador', email: 'admin@emergencia.com', password: 'Admin1234', color: 'blue', icon: '' },
+  ];
 
   constructor(
     private fb: FormBuilder,
@@ -43,6 +56,11 @@ export class LoginComponent {
         this.loading.set(false);
       },
     });
+  }
+
+  fillCredential(cred: DemoCredential) {
+    this.form.patchValue({ email: cred.email, password: cred.password });
+    this.error.set('');
   }
 
   togglePassword() {

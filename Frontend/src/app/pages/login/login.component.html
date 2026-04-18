@@ -97,6 +97,26 @@
         <p class="text-slate-500 text-sm mt-1">Ingresa tus credenciales para acceder al panel</p>
       </div>
 
+      <!-- Credenciales de prueba -->
+      <div class="mb-6">
+        <p class="text-xs text-slate-400 font-medium mb-2 uppercase tracking-wide">Acceso rápido de prueba</p>
+        <div class="flex flex-col gap-2">
+          @for (cred of demoCredentials; track cred.role) {
+            <button type="button" (click)="fillCredential(cred)"
+                    class="flex items-center gap-3 w-full text-left px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/60 transition-all group cursor-pointer">
+              <div class="flex-1 min-w-0">
+                <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-700 block leading-tight">{{ cred.role }}</span>
+                <span class="text-xs text-slate-400 truncate block">{{ cred.email }}</span>
+              </div>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                   class="text-slate-300 group-hover:text-blue-400 shrink-0 transition-colors">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          }
+        </div>
+      </div>
+
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="space-y-5">
 
         <!-- Email -->
