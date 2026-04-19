@@ -3,9 +3,37 @@ from fastapi import APIRouter, Depends, Query
 from app.core.dependencies import DBDep, CurrentUser, require_roles
 from app.models.enums import EstadoTallerEnum
 from app.schemas.taller import TallerCreate, TallerUpdate, TallerOut, TallerEstadoUpdate
-from app.services import taller_service
+from app.schemas.incidente import IncidenteOut
+from app.services import taller_service, incidente_service
 
-router = APIRouter(prefix="/talleres", tags=["Talleres (CU7, CU8)"])
+router = APIRouter(prefix="/talleres", tags=["Talleres (CU7, CU8, CU11)"])
+
+@router.get(
+    "/solicitudes-disponibles", 
+    response_model=list[IncidenteOut], 
+    summary="CU11 - Visualizar solicitudes disponibles",
+    dependencies=[Depends(require_roles("TALLER"))]
+)
+async def visualizar_solicitudes_disponibles(
+    current_user: CurrentUser,
+    db: DBDep,
+):
+    """Permite al taller visualizar solicitudes de asistencia no asignadas."""
+    return await incidente_service.consultar_solicitudes_disponibles(db)
+
+@router.get(
+    "/solicitudes-disponibles/{id_incidente}", 
+    response_model=IncidenteOut, 
+    summary="CU11 - Detalle de solicitud disponible",
+    dependencies=[Depends(require_roles("TALLER"))]
+)
+async def detalle_solicitud_disponible(
+    id_incidente: int,
+    current_user: CurrentUser,
+    db: DBDep,
+):
+    """Muestra información pormenorizada de una solicitud (incidente) disponible."""
+    return await incidente_service.obtener_detalle_solicitud(id_incidente, db)
 
 
 @router.post("", response_model=TallerOut, status_code=201, summary="CU7 - Registrar taller")

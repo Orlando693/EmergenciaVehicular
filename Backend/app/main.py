@@ -7,7 +7,7 @@ from app.config import settings
 from app.database import engine, Base
 from app.models import *  # noqa: F401,F403 – registra todos los modelos en Base.metadata
 
-from app.routers import auth, usuarios, roles, talleres, tecnicos
+from app.routers import auth, usuarios, roles, talleres, tecnicos, vehiculos, incidentes
 
 
 @asynccontextmanager
@@ -43,6 +43,8 @@ app.include_router(usuarios.router)
 app.include_router(roles.router)
 app.include_router(talleres.router)
 app.include_router(tecnicos.router)
+app.include_router(vehiculos.router)
+app.include_router(incidentes.router)
 
 
 @app.get("/", tags=["Health"])
