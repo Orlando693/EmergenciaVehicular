@@ -3,60 +3,202 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.incidente import Incidente
+from app.models.incidente import Incidente, IncidenteHistorial
 from app.models.cliente import Cliente
 from app.models.taller import Taller
 from app.models.vehiculo import Vehiculo
-from app.models.incidente import Incidente, IncidenteHistorial
 from app.schemas.incidente import IncidenteOut, IncidenteCreate, IncidenteHistorialOut, IncidenteEstadoUpdate
 import asyncio
+import mimetypes
+import os
+import time
+import logging
+from google import genai
+from google.genai import types as genai_types
 
-async def procesar_con_ia_mock(descripcion: str, audio_url: str | None, imagen_url: str | None) -> dict:
-    """ Simula el procesamiento con un motor IA """
-    await asyncio.sleep(1) # Simula retraso
-    # Logica simulada que un modelo analizó el caso
-    clasificacion = "MECÁNICO"
-    if "choque" in descripcion.lower() or "accidente" in descripcion.lower():
-        clasificacion = "COLISIÓN"
-    elif "neumatico" in descripcion.lower() or "llanta" in descripcion.lower():
-        clasificacion = "NEUMÁTICOS"
-        
-    fuentes = ["texto"]
-    if audio_url:
-        fuentes.append("audio")
-    if imagen_url:
-        fuentes.append("imagen")
-        
-    resumen = f"Problema {clasificacion} reportado. Análisis basado en {', '.join(fuentes)}."
-    
-    return {
-        "clasificacion": clasificacion,
-        "resumen": resumen
-    }
+logger = logging.getLogger(__name__)
+
+
+def _build_image_part(image_path: str):
+    """Lee la imagen del disco y devuelve un Part inline para el nuevo SDK google.genai."""
+    if not os.path.exists(image_path):
+        logger.warning(f"Imagen no encontrada en disco: {image_path}")
+        return None
+
+    file_size = os.path.getsize(image_path)
+    if file_size > 19 * 1024 * 1024:
+        logger.warning(f"Imagen demasiado grande para inline ({file_size} bytes). Se omite.")
+        return None
+
+    mime_type, _ = mimetypes.guess_type(image_path)
+    if not mime_type or not mime_type.startswith("image/"):
+        mime_type = "image/jpeg"
+
+    with open(image_path, "rb") as f:
+        data = f.read()
+
+    return genai_types.Part.from_bytes(data=data, mime_type=mime_type)
+
+
+def _upload_and_wait_audio(client: genai.Client, audio_path: str):
+    """Sube el audio al File API de Gemini y espera hasta que este ACTIVE."""
+    if not os.path.exists(audio_path):
+        logger.warning(f"Audio no encontrado en disco: {audio_path}")
+        return None
+
+    try:
+        audio_file = client.files.upload(file=audio_path)
+        deadline = time.time() + 60
+        while getattr(audio_file, 'state', None) and str(audio_file.state) in ("FileState.PROCESSING", "PROCESSING") and time.time() < deadline:
+            time.sleep(2)
+            audio_file = client.files.get(name=audio_file.name)
+
+        state_str = str(getattr(audio_file, 'state', 'ACTIVE'))
+        if "ACTIVE" in state_str:
+            return audio_file
+
+        logger.warning(f"Audio no quedo ACTIVE a tiempo. Estado: {state_str}")
+        return None
+    except Exception as exc:
+        logger.warning(f"No se pudo procesar el audio con File API: {exc}")
+        return None
+
+
+async def procesar_con_ia(descripcion: str, audio_url: str | None, imagen_url: str | None) -> dict:
+    """
+    Analisis multimodal real con Google Gemini 1.5 Flash (google-genai SDK).
+    Procesa texto + imagen (inline bytes) + audio (File API).
+    Si GEMINI_API_KEY no esta configurada devuelve analisis basico de texto.
+    """
+    api_key = os.getenv("GEMINI_API_KEY")
+
+    if not api_key:
+        logger.warning("GEMINI_API_KEY no configurada. Usando analisis de texto basico.")
+        clasificacion = "MECANICO"
+        desc_lower = descripcion.lower()
+        if any(w in desc_lower for w in ("choque", "accidente", "colision", "golpe", "impacto")):
+            clasificacion = "COLISION"
+        elif any(w in desc_lower for w in ("neumatico", "llanta", "ponchado", "rueda", "pinchazo")):
+            clasificacion = "NEUMATICOS"
+        elif any(w in desc_lower for w in ("electrico", "bateria", "luz", "faro", "corto", "arranque")):
+            clasificacion = "ELECTRICO"
+
+        fuentes = ["texto"]
+        if audio_url:
+            fuentes.append("audio")
+        if imagen_url:
+            fuentes.append("imagen")
+
+        return {
+            "clasificacion": clasificacion,
+            "resumen": (
+                f"Incidente de tipo {clasificacion} registrado con los datos proporcionados. "
+                f"Analisis basado en: {', '.join(fuentes)}. "
+                "Configure GEMINI_API_KEY para obtener diagnostico completo con IA."
+            )
+        }
+
+    try:
+        client = genai.Client(api_key=api_key)
+
+        content_parts: list = []
+        fuentes_analizadas: list[str] = ["texto"]
+
+        # Imagen: se envia como inline bytes directamente
+        if imagen_url:
+            image_path = imagen_url.lstrip("/")
+            image_part = _build_image_part(image_path)
+            if image_part:
+                content_parts.append(image_part)
+                fuentes_analizadas.append("imagen")
+
+        # Audio: se sube al File API y se referencia
+        if audio_url:
+            audio_path = audio_url.lstrip("/")
+            audio_ref = await asyncio.to_thread(_upload_and_wait_audio, client, audio_path)
+            if audio_ref:
+                content_parts.append(audio_ref)
+                fuentes_analizadas.append("audio")
+
+        medios_str = ", ".join(fuentes_analizadas)
+        imagen_nota = "(Analiza tambien la imagen adjunta del vehiculo o accidente.)" if "imagen" in fuentes_analizadas else ""
+        audio_nota = "(Analiza tambien el audio adjunto del cliente describiendo el problema.)" if "audio" in fuentes_analizadas else ""
+
+        prompt = f"""Eres un experto en diagnostico de emergencias vehiculares.
+
+El cliente reporta el siguiente problema con su vehiculo:
+"{descripcion}"
+
+Fuentes disponibles para analizar: {medios_str}
+{imagen_nota}
+{audio_nota}
+
+Basandote en TODA la informacion disponible (texto, imagen y/o audio), realiza:
+1. Clasifica el incidente en EXACTAMENTE UNO de estos tipos: MECANICO, COLISION, NEUMATICOS, ELECTRICO, OTRO
+2. Redacta un resumen profesional de 2 oraciones con el problema detectado y las recomendaciones inmediatas.
+
+Responde SOLAMENTE con este formato (exactamente 2 lineas, sin asteriscos ni texto adicional):
+CLASIFICACION: <TIPO>
+RESUMEN: <resumen profesional de 2 oraciones>"""
+
+        content_parts.append(prompt)
+
+        response = await asyncio.to_thread(
+            client.models.generate_content,
+            model="gemini-1.5-flash",
+            contents=content_parts
+        )
+
+        clasificacion = "OTRO"
+        resumen = "Analisis IA completado."
+
+        for line in response.text.strip().splitlines():
+            line = line.strip().replace("*", "")
+            if line.upper().startswith("CLASIFICACION:"):
+                clasificacion = line.split(":", 1)[1].strip().upper()
+            elif line.upper().startswith("RESUMEN:"):
+                resumen = line.split(":", 1)[1].strip()
+
+        return {"clasificacion": clasificacion, "resumen": resumen}
+
+    except Exception as exc:
+        logger.error(f"Error invocando Gemini: {exc}")
+        return {
+            "clasificacion": "MECANICO",
+            "resumen": (
+                f"El sistema registro el incidente. "
+                f"Descripcion recibida: {descripcion[:120]}. "
+                "Se recomienda contactar al soporte tecnico para evaluacion."
+            )
+        }
+
 
 async def registrar_incidente_inteligente(data: IncidenteCreate, id_usuario: int, db: AsyncSession) -> IncidenteOut:
     cliente = await get_cliente_by_usuario_id(id_usuario, db)
-    
-    # 1. Validar vehículo
-    vehiculo_stmt = select(Vehiculo).where(Vehiculo.id_vehiculo == data.id_vehiculo, Vehiculo.id_cliente == cliente.id_cliente)
+
+    # 1. Validar vehiculo
+    vehiculo_stmt = select(Vehiculo).where(
+        Vehiculo.id_vehiculo == data.id_vehiculo,
+        Vehiculo.id_cliente == cliente.id_cliente
+    )
     veh_result = await db.execute(vehiculo_stmt)
     vehiculo = veh_result.scalar_one_or_none()
-    
+
     if not vehiculo:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El vehículo no existe o no pertenece al cliente"
+            detail="El vehiculo no existe o no pertenece al cliente"
         )
-        
+
     if not data.descripcion and not data.audio_url and not data.imagen_url:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Debe proveer al menos texto, audio o imagen para procesar el incidente"
         )
 
-    # 2. Procesamiento IA (Llamada al agente/modelo)
-    ia_result = await procesar_con_ia_mock(data.descripcion, data.audio_url, data.imagen_url)
-    
+    # 2. Procesamiento IA real o fallback
+    ia_result = await procesar_con_ia(data.descripcion, data.audio_url, data.imagen_url)
+
     # 3. Guardar Incidente
     nuevo_incidente = Incidente(
         id_cliente=cliente.id_cliente,
@@ -71,13 +213,13 @@ async def registrar_incidente_inteligente(data: IncidenteCreate, id_usuario: int
         clasificacion_ia=ia_result["clasificacion"],
         resumen_ia=ia_result["resumen"]
     )
-    
+
     db.add(nuevo_incidente)
     await db.commit()
     await db.refresh(nuevo_incidente)
-    
-    # Pre-cargar relaciones para responder
-    return await obtener_detalle_incidente(nuevo_incidente.id_incidente, id_usuario, es_admin=False, db=db)
+
+    return await obtener_detalle_incidente(nuevo_incidente.id_incidente, id_usuario, es_admin=False, es_taller=False, db=db)
+
 
 async def get_cliente_by_usuario_id(id_usuario: int, db: AsyncSession) -> Cliente:
     result = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario))
@@ -88,6 +230,7 @@ async def get_cliente_by_usuario_id(id_usuario: int, db: AsyncSession) -> Client
             detail="Cliente no encontrado asociado a este usuario"
         )
     return cliente
+
 
 async def consultar_historial_incidentes(id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession) -> list[IncidenteOut]:
     stmt = select(Incidente).options(
@@ -108,7 +251,7 @@ async def consultar_historial_incidentes(id_usuario: int, es_admin: bool, es_tal
 
     result = await db.execute(stmt)
     incidentes = result.scalars().all()
-    
+
     response = []
     for inc in incidentes:
         inc_data = IncidenteOut.model_validate(inc)
@@ -122,8 +265,8 @@ async def consultar_historial_incidentes(id_usuario: int, es_admin: bool, es_tal
 
     return response
 
+
 async def consultar_solicitudes_disponibles(db: AsyncSession) -> list[IncidenteOut]:
-    """Obtiene todos los incidentes que están en estado REPORTADO y no tienen taller asignado."""
     stmt = select(Incidente).options(
         selectinload(Incidente.vehiculo)
     ).where(
@@ -145,13 +288,14 @@ async def consultar_solicitudes_disponibles(db: AsyncSession) -> list[IncidenteO
 
     return response
 
+
 async def actualizar_estado_incidente(id_incidente: int, id_usuario: int, data: IncidenteEstadoUpdate, db: AsyncSession) -> IncidenteOut:
     stmt_taller = select(Taller).where(Taller.id_usuario == id_usuario)
     res_taller = await db.execute(stmt_taller)
     taller = res_taller.scalar_one_or_none()
 
     if not taller:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado o no es un taller válido")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado o no es un taller valido")
 
     stmt = select(Incidente).where(
         Incidente.id_incidente == id_incidente,
@@ -165,20 +309,20 @@ async def actualizar_estado_incidente(id_incidente: int, id_usuario: int, data: 
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Servicio no encontrado o no asignado a este taller"
         )
-    
+
     estado_viejo = incidente.estado
     if estado_viejo == data.estado:
         raise HTTPException(status_code=400, detail="El incidente ya se encuentra en este estado")
-        
+
     incidente.estado = data.estado
-    
+
     historial = IncidenteHistorial(
         id_incidente=incidente.id_incidente,
         estado_anterior=estado_viejo,
         estado_nuevo=data.estado,
         observacion=data.observacion
     )
-    
+
     db.add(historial)
     db.add(incidente)
     try:
@@ -186,8 +330,9 @@ async def actualizar_estado_incidente(id_incidente: int, id_usuario: int, data: 
     except Exception:
         await db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al actualizar el estado del servicio")
-        
-    return await obtener_detalle_incidente(id_incidente, 0, es_admin=True, db=db)
+
+    return await obtener_detalle_incidente(id_incidente, 0, es_admin=True, es_taller=False, db=db)
+
 
 async def consultar_historial_servicio(id_incidente: int, id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession) -> list[IncidenteHistorialOut]:
     stmt = select(Incidente).where(Incidente.id_incidente == id_incidente)
@@ -199,17 +344,19 @@ async def consultar_historial_servicio(id_incidente: int, id_usuario: int, es_ad
         else:
             cliente = await get_cliente_by_usuario_id(id_usuario, db)
             stmt = stmt.where(Incidente.id_cliente == cliente.id_cliente)
-            
+
     res = await db.execute(stmt)
     if not res.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incidente no accesible")
 
-    historial_stmt = select(IncidenteHistorial).where(IncidenteHistorial.id_incidente == id_incidente).order_by(IncidenteHistorial.created_at.desc())
+    historial_stmt = select(IncidenteHistorial).where(
+        IncidenteHistorial.id_incidente == id_incidente
+    ).order_by(IncidenteHistorial.created_at.desc())
     h_res = await db.execute(historial_stmt)
     return [IncidenteHistorialOut.model_validate(h) for h in h_res.scalars().all()]
 
+
 async def obtener_detalle_solicitud(id_incidente: int, db: AsyncSession) -> IncidenteOut:
-    """Obtiene el detalle de un incidente disponible (estado REPORTADO sin taller asignado)."""
     stmt = select(Incidente).options(
         selectinload(Incidente.vehiculo)
     ).where(
@@ -224,7 +371,7 @@ async def obtener_detalle_solicitud(id_incidente: int, db: AsyncSession) -> Inci
     if not incidente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Solicitud no encontrada o ya no está disponible"
+            detail="Solicitud no encontrada o ya no esta disponible"
         )
 
     inc_data = IncidenteOut.model_validate(incidente)
@@ -235,8 +382,8 @@ async def obtener_detalle_solicitud(id_incidente: int, db: AsyncSession) -> Inci
 
     return inc_data
 
+
 async def obtener_detalle_incidente(id_incidente: int, id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession) -> IncidenteOut:
-    """Obtiene el detalle de un incidente validando roles asignados."""
     stmt = select(Incidente).options(
         selectinload(Incidente.vehiculo),
         selectinload(Incidente.taller)
@@ -251,7 +398,6 @@ async def obtener_detalle_incidente(id_incidente: int, id_usuario: int, es_admin
             detail="Incidente no encontrado"
         )
 
-    # Validar permisos
     if not es_admin:
         if es_taller:
             taller_stmt = select(Taller).where(Taller.id_usuario == id_usuario)
@@ -275,5 +421,3 @@ async def obtener_detalle_incidente(id_incidente: int, id_usuario: int, es_admin
         inc_data.taller_nombre = incidente.taller.razon_social
 
     return inc_data
-    return inc_data
-

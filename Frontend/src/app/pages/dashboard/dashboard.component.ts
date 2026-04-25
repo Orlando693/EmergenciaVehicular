@@ -3,6 +3,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } fro
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
+import { BitacoraService } from '../../services/bitacora.service';
 
 interface NavItem {
   label: string;
@@ -42,6 +43,7 @@ export class DashboardComponent implements OnInit {
       items: [
         { label: 'Usuarios',        icon: 'users',  route: '/dashboard/usuarios', roles: ['ADMINISTRADOR'] },
         { label: 'Roles y Permisos',icon: 'shield', route: '/dashboard/roles',    roles: ['ADMINISTRADOR'] },
+        { label: 'Bitácora',        icon: 'archive',route: '/dashboard/bitacora', roles: ['ADMINISTRADOR'] },
       ],
     },
     {
@@ -91,12 +93,28 @@ export class DashboardComponent implements OnInit {
       .filter(g => g.items.length > 0);
   });
 
-  constructor(public auth: AuthService, private router: Router) {}
+  constructor(public auth: AuthService, private router: Router, private bitacora: BitacoraService) {}
 
   ngOnInit() {
-    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
         this.sidebarOpen.set(false);
+      }
+      
+      // Auto-register navigation
+      if (this.auth.getToken()) {
+        let modulo = 'Navegación';
+        let accion = 'Acceso a ' + e.urlAfterRedirects;
+        
+        // Simple map
+        if (e.urlAfterRedirects.includes('/dashboard/usuarios')) modulo = 'Usuarios';
+        else if (e.urlAfterRedirects.includes('/dashboard/roles')) modulo = 'Roles y Permisos';
+        else if (e.urlAfterRedirects.includes('/dashboard/talleres')) modulo = 'Talleres';
+        else if (e.urlAfterRedirects.includes('/dashboard/vehiculos')) modulo = 'Vehículos';
+        else if (e.urlAfterRedirects.includes('/dashboard/incidentes')) modulo = 'Incidentes';
+        else if (e.urlAfterRedirects.includes('/dashboard/bitacora')) modulo = 'Bitácora';
+        
+        this.bitacora.logAction(modulo, accion).subscribe();
       }
     });
   }
@@ -107,7 +125,12 @@ export class DashboardComponent implements OnInit {
     );
   }
 
-  logout() { this.auth.logout(); }
+  logout() {
+    this.bitacora.logAction('Autenticación', `Cierre de sesión: ${this.auth.nombreCompleto}`).subscribe({
+      complete: () => this.auth.logout(),
+      error: () => this.auth.logout(),
+    });
+  }
   toggleSidebar() { this.sidebarOpen.update(v => !v); }
 
   getIcon(name: string): string {
@@ -123,6 +146,7 @@ export class DashboardComponent implements OnInit {
       list: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
       'plus-circle': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
       bell: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
+      archive: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`,
     };
     return icons[name] ?? '';
   }

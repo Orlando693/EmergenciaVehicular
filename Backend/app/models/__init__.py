@@ -4,8 +4,9 @@ from app.models.taller import Taller
 from app.models.tecnico import Tecnico
 from app.models.vehiculo import Vehiculo
 from app.models.incidente import Incidente
+from app.models.bitacora import Bitacora
 
 __all__ = [
     "Usuario", "Rol", "Permiso", "RolPermiso", "UsuarioRol",
-    "Cliente", "Taller", "Tecnico", "Vehiculo",
+    "Cliente", "Taller", "Tecnico", "Vehiculo", "Bitacora"
 ]

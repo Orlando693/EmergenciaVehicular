@@ -1,0 +1,179 @@
+<div class="space-y-5">
+
+  <!-- Header -->
+  <div class="page-header mt-4">
+    <div>
+      <h1 class="page-title">Bitácora del Sistema</h1>
+      <p class="page-sub">
+        Registro de actividad
+        @if (total() > 0) {
+          · <span class="font-semibold text-slate-600">{{ total() }} acciones totales</span>
+        }
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Actualizar -->
+      <button class="btn-secondary" (click)="fetchLogs()" [disabled]="loading()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mr-1">
+          <path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 0 2.13-5.85L2 9"/>
+        </svg>
+        Actualizar
+      </button>
+
+      <!-- Limpiar bitácora -->
+      @if (!confirmando()) {
+        <button class="inline-flex items-center gap-1.5 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-semibold rounded-xl transition-colors border-0 cursor-pointer"
+                (click)="confirmarEliminar()" [disabled]="deleting() || total() === 0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+          Limpiar bitácora
+        </button>
+      } @else {
+        <!-- Confirmar eliminación -->
+        <div class="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5">
+          <span class="text-sm text-red-700 font-medium">¿Eliminar los {{ total() }} registros?</span>
+          <button class="inline-flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition"
+                  (click)="eliminarTodo()" [disabled]="deleting()">
+            @if (deleting()) { <span class="spinner mr-1"></span> } Sí, eliminar
+          </button>
+          <button class="inline-flex items-center px-3 py-1 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold rounded-lg border transition"
+                  (click)="cancelarEliminar()">
+            Cancelar
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-card">
+    @if (loading()) {
+      <div class="loading-row py-16">
+        <span class="spinner inline-block mr-2" style="border-top-color:#6366f1;border-color:rgba(99,102,241,.3)"></span>
+        Cargando registros...
+      </div>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>USUARIO / ROL</th>
+              <th>MÓDULO</th>
+              <th>ACCIÓN</th>
+              <th>IP</th>
+              <th>FECHA</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of logs(); track log.id_bitacora) {
+              <tr>
+                <!-- Usuario -->
+                <td>
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                         [ngClass]="{
+                           'bg-orange-100 text-orange-700': log.rol === 'ADMINISTRADOR',
+                           'bg-blue-100 text-blue-700':   log.rol === 'TALLER',
+                           'bg-emerald-100 text-emerald-700': log.rol === 'CLIENTE',
+                           'bg-slate-100 text-slate-500':  log.rol === 'DESCONOCIDO' || !log.rol
+                         }">
+                      {{ log.usuario_email ? log.usuario_email.charAt(0).toUpperCase() : '?' }}
+                    </div>
+                    <div>
+                      <p class="user-name-cell text-xs">{{ log.usuario_email || 'Anónimo' }}</p>
+                      @if (log.rol === 'ADMINISTRADOR') {
+                        <span class="badge badge-orange">ADMIN</span>
+                      } @else if (log.rol === 'TALLER') {
+                        <span class="badge badge-blue">TALLER</span>
+                      } @else if (log.rol === 'CLIENTE') {
+                        <span class="badge badge-green">CLIENTE</span>
+                      } @else {
+                        <span class="badge badge-gray">{{ log.rol || '—' }}</span>
+                      }
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Módulo -->
+                <td>
+                  <span class="font-medium text-slate-700 border border-slate-200 bg-slate-50 px-2 py-0.5 rounded text-xs whitespace-nowrap">
+                    {{ log.modulo }}
+                  </span>
+                </td>
+
+                <!-- Acción -->
+                <td class="max-w-xs">
+                  <span class="text-slate-600 text-sm break-words">{{ log.accion }}</span>
+                </td>
+
+                <!-- IP -->
+                <td>
+                  <span class="font-mono text-xs text-slate-500 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded whitespace-nowrap">
+                    {{ log.ip || 'N/A' }}
+                  </span>
+                </td>
+
+                <!-- Fecha -->
+                <td class="whitespace-nowrap text-xs text-slate-500">
+                  {{ log.created_at | date:'dd/MM/yy HH:mm:ss' }}
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="empty-row py-14 text-center text-slate-400">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto mb-2 text-slate-300">
+                    <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+                  </svg>
+                  No hay acciones registradas en la bitácora
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      @if (totalPages() > 1) {
+        <div class="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+          <p class="text-xs text-slate-500">
+            Página <span class="font-bold text-slate-700">{{ page() }}</span> de
+            <span class="font-bold text-slate-700">{{ totalPages() }}</span>
+            · {{ total() }} registros
+          </p>
+
+          <div class="flex items-center gap-1">
+            <!-- Anterior -->
+            <button class="w-8 h-8 flex items-center justify-center rounded-lg border text-slate-600 hover:bg-slate-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    (click)="goToPage(page() - 1)" [disabled]="page() === 1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+
+            <!-- Números de página (máx 7 visibles) -->
+            @for (p of pages(); track p) {
+              @if (p === 1 || p === totalPages() || (p >= page() - 2 && p <= page() + 2)) {
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition"
+                        [ngClass]="p === page()
+                          ? 'bg-blue-600 text-white border border-blue-600'
+                          : 'border text-slate-600 hover:bg-slate-100'"
+                        (click)="goToPage(p)">
+                  {{ p }}
+                </button>
+              } @else if (p === page() - 3 || p === page() + 3) {
+                <span class="w-8 h-8 flex items-center justify-center text-slate-400 text-xs">…</span>
+              }
+            }
+
+            <!-- Siguiente -->
+            <button class="w-8 h-8 flex items-center justify-center rounded-lg border text-slate-600 hover:bg-slate-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    (click)="goToPage(page() + 1)" [disabled]="page() === totalPages()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

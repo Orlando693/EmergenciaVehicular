@@ -28,6 +28,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/dashboard/roles/roles.component').then(m => m.RolesComponent),
       },
       {
+        path: 'bitacora',
+        loadComponent: () => import('./pages/dashboard/bitacora/bitacora.component').then(m => m.BitacoraComponent),
+      },
+      {
         path: 'talleres',
         loadComponent: () => import('./pages/dashboard/talleres/talleres.component').then(m => m.TalleresComponent),
       },

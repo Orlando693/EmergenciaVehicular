@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     # Orígenes permitidos para CORS (separados por coma si son varios)
     CORS_ORIGINS: str = ""
 
+    # Google Gemini IA — obtén tu clave en https://aistudio.google.com/app/apikey
+    GEMINI_API_KEY: str = ""
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 

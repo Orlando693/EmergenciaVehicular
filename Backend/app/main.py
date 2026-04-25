@@ -2,12 +2,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 from app.config import settings
 from app.database import engine, Base
 from app.models import *  # noqa: F401,F403 – registra todos los modelos en Base.metadata
 
-from app.routers import auth, usuarios, roles, talleres, tecnicos, vehiculos, incidentes
+from app.routers import auth, usuarios, roles, talleres, tecnicos, vehiculos, incidentes, bitacora
 
 
 @asynccontextmanager
@@ -45,7 +47,10 @@ app.include_router(talleres.router)
 app.include_router(tecnicos.router)
 app.include_router(vehiculos.router)
 app.include_router(incidentes.router)
+app.include_router(bitacora.router)
 
+os.makedirs("public/uploads", exist_ok=True)
+app.mount("/public", StaticFiles(directory="public"), name="public")
 
 @app.get("/", tags=["Health"])
 async def root():

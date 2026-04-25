@@ -1,13 +1,15 @@
 <div class="space-y-5">
-  
+
   <!-- Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">Registrar Incidente</h1>
-      <p class="page-sub">Reporta una emergencia y recibe un diagnóstico inteligente</p>
+      <p class="page-sub">Reporta una emergencia y recibe un diagnóstico inteligente con IA</p>
     </div>
     <button class="btn-secondary" (click)="volver()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+      </svg>
       Volver
     </button>
   </div>
@@ -15,30 +17,91 @@
   <!-- Alertas -->
   @if (errorMessage()) {
     <div class="alert danger">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2 shrink-0">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
       {{ errorMessage() }}
     </div>
   }
   @if (successMessage()) {
     <div class="alert success">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2 shrink-0">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
       {{ successMessage() }}
     </div>
   }
 
-  <!-- Contenido -->
+  <!-- ===== RESULTADO IA (se muestra tras enviar) ===== -->
+  @if (mostrarResultado() && resultadoIA(); as inc) {
+    <div class="form-card border-2 border-indigo-200 bg-indigo-50">
+      <!-- Titulo resultado -->
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-indigo-900">Diagnóstico IA Completado</h2>
+          <p class="text-xs text-indigo-600">Procesado por Google Gemini 1.5 Flash</p>
+        </div>
+      </div>
+
+      <!-- Clasificacion + Resumen -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+        <div class="bg-white rounded-xl border p-4">
+          <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Clasificación del Incidente</p>
+          <span class="inline-block px-3 py-1.5 rounded-lg text-sm font-bold border"
+                [ngClass]="{
+                  'bg-orange-100 text-orange-800 border-orange-300': inc.clasificacion_ia === 'MECANICO',
+                  'bg-red-100 text-red-800 border-red-300': inc.clasificacion_ia === 'COLISION',
+                  'bg-yellow-100 text-yellow-800 border-yellow-300': inc.clasificacion_ia === 'NEUMATICOS',
+                  'bg-blue-100 text-blue-800 border-blue-300': inc.clasificacion_ia === 'ELECTRICO',
+                  'bg-slate-100 text-slate-700 border-slate-300': !inc.clasificacion_ia || inc.clasificacion_ia === 'OTRO'
+                }">
+            {{ inc.clasificacion_ia ?? 'OTRO' }}
+          </span>
+        </div>
+        <div class="bg-white rounded-xl border p-4">
+          <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Estado del Reporte</p>
+          <span class="inline-block px-3 py-1.5 rounded-lg text-sm font-bold bg-yellow-100 text-yellow-800 border border-yellow-300">
+            {{ inc.estado }}
+          </span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-indigo-100 p-4 mb-5">
+        <p class="text-xs font-bold text-indigo-700 uppercase tracking-wide mb-2">Resumen del Análisis IA</p>
+        <p class="text-sm text-slate-800 leading-relaxed">{{ inc.resumen_ia ?? 'Sin resumen disponible.' }}</p>
+      </div>
+
+      <!-- Botón ir al detalle -->
+      <div class="flex gap-3">
+        <button type="button" class="btn-primary flex-1 sm:flex-none" (click)="irAlDetalle()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+          Ver Detalle Completo
+        </button>
+        <button type="button" class="btn-secondary" (click)="volver()">
+          Ver todos mis incidentes
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ===== FORMULARIO ===== -->
   @if (cargandoVehiculos()) {
     <div class="form-card text-center py-10 text-slate-500 text-sm">
       Cargando perfil y vehículos...
     </div>
   } @else if (vehiculos().length === 0) {
-    <!-- Empty State -->
     <div class="form-card text-center py-12">
       <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-orange-600">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
       </div>
       <h3 class="text-lg font-bold text-slate-900 mb-2">Vehículo Requerido</h3>
@@ -49,49 +112,26 @@
         Ingresar Vehículo Nuevo
       </button>
     </div>
-  } @else {
-    <!-- Formulario Normal -->
+
+  } @else if (!mostrarResultado()) {
+    <!-- Solo mostrar el form si aún no hay resultado -->
     <div class="form-card">
-      <h2 class="form-card-title">Detalles del Suceso</h2>
-      
+      <h2 class="form-card-title">Datos del Incidente</h2>
+
       <form [formGroup]="incidenteForm" (ngSubmit)="onSubmit()" class="grid-form">
-        
+
         <!-- Vehículo Afectado -->
         <div class="field-group">
           <label class="field-label">Vehículo Afectado <span class="text-red-500">*</span></label>
-          <select formControlName="id_vehiculo" class="field-input" [class.field-error]="f['id_vehiculo'].invalid && f['id_vehiculo'].touched">
+          <select formControlName="id_vehiculo" class="field-input"
+                  [class.field-error]="f['id_vehiculo'].invalid && f['id_vehiculo'].touched">
             <option value="" disabled selected>Seleccione un vehículo...</option>
             @for (v of vehiculos(); track v.id_vehiculo) {
-              <option [value]="v.id_vehiculo">{{ v.marca }} {{ v.modelo }} ({{ v.placa }})</option>
+              <option [value]="v.id_vehiculo">{{ v.marca }} {{ v.modelo }} — {{ v.placa }}</option>
             }
           </select>
           @if (f['id_vehiculo'].invalid && f['id_vehiculo'].touched) {
             <p class="field-error-msg mt-1 text-red-500 text-xs font-medium">El vehículo es requerido</p>
-          }
-        </div>
-
-        <!-- Ubicación -->
-        <div class="field-group">
-          <label class="field-label">Ubicación Actual <span class="text-red-500">*</span></label>
-          <div class="flex gap-2">
-            <input type="text" formControlName="direccion" class="field-input flex-1" 
-                   [class.field-error]="f['direccion'].invalid && f['direccion'].touched"
-                   placeholder="Ej: Av. Principal 123..."/>
-            <button type="button" class="btn-secondary shrink-0" (click)="obtenerUbicacion()" title="Capturar GPS">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>
-              </svg>
-              GPS
-            </button>
-          </div>
-          @if (f['direccion'].invalid && f['direccion'].touched) {
-            <p class="field-error-msg mt-1 text-red-500 text-xs font-medium">La ubicación es obligatoria</p>
-          }
-          @if (latitud() && longitud()) {
-            <p class="text-xs text-blue-600 mt-1 flex items-center font-medium">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mr-1"><polyline points="20 6 9 17 4 12"/></svg>
-              GPS Capturado exitosamente
-            </p>
           }
         </div>
 
@@ -100,42 +140,183 @@
           <label class="field-label">Descripción del problema <span class="text-red-500">*</span></label>
           <textarea formControlName="descripcion" rows="4" class="field-input resize-none"
                     [class.field-error]="f['descripcion'].invalid && f['descripcion'].touched"
-                    placeholder="Describe qué sucedió para que podamos evaluar la gravedad del incidente..."></textarea>
+                    placeholder="Describe qué sucedió: ruidos, síntomas, circunstancias del accidente... Entre más detalle mejor diagnóstico recibirás."></textarea>
           <div class="flex items-center justify-between mt-1">
             @if (f['descripcion'].invalid && f['descripcion'].touched) {
               <p class="field-error-msg text-red-500 text-xs font-medium">Mínimo 10 caracteres para el análisis</p>
             } @else {
-              <p class="text-xs text-slate-400">Detalla el incidente para su análisis</p>
+              <p class="text-xs text-slate-400">Detalla el incidente para un mejor análisis de IA</p>
             }
-            <span class="text-xs font-medium text-slate-400">{{ f['descripcion'].value?.length || 0 }}/1000</span>
+            <span class="text-xs font-medium" [class.text-red-400]="(f['descripcion'].value?.length ?? 0) > 900"
+                  [class.text-slate-400]="(f['descripcion'].value?.length ?? 0) <= 900">
+              {{ f['descripcion'].value?.length || 0 }}/1000
+            </span>
           </div>
         </div>
 
-        <!-- Evidencia -->
-        <div class="field-group">
-          <label class="field-label">Fotografía (URL Opcional)</label>
-          <input type="text" formControlName="imagen_url" class="field-input" placeholder="https://ejemplo.com/foto.jpg"/>
+        <!-- ======= MAPA ======= -->
+        <div class="field-group sm:col-span-2">
+          <label class="field-label">
+            Ubicación en el Mapa <span class="text-red-500">*</span>
+            <span class="ml-2 text-xs font-normal text-slate-400">Haz clic en el mapa para marcar el lugar del incidente</span>
+          </label>
+
+          <div class="rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+            <!-- El div del mapa debe tener un id único y altura fija -->
+            <div id="incident-map" style="height: 340px; width: 100%; z-index: 0;"></div>
+
+            <!-- Barra inferior del mapa -->
+            <div class="bg-slate-50 border-t border-slate-200 px-3 py-2.5 flex items-center gap-3">
+              <div class="flex-1 min-w-0">
+                @if (latitud()) {
+                  <div class="flex items-center gap-1.5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-green-600 shrink-0">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span class="text-xs text-slate-700 font-medium truncate">{{ f['direccion'].value || 'Ubicación seleccionada' }}</span>
+                  </div>
+                } @else {
+                  <span class="text-xs text-slate-400 italic">Sin ubicación seleccionada — haz clic en el mapa</span>
+                }
+              </div>
+              <button type="button" class="btn-secondary py-1.5 px-3 text-xs shrink-0 flex items-center gap-1.5"
+                      (click)="obtenerUbicacion()" title="Usar mi GPS actual">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                  <path d="M2 12h20"/>
+                </svg>
+                Usar mi GPS
+              </button>
+            </div>
+          </div>
+
+          @if (!latitud() && incidenteForm.touched) {
+            <p class="text-red-500 text-xs font-medium mt-1">Debes seleccionar la ubicación en el mapa</p>
+          }
         </div>
 
+        <!-- ======= EVIDENCIA: IMAGEN ======= -->
         <div class="field-group">
-          <label class="field-label">Audio corto (URL Opcional)</label>
-          <input type="text" formControlName="audio_url" class="field-input" placeholder="https://ejemplo.com/audio.mp3"/>
-        </div>
+          <label class="field-label">
+            Fotografía del incidente
+            <span class="ml-1 text-xs font-normal text-slate-400">(Opcional)</span>
+          </label>
 
-        <!-- Actions -->
-        <div class="form-actions mt-4 sm:col-span-2">
-          <button type="submit" class="btn-primary" [disabled]="incidenteForm.invalid || procesando()">
-            @if (procesando()) {
-              <span class="spinner mr-2"></span> Analizando reporte...
-            } @else {
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
-                <path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"></path>
+          @if (!imagenPreviewUrl()) {
+            <!-- Upload area -->
+            <label class="flex flex-col items-center justify-center gap-2 h-28 rounded-xl border-2 border-dashed border-slate-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-slate-400">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
               </svg>
-              Generar Diagnóstico
+              <span class="text-xs text-slate-500 font-medium">Haz clic para subir imagen</span>
+              <span class="text-xs text-slate-400">JPG, PNG, WEBP · Max 19 MB</span>
+              <input type="file" accept="image/*" class="hidden" (change)="onImageChange($event)"/>
+            </label>
+          } @else {
+            <!-- Image preview -->
+            <div class="relative rounded-xl overflow-hidden border border-slate-200">
+              <img [src]="imagenPreviewUrl()" alt="Preview" class="w-full h-40 object-cover"/>
+              <div class="absolute top-2 right-2">
+                <button type="button" (click)="limpiarImagen()"
+                        class="bg-red-600 hover:bg-red-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-lg transition">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="bg-black/60 text-white text-xs px-3 py-1.5 truncate">
+                {{ imagenNombre() }}
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- ======= EVIDENCIA: AUDIO ======= -->
+        <div class="field-group">
+          <label class="field-label">
+            Audio descriptivo
+            <span class="ml-1 text-xs font-normal text-slate-400">(Opcional)</span>
+          </label>
+
+          @if (!audioNombre()) {
+            <label class="flex flex-col items-center justify-center gap-2 h-28 rounded-xl border-2 border-dashed border-slate-300 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-colors">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-slate-400">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+              <span class="text-xs text-slate-500 font-medium">Haz clic para subir audio</span>
+              <span class="text-xs text-slate-400">MP3, WAV, OGG, M4A</span>
+              <input type="file" accept="audio/*" class="hidden" (change)="onAudioChange($event)"/>
+            </label>
+          } @else {
+            <!-- Audio selected state -->
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-bold text-emerald-800">Audio seleccionado</p>
+                  <p class="text-xs text-emerald-700 truncate">{{ audioNombre() }}</p>
+                </div>
+                <button type="button" (click)="limpiarAudio()"
+                        class="text-red-500 hover:text-red-700 transition shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                </button>
+              </div>
+              <!-- Audio player nativo -->
+              @if (audioPreviewUrl()) {
+                <audio controls class="w-full" style="height:36px">
+                  <source [src]="audioPreviewUrl()!" />
+                  Tu navegador no soporta el elemento de audio.
+                </audio>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- ======= INFO IA ======= -->
+        <div class="sm:col-span-2">
+          <div class="bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-xl px-4 py-3 flex items-start gap-3">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-indigo-500 shrink-0 mt-0.5">
+              <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
+              <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <div>
+              <p class="text-xs font-bold text-indigo-800 mb-0.5">Análisis con Inteligencia Artificial</p>
+              <p class="text-xs text-indigo-700">
+                La IA analizará tu descripción, imagen y audio para clasificar el incidente y generar
+                un diagnóstico profesional. Cuanta más información proporciones, mejor será el resultado.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón Enviar -->
+        <div class="form-actions mt-2 sm:col-span-2">
+          <button type="submit" class="btn-primary w-full sm:w-auto px-8"
+                  [disabled]="procesando()">
+            @if (procesando()) {
+              <span class="spinner mr-2"></span>
+              Analizando con IA... esto puede tomar unos segundos
+            } @else {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2">
+                <path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>
+              </svg>
+              Generar Diagnóstico con IA
             }
           </button>
         </div>
+
       </form>
     </div>
   }
+
 </div>

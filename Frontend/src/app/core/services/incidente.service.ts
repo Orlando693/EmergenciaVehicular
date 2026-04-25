@@ -82,4 +82,10 @@ export class IncidenteService {
   consultarHistorialEstados(id_incidente: number): Observable<IncidenteHistorialOut[]> {
     return this.http.get<IncidenteHistorialOut[]>(`${this.apiUrl}/${id_incidente}/historial`);
   }
+
+  uploadEvidence(file: File): Observable<{url: string}> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{url: string}>(`${this.apiUrl}/upload`, formData);
+  }
 }
