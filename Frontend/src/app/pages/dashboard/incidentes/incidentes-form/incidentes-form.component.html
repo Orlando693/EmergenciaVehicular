@@ -1,0 +1,141 @@
+<div class="space-y-5">
+  
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Registrar Incidente</h1>
+      <p class="page-sub">Reporta una emergencia y recibe un diagnóstico inteligente</p>
+    </div>
+    <button class="btn-secondary" (click)="volver()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Volver
+    </button>
+  </div>
+
+  <!-- Alertas -->
+  @if (errorMessage()) {
+    <div class="alert danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      {{ errorMessage() }}
+    </div>
+  }
+  @if (successMessage()) {
+    <div class="alert success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      {{ successMessage() }}
+    </div>
+  }
+
+  <!-- Contenido -->
+  @if (cargandoVehiculos()) {
+    <div class="form-card text-center py-10 text-slate-500 text-sm">
+      Cargando perfil y vehículos...
+    </div>
+  } @else if (vehiculos().length === 0) {
+    <!-- Empty State -->
+    <div class="form-card text-center py-12">
+      <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-orange-600">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 mb-2">Vehículo Requerido</h3>
+      <p class="text-sm text-slate-500 mb-6 max-w-md mx-auto">
+        Asocia un vehículo para que el sistema pueda analizar tu incidente con el modelo y marca correctos.
+      </p>
+      <button class="btn-primary" routerLink="/dashboard/vehiculos/nuevo">
+        Ingresar Vehículo Nuevo
+      </button>
+    </div>
+  } @else {
+    <!-- Formulario Normal -->
+    <div class="form-card">
+      <h2 class="form-card-title">Detalles del Suceso</h2>
+      
+      <form [formGroup]="incidenteForm" (ngSubmit)="onSubmit()" class="grid-form">
+        
+        <!-- Vehículo Afectado -->
+        <div class="field-group">
+          <label class="field-label">Vehículo Afectado <span class="text-red-500">*</span></label>
+          <select formControlName="id_vehiculo" class="field-input" [class.field-error]="f['id_vehiculo'].invalid && f['id_vehiculo'].touched">
+            <option value="" disabled selected>Seleccione un vehículo...</option>
+            @for (v of vehiculos(); track v.id_vehiculo) {
+              <option [value]="v.id_vehiculo">{{ v.marca }} {{ v.modelo }} ({{ v.placa }})</option>
+            }
+          </select>
+          @if (f['id_vehiculo'].invalid && f['id_vehiculo'].touched) {
+            <p class="field-error-msg mt-1 text-red-500 text-xs font-medium">El vehículo es requerido</p>
+          }
+        </div>
+
+        <!-- Ubicación -->
+        <div class="field-group">
+          <label class="field-label">Ubicación Actual <span class="text-red-500">*</span></label>
+          <div class="flex gap-2">
+            <input type="text" formControlName="direccion" class="field-input flex-1" 
+                   [class.field-error]="f['direccion'].invalid && f['direccion'].touched"
+                   placeholder="Ej: Av. Principal 123..."/>
+            <button type="button" class="btn-secondary shrink-0" (click)="obtenerUbicacion()" title="Capturar GPS">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>
+              </svg>
+              GPS
+            </button>
+          </div>
+          @if (f['direccion'].invalid && f['direccion'].touched) {
+            <p class="field-error-msg mt-1 text-red-500 text-xs font-medium">La ubicación es obligatoria</p>
+          }
+          @if (latitud() && longitud()) {
+            <p class="text-xs text-blue-600 mt-1 flex items-center font-medium">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mr-1"><polyline points="20 6 9 17 4 12"/></svg>
+              GPS Capturado exitosamente
+            </p>
+          }
+        </div>
+
+        <!-- Descripción -->
+        <div class="field-group sm:col-span-2">
+          <label class="field-label">Descripción del problema <span class="text-red-500">*</span></label>
+          <textarea formControlName="descripcion" rows="4" class="field-input resize-none"
+                    [class.field-error]="f['descripcion'].invalid && f['descripcion'].touched"
+                    placeholder="Describe qué sucedió para que podamos evaluar la gravedad del incidente..."></textarea>
+          <div class="flex items-center justify-between mt-1">
+            @if (f['descripcion'].invalid && f['descripcion'].touched) {
+              <p class="field-error-msg text-red-500 text-xs font-medium">Mínimo 10 caracteres para el análisis</p>
+            } @else {
+              <p class="text-xs text-slate-400">Detalla el incidente para su análisis</p>
+            }
+            <span class="text-xs font-medium text-slate-400">{{ f['descripcion'].value?.length || 0 }}/1000</span>
+          </div>
+        </div>
+
+        <!-- Evidencia -->
+        <div class="field-group">
+          <label class="field-label">Fotografía (URL Opcional)</label>
+          <input type="text" formControlName="imagen_url" class="field-input" placeholder="https://ejemplo.com/foto.jpg"/>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Audio corto (URL Opcional)</label>
+          <input type="text" formControlName="audio_url" class="field-input" placeholder="https://ejemplo.com/audio.mp3"/>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions mt-4 sm:col-span-2">
+          <button type="submit" class="btn-primary" [disabled]="incidenteForm.invalid || procesando()">
+            @if (procesando()) {
+              <span class="spinner mr-2"></span> Analizando reporte...
+            } @else {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
+                <path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"></path>
+              </svg>
+              Generar Diagnóstico
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

@@ -38,7 +38,7 @@
               @for (item of group.items; track item.route) {
                 <a [routerLink]="item.route"
                    routerLinkActive="active"
-                   [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+                   [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' || item.route === '/dashboard/incidentes' }"
                    class="nav-link"
                    [title]="item.label">
                   <span class="shrink-0" [innerHTML]="getIcon(item.icon)"></span>

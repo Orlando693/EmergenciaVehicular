@@ -89,16 +89,23 @@ async def get_cliente_by_usuario_id(id_usuario: int, db: AsyncSession) -> Client
         )
     return cliente
 
-async def consultar_historial_incidentes(id_usuario: int, es_admin: bool, db: AsyncSession) -> list[IncidenteOut]:
+async def consultar_historial_incidentes(id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession) -> list[IncidenteOut]:
     stmt = select(Incidente).options(
         selectinload(Incidente.taller),
         selectinload(Incidente.vehiculo)
     ).order_by(Incidente.created_at.desc())
 
     if not es_admin:
-        cliente = await get_cliente_by_usuario_id(id_usuario, db)
-        stmt = stmt.where(Incidente.id_cliente == cliente.id_cliente)
-        
+        if es_taller:
+            stmt_taller = select(Taller).where(Taller.id_usuario == id_usuario)
+            res_taller = await db.execute(stmt_taller)
+            taller = res_taller.scalar_one_or_none()
+            id_taller = taller.id_taller if taller else -1
+            stmt = stmt.where(Incidente.id_taller == id_taller)
+        else:
+            cliente = await get_cliente_by_usuario_id(id_usuario, db)
+            stmt = stmt.where(Incidente.id_cliente == cliente.id_cliente)
+
     result = await db.execute(stmt)
     incidentes = result.scalars().all()
     
@@ -228,56 +235,45 @@ async def obtener_detalle_solicitud(id_incidente: int, db: AsyncSession) -> Inci
 
     return inc_data
 
-async def obtener_detalle_incidente(id_incidente: int, id_usuario: int, es_admin: bool, db: AsyncSession) -> IncidenteOut:
-    """Obtiene el detalle de un incidente disponible (estado REPORTADO sin taller asignado)."""
+async def obtener_detalle_incidente(id_incidente: int, id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession) -> IncidenteOut:
+    """Obtiene el detalle de un incidente validando roles asignados."""
     stmt = select(Incidente).options(
-        selectinload(Incidente.vehiculo)
-    ).where(
-        Incidente.id_incidente == id_incidente,
-        Incidente.estado == "REPORTADO",
-        Incidente.id_taller.is_(None)
-    )
-
-    result = await db.execute(stmt)
-    incidente = result.scalar_one_or_none()
-
-    if not incidente:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Solicitud no encontrada o ya no está disponible"
-        )
-
-    inc_data = IncidenteOut.model_validate(incidente)
-    if incidente.vehiculo:
-        inc_data.vehiculo_placa = incidente.vehiculo.placa
-        inc_data.vehiculo_marca = incidente.vehiculo.marca
-        inc_data.vehiculo_modelo = incidente.vehiculo.modelo
-
-    return inc_data
-    stmt = select(Incidente).options(
-        selectinload(Incidente.taller),
-        selectinload(Incidente.vehiculo)
+        selectinload(Incidente.vehiculo),
+        selectinload(Incidente.taller)
     ).where(Incidente.id_incidente == id_incidente)
-    
-    if not es_admin:
-        cliente = await get_cliente_by_usuario_id(id_usuario, db)
-        stmt = stmt.where(Incidente.id_cliente == cliente.id_cliente)
-        
+
     result = await db.execute(stmt)
     incidente = result.scalar_one_or_none()
-    
+
     if not incidente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Incidente no encontrado"
         )
-        
+
+    # Validar permisos
+    if not es_admin:
+        if es_taller:
+            taller_stmt = select(Taller).where(Taller.id_usuario == id_usuario)
+            taller_res = await db.execute(taller_stmt)
+            taller = taller_res.scalar_one_or_none()
+            if not taller or incidente.id_taller != taller.id_taller:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado para ver este servicio.")
+        else:
+            cliente_stmt = select(Cliente).where(Cliente.id_usuario == id_usuario)
+            cliente_res = await db.execute(cliente_stmt)
+            cliente = cliente_res.scalar_one_or_none()
+            if not cliente or incidente.id_cliente != cliente.id_cliente:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado para ver este incidente.")
+
     inc_data = IncidenteOut.model_validate(incidente)
-    if incidente.taller:
-        inc_data.taller_nombre = incidente.taller.razon_social
     if incidente.vehiculo:
         inc_data.vehiculo_placa = incidente.vehiculo.placa
         inc_data.vehiculo_marca = incidente.vehiculo.marca
         inc_data.vehiculo_modelo = incidente.vehiculo.modelo
-        
+    if incidente.taller:
+        inc_data.taller_nombre = incidente.taller.razon_social
+
     return inc_data
+    return inc_data
+

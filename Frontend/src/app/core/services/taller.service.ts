@@ -2,12 +2,21 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Taller, TallerCreate } from '../../models/taller.model';
+import { IncidenteOut } from './incidente.service';
 
 @Injectable({ providedIn: 'root' })
 export class TallerService {
   private readonly api = `${environment.apiUrl}/talleres`;
 
   constructor(private http: HttpClient) {}
+
+  solicitudesDisponibles() {
+    return this.http.get<IncidenteOut[]>(`${this.api}/solicitudes-disponibles`);
+  }
+
+  detalleSolicitudDisponible(id: number) {
+    return this.http.get<IncidenteOut>(`${this.api}/solicitudes-disponibles/${id}`);
+  }
 
   registrar(data: TallerCreate) {
     return this.http.post<Taller>(this.api, data);
