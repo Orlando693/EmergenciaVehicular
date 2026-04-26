@@ -6,10 +6,14 @@ from fastapi import HTTPException, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.incidente import Incidente
+from app.models.incidente import Incidente, IncidenteHistorial
 from app.models.cliente import Cliente
 from app.models.pago import Pago
+from app.models.taller import Taller
 from app.services import notificacion_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 COMISION_PCT = Decimal("0.10")
 
@@ -88,6 +92,54 @@ async def obtener_costo(id_incidente: int, id_usuario: int, db: AsyncSession) ->
     }
 
 
+async def obtener_info_pago(
+    id_incidente: int,
+    id_usuario: int,
+    es_admin: bool,
+    es_taller: bool,
+    es_cliente: bool,
+    db: AsyncSession,
+) -> dict:
+    """A2 - Devuelve la misma info de costo+pago para CLIENTE dueño, TALLER asignado o ADMIN.
+    No exige que el incidente esté en RESUELTO; sirve también para mostrar el pago ya existente."""
+    r = await db.execute(select(Incidente).where(Incidente.id_incidente == id_incidente))
+    incidente = r.scalar_one_or_none()
+    if not incidente:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incidente no encontrado")
+
+    if es_admin:
+        pass
+    elif es_taller:
+        tr = await db.execute(select(Taller).where(Taller.id_usuario == id_usuario))
+        taller = tr.scalar_one_or_none()
+        if not taller or incidente.id_taller != taller.id_taller:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a este servicio")
+    elif es_cliente:
+        cr = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario))
+        cliente = cr.scalar_one_or_none()
+        if not cliente or incidente.id_cliente != cliente.id_cliente:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a este incidente")
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
+
+    monto = calcular_monto(incidente.clasificacion_ia)
+    comision = (monto * COMISION_PCT).quantize(Decimal("0.01"))
+    al_taller = (monto - comision).quantize(Decimal("0.01"))
+
+    pr = await db.execute(select(Pago).where(Pago.id_incidente == id_incidente))
+    pago = pr.scalar_one_or_none()
+
+    return {
+        "id_incidente":        id_incidente,
+        "clasificacion_ia":    incidente.clasificacion_ia,
+        "estado_incidente":    incidente.estado,
+        "monto_total":         monto,
+        "monto_taller":        al_taller,
+        "comision_plataforma": comision,
+        "pago_existente":      pago,
+    }
+
+
 async def iniciar_pago(
     id_incidente: int,
     id_usuario:   int,
@@ -150,6 +202,13 @@ async def iniciar_pago(
     if aprobado:
         incidente.estado = "PAGADO"
         db.add(incidente)
+        hist = IncidenteHistorial(
+            id_incidente=id_incidente,
+            estado_anterior="RESUELTO",
+            estado_nuevo="PAGADO",
+            observacion=f"Pago completado. Método: {metodo_upper}. Referencia: {referencia}. Monto: ${monto:.2f}."
+        )
+        db.add(hist)
         await db.commit()
 
         # Notificar al cliente
@@ -159,11 +218,46 @@ async def iniciar_pago(
                 id_usuario=id_usuario,
                 titulo=f"Pago confirmado — Incidente #{id_incidente}",
                 mensaje=f"Tu pago de ${monto:.2f} fue procesado exitosamente. Referencia: {referencia}.",
-                tipo="INFO",
+                tipo="PAGO_REALIZADO",
                 id_incidente=id_incidente,
             )
+        except Exception as exc:
+            logger.warning(f"[Pago] No se pudo notificar al cliente: {exc}")
+
+        # Notificar al taller asignado (A1 - sincronización pago → taller)
+        try:
+            if incidente.id_taller is not None:
+                tr = await db.execute(select(Taller).where(Taller.id_taller == incidente.id_taller))
+                taller = tr.scalar_one_or_none()
+                if taller:
+                    await notificacion_service.crear_notificacion(
+                        db=db,
+                        id_usuario=taller.id_usuario,
+                        titulo=f"Pago recibido — Incidente #{id_incidente}",
+                        mensaje=(
+                            f"El cliente pagó ${monto:.2f}. "
+                            f"Tu parte (90%): ${al_taller:.2f} · "
+                            f"Comisión (10%): ${comision:.2f}. Ref: {referencia}."
+                        ),
+                        tipo="PAGO_RECIBIDO",
+                        id_incidente=id_incidente,
+                    )
+        except Exception as exc:
+            logger.warning(f"[Pago] No se pudo notificar al taller: {exc}")
+
+    elif estado == "FALLIDO":
+        # También dejar trazabilidad del intento fallido
+        try:
+            hist_fail = IncidenteHistorial(
+                id_incidente=id_incidente,
+                estado_anterior=incidente.estado,
+                estado_nuevo=incidente.estado,
+                observacion=f"Intento de pago FALLIDO. Método: {metodo_upper}. Motivo: {error_msg or 'desconocido'}.",
+            )
+            db.add(hist_fail)
+            await db.commit()
         except Exception:
-            pass
+            await db.rollback()
 
     return pago
 

@@ -1,10 +1,17 @@
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, Field
 
 from app.core.dependencies import DBDep, CurrentUser, require_roles
 from app.models.enums import EstadoTallerEnum
 from app.schemas.taller import TallerCreate, TallerUpdate, TallerOut, TallerEstadoUpdate
 from app.schemas.incidente import IncidenteOut
 from app.services import taller_service, incidente_service
+from app.services.asignacion_service import aceptar_solicitud, rechazar_solicitud
+
+
+class RechazoSolicitud(BaseModel):
+    observacion: str | None = Field(None, max_length=500)
+
 
 router = APIRouter(prefix="/talleres", tags=["Talleres (CU7, CU8, CU11)"])
 
@@ -36,6 +43,38 @@ async def detalle_solicitud_disponible(
     return await incidente_service.obtener_detalle_solicitud(id_incidente, db)
 
 
+@router.post(
+    "/solicitudes-disponibles/{id_incidente}/aceptar",
+    response_model=IncidenteOut,
+    summary="CU11 - Taller acepta una solicitud",
+    dependencies=[Depends(require_roles("TALLER"))],
+)
+async def aceptar_solicitud_endpoint(
+    id_incidente: int,
+    current_user: CurrentUser,
+    db: DBDep,
+):
+    """El taller acepta una solicitud disponible. La solicitud queda asignada a su taller
+    y pasa al estado EN_PROCESO. Se registra historial y se notifica al cliente."""
+    return await aceptar_solicitud(id_incidente, current_user.id_usuario, db)
+
+
+@router.post(
+    "/solicitudes-disponibles/{id_incidente}/rechazar",
+    summary="CU11 - Taller rechaza una solicitud (queda disponible)",
+    dependencies=[Depends(require_roles("TALLER"))],
+)
+async def rechazar_solicitud_endpoint(
+    id_incidente: int,
+    body: RechazoSolicitud,
+    current_user: CurrentUser,
+    db: DBDep,
+):
+    """El taller rechaza la solicitud. El incidente NO se elimina; se registra el rechazo
+    en historial y la solicitud sigue disponible para otros talleres."""
+    return await rechazar_solicitud(id_incidente, current_user.id_usuario, body.observacion, db)
+
+
 @router.post("", response_model=TallerOut, status_code=201, summary="CU7 - Registrar taller")
 async def registrar_taller(
     data: TallerCreate,
@@ -59,6 +98,26 @@ async def listar_talleres(
 async def mi_taller(current_user: CurrentUser, db: DBDep):
     """El usuario TALLER consulta su propio perfil de taller."""
     return await taller_service.obtener_taller_por_usuario(current_user.id_usuario, db)
+
+
+@router.get(
+    "/mis-metricas",
+    summary="TALLER - Mis métricas de rendimiento",
+    dependencies=[Depends(require_roles("TALLER"))],
+)
+async def mis_metricas(current_user: CurrentUser, db: DBDep):
+    """El taller consulta sus propias estadísticas: solicitudes, servicios, ingresos y comisiones."""
+    return await taller_service.obtener_metricas_taller(current_user.id_usuario, db)
+
+
+@router.get(
+    "/mis-pagos",
+    summary="TALLER - Pagos y comisiones de los servicios atendidos",
+    dependencies=[Depends(require_roles("TALLER"))],
+)
+async def mis_pagos_taller(current_user: CurrentUser, db: DBDep):
+    """Lista los pagos relacionados con incidentes asignados a este taller, con su comisión."""
+    return await taller_service.obtener_pagos_taller(current_user.id_usuario, db)
 
 
 @router.put("/mi-taller", response_model=TallerOut, summary="CU8 - Actualizar mi taller")

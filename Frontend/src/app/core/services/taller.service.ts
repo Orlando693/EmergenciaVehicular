@@ -18,6 +18,21 @@ export class TallerService {
     return this.http.get<IncidenteOut>(`${this.api}/solicitudes-disponibles/${id}`);
   }
 
+  aceptarSolicitud(id: number) {
+    return this.http.post<IncidenteOut>(`${this.api}/solicitudes-disponibles/${id}/aceptar`, {});
+  }
+
+  rechazarSolicitud(id: number, observacion?: string) {
+    return this.http.post<{ detail: string }>(
+      `${this.api}/solicitudes-disponibles/${id}/rechazar`,
+      { observacion: observacion ?? null },
+    );
+  }
+
+  misPagos() {
+    return this.http.get<any[]>(`${this.api}/mis-pagos`);
+  }
+
   registrar(data: TallerCreate) {
     return this.http.post<Taller>(this.api, data);
   }
@@ -45,5 +60,9 @@ export class TallerService {
 
   cambiarEstado(id: number, estado: string) {
     return this.http.patch<Taller>(`${this.api}/${id}/estado`, { estado_registro: estado });
+  }
+
+  misMetricas() {
+    return this.http.get<any>(`${this.api}/mis-metricas`);
   }
 }

@@ -1,1 +1,117 @@
-<p>servicios-list works!</p>
+<div class="space-y-5">
+
+  <!-- Métricas rápidas del taller -->
+  <ng-container *ngIf="metricas() as m">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-4">
+        <p class="text-2xl font-black text-blue-700">{{ m.solicitudes_recibidas }}</p>
+        <p class="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">Servicios totales</p>
+      </div>
+      <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-4">
+        <p class="text-2xl font-black text-emerald-700">{{ m.completados }}</p>
+        <p class="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">Completados</p>
+      </div>
+      <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-4">
+        <p class="text-2xl font-black text-teal-700">$ {{ m.ingresos_taller.toFixed(2) }}</p>
+        <p class="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">Ingresos taller (90%)</p>
+      </div>
+      <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-4">
+        <p class="text-2xl font-black text-amber-600">$ {{ m.comisiones_pagadas.toFixed(2) }}</p>
+        <p class="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">Comisión plataforma 10%</p>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Header -->
+  <div class="bg-white shadow-sm border border-slate-100 rounded-2xl p-5">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div>
+        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+          <span class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </span>
+          Mis Servicios Asignados
+        </h2>
+        <p class="text-sm text-slate-500 mt-1">Incidentes que tu taller ya aceptó o que tiene asignados.</p>
+      </div>
+
+      <!-- Filtros -->
+      <div class="flex flex-wrap gap-1 self-start md:self-auto bg-slate-100 p-1 rounded-lg">
+        <button *ngFor="let f of filtros"
+                (click)="setFiltro(f.id)"
+                class="px-3 py-1.5 text-xs font-bold rounded-md transition"
+                [ngClass]="filtro() === f.id ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'">
+          {{ f.label }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando()" class="flex justify-center p-12">
+    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error()" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+    {{ error() }}
+  </div>
+
+  <!-- Empty -->
+  <div *ngIf="!cargando() && incidentesFiltrados().length === 0"
+       class="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center">
+    <div class="w-14 h-14 mx-auto rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </div>
+    <h3 class="text-lg font-bold text-slate-900 mt-3">Sin servicios para mostrar</h3>
+    <p class="mt-1 text-sm text-slate-500">No tienes incidentes en este filtro.</p>
+  </div>
+
+  <!-- Tabla -->
+  <div *ngIf="!cargando() && incidentesFiltrados().length > 0"
+       class="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-100">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Fecha</th>
+            <th class="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Incidente</th>
+            <th class="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Clasificación IA</th>
+            <th class="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Vehículo</th>
+            <th class="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Estado</th>
+            <th class="px-5 py-3 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-slate-100">
+          <tr *ngFor="let inc of incidentesFiltrados()" class="hover:bg-slate-50 transition">
+            <td class="px-5 py-3 text-sm text-slate-700 whitespace-nowrap">{{ inc.created_at | date:'short' }}</td>
+            <td class="px-5 py-3 text-sm font-bold text-slate-900 whitespace-nowrap">#{{ inc.id_incidente }}</td>
+            <td class="px-5 py-3 text-sm text-slate-700 whitespace-nowrap">
+              <span class="inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded"
+                    [ngClass]="badgeClasificacion(inc.clasificacion_ia)">
+                {{ inc.clasificacion_ia || 'SIN_CLASIFICAR' }}
+              </span>
+            </td>
+            <td class="px-5 py-3 text-sm text-slate-700 whitespace-nowrap">
+              {{ inc.vehiculo_marca || '—' }} {{ inc.vehiculo_modelo || '' }}
+              <span class="text-slate-400">({{ inc.vehiculo_placa || 'S/P' }})</span>
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap">
+              <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded"
+                    [ngClass]="estadoBadge(inc.estado)">
+                {{ inc.estado }}
+              </span>
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap text-right">
+              <button (click)="verDetalle(inc.id_incidente)"
+                      class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
+                Ver detalle
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

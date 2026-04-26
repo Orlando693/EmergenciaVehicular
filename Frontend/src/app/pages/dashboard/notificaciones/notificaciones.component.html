@@ -44,7 +44,7 @@
                [class.bg-blue-50]="!n.leida"
                [class.hover:bg-blue-100]="!n.leida"
                [class.hover:bg-slate-50]="n.leida"
-               (click)="marcarLeida(n)">
+               (click)="irNotificacion(n)">
 
             <!-- Icono tipo -->
             <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5"
@@ -65,10 +65,10 @@
               <p class="text-sm text-slate-600 mt-0.5 leading-snug">{{ n.mensaje }}</p>
               <div class="flex items-center gap-3 mt-1.5">
                 @if (n.id_incidente) {
-                  <a [routerLink]="['/dashboard/incidentes/detalle', n.id_incidente]"
+                  <a [routerLink]="rutaNotificacion(n)"
                      class="text-xs text-blue-600 font-semibold hover:underline"
-                     (click)="$event.stopPropagation()">
-                    Ver incidente #{{ n.id_incidente }} →
+                     (click)="$event.stopPropagation(); marcarLeida(n)">
+                    {{ etiquetaEnlace(n) }}
                   </a>
                 }
                 @if (!n.leida) {

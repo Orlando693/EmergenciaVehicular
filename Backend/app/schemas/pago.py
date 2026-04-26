@@ -39,6 +39,18 @@ class CostoEstimado(BaseModel):
     pago_existente:      Optional[PagoOut] = None
 
 
+class InfoPago(BaseModel):
+    """Devuelve costo + pago existente; accesible para CLIENTE dueño,
+    TALLER asignado y ADMIN (no exige estado RESUELTO)."""
+    id_incidente:        int
+    clasificacion_ia:    Optional[str]
+    estado_incidente:    Optional[str] = None
+    monto_total:         Decimal
+    monto_taller:        Decimal
+    comision_plataforma: Decimal
+    pago_existente:      Optional[PagoOut] = None
+
+
 class PagoPage(BaseModel):
     items: List[PagoOut]
     total: int

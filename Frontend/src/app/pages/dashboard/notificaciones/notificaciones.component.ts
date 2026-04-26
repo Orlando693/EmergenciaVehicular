@@ -1,7 +1,8 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { NotificacionesService, Notificacion } from '../../../services/notificaciones.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-notificaciones',
@@ -11,6 +12,8 @@ import { NotificacionesService, Notificacion } from '../../../services/notificac
 })
 export class NotificacionesComponent implements OnInit {
   private svc = inject(NotificacionesService);
+  private auth = inject(AuthService);
+  private router = inject(Router);
 
   items       = signal<Notificacion[]>([]);
   total       = signal(0);
@@ -88,7 +91,52 @@ export class NotificacionesComponent implements OnInit {
       ASIGNACION:      'bg-blue-100 text-blue-600',
       ESTADO_CAMBIO:   'bg-emerald-100 text-emerald-600',
       NUEVO_SERVICIO:  'bg-violet-100 text-violet-600',
+      MENSAJE_CHAT:    'bg-cyan-100 text-cyan-600',
+      PAGO_REALIZADO:  'bg-amber-100 text-amber-700',
+      PAGO_RECIBIDO:   'bg-amber-100 text-amber-700',
     };
     return map[tipo] ?? 'bg-slate-100 text-slate-500';
+  }
+
+  /**
+   * A3 - Resuelve la mejor ruta según rol y tipo de notificación.
+   * - TALLER + NUEVO_INCIDENTE → solicitudes-disponibles/detalle/:id
+   * - TALLER + cualquier otra (asignación, estado, pago, chat) → servicios/detalle/:id
+   * - CUALQUIER ROL + MENSAJE_CHAT → /dashboard/chat/:id
+   * - CLIENTE / ADMIN → incidentes/detalle/:id
+   */
+  rutaNotificacion(n: Notificacion): any[] | null {
+    if (!n.id_incidente) return null;
+    const rol = (this.auth.rol || '').toUpperCase();
+    const tipo = (n.tipo || '').toUpperCase();
+
+    if (tipo === 'MENSAJE_CHAT') {
+      return ['/dashboard/chat', n.id_incidente];
+    }
+
+    if (rol === 'TALLER') {
+      if (tipo === 'NUEVO_INCIDENTE') {
+        return ['/dashboard/solicitudes-disponibles/detalle', n.id_incidente];
+      }
+      return ['/dashboard/servicios/detalle', n.id_incidente];
+    }
+
+    return ['/dashboard/incidentes/detalle', n.id_incidente];
+  }
+
+  etiquetaEnlace(n: Notificacion): string {
+    const rol = (this.auth.rol || '').toUpperCase();
+    const tipo = (n.tipo || '').toUpperCase();
+
+    if (tipo === 'MENSAJE_CHAT') return `Abrir chat del incidente #${n.id_incidente} →`;
+    if (rol === 'TALLER' && tipo === 'NUEVO_INCIDENTE') return `Ver solicitud #${n.id_incidente} →`;
+    if (rol === 'TALLER') return `Ver servicio #${n.id_incidente} →`;
+    return `Ver incidente #${n.id_incidente} →`;
+  }
+
+  irNotificacion(n: Notificacion) {
+    const ruta = this.rutaNotificacion(n);
+    this.marcarLeida(n);
+    if (ruta) this.router.navigate(ruta);
   }
 }

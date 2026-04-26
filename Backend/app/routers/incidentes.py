@@ -58,6 +58,16 @@ async def consultar_historial_servicio(id_incidente: int, db: DBDep, current_use
     es_taller = any(rol.nombre == "TALLER" for rol in current_user.roles)       
     return await incidente_service.consultar_historial_servicio(id_incidente, current_user.id_usuario, es_admin, es_taller, db)
 
+@router.get(
+    "/mis-metricas",
+    summary="CLIENTE - Resumen de mis incidentes y pagos",
+    dependencies=[Depends(require_roles("CLIENTE"))],
+)
+async def mis_metricas_cliente(db: DBDep, current_user: CurrentUser):
+    """El cliente consulta el resumen de sus incidentes y pagos."""
+    return await incidente_service.obtener_metricas_cliente(current_user.id_usuario, db)
+
+
 @router.post(
     "",
     response_model=IncidenteOut,

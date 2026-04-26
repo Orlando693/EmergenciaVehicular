@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -7,6 +7,7 @@ from app.models.incidente import Incidente, IncidenteHistorial
 from app.models.cliente import Cliente
 from app.models.taller import Taller
 from app.models.vehiculo import Vehiculo
+from app.models.pago import Pago
 from app.schemas.incidente import IncidenteOut, IncidenteCreate, IncidenteHistorialOut, IncidenteEstadoUpdate
 from app.services import notificacion_service
 import asyncio
@@ -76,13 +77,21 @@ async def procesar_con_ia(descripcion: str, audio_url: str | None, imagen_url: s
     if not api_key:
         logger.warning("GEMINI_API_KEY no configurada. Usando analisis de texto basico.")
         clasificacion = "MECANICO"
-        desc_lower = descripcion.lower()
-        if any(w in desc_lower for w in ("choque", "accidente", "colision", "golpe", "impacto")):
+        desc_lower = (descripcion or "").lower()
+        if any(w in desc_lower for w in ("choque", "accidente", "colision", "golpe", "impacto", "atropello", "rozar")):
             clasificacion = "COLISION"
-        elif any(w in desc_lower for w in ("neumatico", "llanta", "ponchado", "rueda", "pinchazo")):
+        elif any(w in desc_lower for w in ("neumatico", "llanta", "ponchado", "rueda", "pinchazo", "desinflad")):
             clasificacion = "NEUMATICOS"
-        elif any(w in desc_lower for w in ("electrico", "bateria", "luz", "faro", "corto", "arranque")):
+        elif any(w in desc_lower for w in ("electrico", "bateria", "luz", "faro", "corto", "arranque", "no enciende", "no prende")):
             clasificacion = "ELECTRICO"
+
+        recomendaciones = {
+            "MECANICO":   "Recomendación inicial: detener el vehículo en un lugar seguro, no intentar continuar la marcha y solicitar asistencia mecánica para diagnóstico en sitio.",
+            "COLISION":   "Recomendación inicial: priorizar la seguridad de los ocupantes, señalizar el área, tomar fotos del vehículo y solicitar asistencia para remolque y peritaje.",
+            "NEUMATICOS": "Recomendación inicial: estacionar en una zona segura, evitar continuar la marcha con el neumático afectado y solicitar cambio o reparación de llanta.",
+            "ELECTRICO":  "Recomendación inicial: apagar luces y accesorios, no intentar arranques repetidos y solicitar asistencia para revisión de batería y sistema eléctrico.",
+        }
+        reco = recomendaciones.get(clasificacion, "Recomendación inicial: solicitar asistencia técnica para evaluación en sitio.")
 
         fuentes = ["texto"]
         if audio_url:
@@ -93,9 +102,8 @@ async def procesar_con_ia(descripcion: str, audio_url: str | None, imagen_url: s
         return {
             "clasificacion": clasificacion,
             "resumen": (
-                f"Incidente de tipo {clasificacion} registrado con los datos proporcionados. "
-                f"Analisis basado en: {', '.join(fuentes)}. "
-                "Configure GEMINI_API_KEY para obtener diagnostico completo con IA."
+                f"Diagnóstico preliminar: posible incidente de tipo {clasificacion} "
+                f"según el reporte del cliente ({', '.join(fuentes)}). {reco}"
             )
         }
 
@@ -218,6 +226,16 @@ async def registrar_incidente_inteligente(data: IncidenteCreate, id_usuario: int
     db.add(nuevo_incidente)
     await db.commit()
     await db.refresh(nuevo_incidente)
+
+    # Historial: evento de creacion
+    hist_creacion = IncidenteHistorial(
+        id_incidente=nuevo_incidente.id_incidente,
+        estado_anterior=None,
+        estado_nuevo="REPORTADO",
+        observacion=f"Incidente registrado. IA clasificó: {ia_result['clasificacion']}."
+    )
+    db.add(hist_creacion)
+    await db.commit()
 
     # Notificar al cliente que su incidente fue registrado y analizado
     try:
@@ -417,6 +435,46 @@ async def obtener_detalle_solicitud(id_incidente: int, db: AsyncSession) -> Inci
         inc_data.vehiculo_modelo = incidente.vehiculo.modelo
 
     return inc_data
+
+
+async def obtener_metricas_cliente(id_usuario: int, db: AsyncSession) -> dict:
+    """Resumen de incidentes y pagos pendientes del cliente."""
+    cliente = await get_cliente_by_usuario_id(id_usuario, db)
+
+    async def count_state(estado: str) -> int:
+        r = await db.execute(
+            select(func.count()).where(
+                Incidente.id_cliente == cliente.id_cliente,
+                Incidente.estado == estado
+            ).select_from(Incidente)
+        )
+        return r.scalar_one()
+
+    r_total = await db.execute(
+        select(func.count()).where(Incidente.id_cliente == cliente.id_cliente).select_from(Incidente)
+    )
+    total = r_total.scalar_one()
+    reportados   = await count_state("REPORTADO")
+    en_proceso   = await count_state("EN_PROCESO")
+    resueltos    = await count_state("RESUELTO")
+    pagados      = await count_state("PAGADO")
+    cancelados   = await count_state("CANCELADO")
+
+    r_gastado = await db.execute(
+        select(func.sum(Pago.monto_total))
+        .where(Pago.id_cliente == cliente.id_cliente, Pago.estado == "COMPLETADO")
+    )
+    gastado = float(r_gastado.scalar_one() or 0)
+
+    return {
+        "total_incidentes":    total,
+        "reportados":          reportados,
+        "en_proceso":          en_proceso,
+        "pendientes_de_pago":  resueltos,
+        "pagados":             pagados,
+        "cancelados":          cancelados,
+        "total_gastado":       gastado,
+    }
 
 
 async def obtener_detalle_incidente(id_incidente: int, id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession) -> IncidenteOut:

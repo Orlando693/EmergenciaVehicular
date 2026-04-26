@@ -1,1 +1,123 @@
-<p>solicitudes-list works!</p>
+<div class="space-y-5">
+
+  <!-- Header con KPIs rápidos -->
+  <div class="bg-white shadow-sm border border-slate-100 rounded-2xl p-5">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div>
+        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+          <span class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </span>
+          Solicitudes Disponibles
+        </h2>
+        <p class="text-sm text-slate-500 mt-1">
+          Incidentes reportados por clientes que aún no han sido tomados por ningún taller.
+        </p>
+      </div>
+      <button (click)="cargarSolicitudes()"
+              class="self-start md:self-auto inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Actualizar
+      </button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-3">
+        <p class="text-xs font-bold text-blue-700 uppercase tracking-wider">Disponibles</p>
+        <p class="text-2xl font-black text-blue-900 mt-1">{{ solicitudes().length }}</p>
+      </div>
+      <div class="bg-red-50 border border-red-100 rounded-xl p-3">
+        <p class="text-xs font-bold text-red-700 uppercase tracking-wider">Colisión</p>
+        <p class="text-2xl font-black text-red-900 mt-1">{{ contar('COLISION') }}</p>
+      </div>
+      <div class="bg-amber-50 border border-amber-100 rounded-xl p-3">
+        <p class="text-xs font-bold text-amber-700 uppercase tracking-wider">Mecánico</p>
+        <p class="text-2xl font-black text-amber-900 mt-1">{{ contar('MECANICO') }}</p>
+      </div>
+      <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+        <p class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Otros</p>
+        <p class="text-2xl font-black text-emerald-900 mt-1">{{ contarOtros() }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando()" class="flex justify-center p-12">
+    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error()" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+    {{ error() }}
+  </div>
+
+  <!-- Empty -->
+  <div *ngIf="!cargando() && solicitudes().length === 0"
+       class="bg-white text-center p-10 border-2 border-dashed border-slate-200 rounded-2xl">
+    <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+    <h3 class="text-lg font-bold text-slate-900 mt-3">No hay nuevas solicitudes</h3>
+    <p class="mt-1 text-sm text-slate-500">Por el momento no hay incidentes pendientes de asistencia.</p>
+  </div>
+
+  <!-- Lista en tarjetas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+       *ngIf="!cargando() && solicitudes().length > 0">
+    <div *ngFor="let sol of solicitudes()"
+         class="bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-200 overflow-hidden flex flex-col">
+
+      <!-- Header de la card -->
+      <div class="p-4 border-b border-slate-100 flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <span class="inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded"
+                [ngClass]="badgeClasificacion(sol.clasificacion_ia)">
+            {{ sol.clasificacion_ia || 'SIN_CLASIFICAR' }}
+          </span>
+          <p class="text-base font-bold text-slate-900 mt-2 truncate">
+            Incidente #{{ sol.id_incidente }}
+          </p>
+        </div>
+        <div class="text-right shrink-0">
+          <p class="text-[10px] font-semibold text-slate-400 uppercase">Reportado</p>
+          <p class="text-xs font-bold text-slate-700">{{ sol.created_at | date:'shortTime' }}</p>
+          <p class="text-[11px] text-slate-500">{{ sol.created_at | date:'dd/MM/yy' }}</p>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="p-4 flex-grow space-y-3">
+        <p class="text-sm text-slate-700 line-clamp-2 italic">"{{ sol.descripcion }}"</p>
+
+        <div *ngIf="sol.resumen_ia" class="bg-indigo-50 border border-indigo-100 rounded-lg p-2.5">
+          <p class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Análisis IA
+          </p>
+          <p class="text-xs text-indigo-900 mt-1 line-clamp-2">{{ sol.resumen_ia }}</p>
+        </div>
+
+        <div class="space-y-1.5 text-xs">
+          <div class="flex items-start gap-1.5 text-slate-600">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 shrink-0 text-rose-500"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span class="truncate">{{ sol.direccion || 'Ubicación GPS sin dirección' }}</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-slate-600">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 text-blue-500"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
+            <span class="truncate">{{ sol.vehiculo_marca || '—' }} {{ sol.vehiculo_modelo || '' }} ({{ sol.vehiculo_placa || 'S/P' }})</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-3 border-t border-slate-100 bg-slate-50">
+        <button (click)="verDetalle(sol.id_incidente)"
+                class="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-lg transition">
+          Ver detalle
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

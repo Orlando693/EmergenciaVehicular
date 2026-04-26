@@ -88,4 +88,8 @@ export class IncidenteService {
     formData.append('file', file);
     return this.http.post<{url: string}>(`${this.apiUrl}/upload`, formData);
   }
+
+  misMetricasCliente(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/mis-metricas`);
+  }
 }

@@ -12,6 +12,16 @@ export interface CostoEstimado {
   pago_existente:      PagoOut | null;
 }
 
+export interface InfoPago {
+  id_incidente:        number;
+  clasificacion_ia:    string | null;
+  estado_incidente?:   string | null;
+  monto_total:         number;
+  monto_taller:        number;
+  comision_plataforma: number;
+  pago_existente:      PagoOut | null;
+}
+
 export interface PagoOut {
   id_pago:             number;
   id_incidente:        number;
@@ -47,6 +57,11 @@ export class PagoService {
 
   obtenerCosto(idIncidente: number): Observable<CostoEstimado> {
     return this.http.get<CostoEstimado>(`${this.apiUrl}/incidente/${idIncidente}/costo`);
+  }
+
+  /** A2 - Info de pago accesible para CLIENTE dueño, TALLER asignado o ADMIN. */
+  infoPago(idIncidente: number): Observable<InfoPago> {
+    return this.http.get<InfoPago>(`${this.apiUrl}/incidente/${idIncidente}/info`);
   }
 
   realizarPago(idIncidente: number, data: IniciarPagoRequest): Observable<PagoOut> {

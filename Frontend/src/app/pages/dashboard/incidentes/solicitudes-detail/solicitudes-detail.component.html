@@ -1,1 +1,212 @@
-<p>solicitudes-detail works!</p>
+<div class="max-w-5xl mx-auto space-y-5">
+
+  <!-- Header -->
+  <div class="bg-white shadow-sm border border-slate-100 rounded-2xl p-5 flex items-center gap-3">
+    <button (click)="volver()"
+            class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="min-w-0">
+      <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Solicitud disponible</p>
+      <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+        Detalle del Incidente #{{ id() }}
+      </h2>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando()" class="bg-white p-12 rounded-2xl flex justify-center">
+    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error()" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+    {{ error() }}
+  </div>
+
+  <!-- Mensaje de éxito (acepta/rechaza) -->
+  <div *ngIf="okMsg()" class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    {{ okMsg() }}
+  </div>
+
+  <ng-container *ngIf="solicitud() as sol">
+
+    <!-- Banner clasificación + estado -->
+    <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="md:col-span-2">
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Clasificación IA</p>
+        <div class="mt-2 flex items-center gap-2 flex-wrap">
+          <span class="inline-block text-sm font-extrabold uppercase px-3 py-1 rounded-lg"
+                [ngClass]="badgeClasificacion(sol.clasificacion_ia)">
+            {{ sol.clasificacion_ia || 'SIN_CLASIFICAR' }}
+          </span>
+          <span class="inline-block text-xs font-bold uppercase px-3 py-1 rounded-lg"
+                [ngClass]="prioridadClasses(sol.clasificacion_ia)">
+            Prioridad {{ prioridadTexto(sol.clasificacion_ia) }}
+          </span>
+          <span class="inline-block text-xs font-bold uppercase px-3 py-1 rounded-lg bg-slate-100 text-slate-700">
+            Estado: {{ sol.estado }}
+          </span>
+        </div>
+      </div>
+      <div class="text-left md:text-right">
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Reportado el</p>
+        <p class="text-sm font-bold text-slate-800 mt-2">{{ sol.created_at | date:'medium' }}</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+      <!-- Columna izquierda: detalles -->
+      <div class="lg:col-span-2 space-y-4">
+
+        <!-- Análisis IA destacado -->
+        <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="text-base font-extrabold text-indigo-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+            </span>
+            Análisis IA del incidente
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+            <div class="bg-white border border-indigo-100 rounded-lg p-3">
+              <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Clasificación</p>
+              <p class="text-sm font-extrabold text-indigo-900 mt-1 truncate">{{ sol.clasificacion_ia || 'N/D' }}</p>
+            </div>
+            <div class="bg-white border border-indigo-100 rounded-lg p-3">
+              <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Prioridad sugerida</p>
+              <p class="text-sm font-extrabold text-indigo-900 mt-1">{{ prioridadTexto(sol.clasificacion_ia) }}</p>
+            </div>
+            <div class="bg-white border border-indigo-100 rounded-lg p-3">
+              <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Confianza</p>
+              <p class="text-sm font-extrabold text-indigo-900 mt-1">{{ sol.resumen_ia ? 'Alta' : '—' }}</p>
+            </div>
+          </div>
+          <div class="bg-white border border-indigo-100 rounded-lg p-3 mt-3">
+            <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Resumen automático</p>
+            <p class="text-sm text-indigo-900 mt-1 leading-relaxed whitespace-pre-wrap">
+              {{ sol.resumen_ia || 'No hay resumen IA disponible para este incidente.' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Reporte original -->
+        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+          <h3 class="text-base font-extrabold text-slate-900">Reporte del cliente</h3>
+          <div class="bg-slate-50 border border-slate-100 rounded-lg p-3 mt-3 italic text-sm text-slate-700 whitespace-pre-wrap">
+            "{{ sol.descripcion }}"
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+            <a *ngIf="sol.imagen_url" [href]="sol.imagen_url" target="_blank"
+               class="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Ver imagen adjunta
+            </a>
+            <a *ngIf="sol.audio_url" [href]="sol.audio_url" target="_blank"
+               class="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              Escuchar audio adjunto
+            </a>
+          </div>
+        </div>
+
+        <!-- Vehiculo + Ubicación -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+            <h3 class="text-base font-extrabold text-slate-900">Vehículo afectado</h3>
+            <div class="mt-3 space-y-2 text-sm">
+              <p><span class="font-bold text-slate-500">Placa:</span>
+                <span class="bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded ml-1">{{ sol.vehiculo_placa || 'N/D' }}</span>
+              </p>
+              <p><span class="font-bold text-slate-500">Marca:</span>
+                <span class="text-slate-800 ml-1">{{ sol.vehiculo_marca || 'N/D' }}</span>
+              </p>
+              <p><span class="font-bold text-slate-500">Modelo:</span>
+                <span class="text-slate-800 ml-1">{{ sol.vehiculo_modelo || 'N/D' }}</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+            <h3 class="text-base font-extrabold text-slate-900">Ubicación</h3>
+            <p class="bg-slate-50 border border-slate-100 rounded-lg p-3 mt-3 text-sm text-slate-700 break-words">
+              {{ sol.direccion || 'El cliente no proporcionó dirección textual.' }}
+            </p>
+            <p *ngIf="sol.ubicacion_lat && sol.ubicacion_lng"
+               class="text-xs font-mono text-slate-500 mt-2">
+              Lat: {{ sol.ubicacion_lat | number:'1.4-4' }} · Lng: {{ sol.ubicacion_lng | number:'1.4-4' }}
+            </p>
+            <a *ngIf="sol.ubicacion_lat && sol.ubicacion_lng"
+               [href]="'https://www.google.com/maps?q=' + sol.ubicacion_lat + ',' + sol.ubicacion_lng" target="_blank"
+               class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-blue-700 hover:underline">
+              Abrir en Google Maps
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna derecha: acciones del taller -->
+      <div class="lg:col-span-1 space-y-4">
+
+        <div class="bg-white border-2 border-blue-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="text-base font-extrabold text-slate-900">Acciones del taller</h3>
+          <p class="text-xs text-slate-500 mt-1 mb-4">
+            Aceptar la solicitud te asigna este caso y notifica al cliente. Rechazar la deja
+            disponible para que otro taller pueda tomarla.
+          </p>
+
+          <div class="space-y-2">
+            <button (click)="aceptar()" [disabled]="procesando()"
+                    class="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold py-2.5 px-4 rounded-lg transition">
+              <svg *ngIf="!procesando()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg *ngIf="procesando()" class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
+              Aceptar solicitud
+            </button>
+
+            <button (click)="abrirRechazo()" [disabled]="procesando() || mostrarRechazo()"
+                    class="w-full inline-flex items-center justify-center gap-2 bg-rose-100 hover:bg-rose-200 text-rose-700 text-sm font-bold py-2.5 px-4 rounded-lg transition disabled:opacity-50">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Rechazar solicitud
+            </button>
+
+            <button (click)="volver()" type="button"
+                    class="w-full text-sm font-bold text-slate-600 hover:text-slate-800 py-2 transition">
+              Volver al listado
+            </button>
+          </div>
+
+          <!-- Form rechazo -->
+          <div *ngIf="mostrarRechazo()"
+               class="mt-4 pt-4 border-t border-slate-100 space-y-2">
+            <label class="text-xs font-bold text-slate-700">Motivo del rechazo (opcional)</label>
+            <textarea [(ngModel)]="motivoRechazo" rows="3"
+                      class="w-full text-sm border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-rose-200 focus:border-rose-400"
+                      placeholder="Ej. Sin disponibilidad de técnicos en este momento."></textarea>
+            <div class="flex gap-2">
+              <button (click)="confirmarRechazo()" [disabled]="procesando()"
+                      class="flex-1 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-sm font-bold py-2 rounded-lg transition">
+                Confirmar rechazo
+              </button>
+              <button (click)="cancelarRechazo()" type="button"
+                      class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold py-2 rounded-lg transition">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tip operativo -->
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800">
+          <p class="font-bold">Recuerda:</p>
+          <p class="mt-1 leading-relaxed">
+            Después de aceptar, podrás actualizar el estado del servicio (en proceso, resuelto)
+            desde la pantalla "Mis Servicios" y comunicarte con el cliente vía chat.
+          </p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>
