@@ -8,6 +8,7 @@ from app.models.cliente import Cliente
 from app.models.taller import Taller
 from app.models.vehiculo import Vehiculo
 from app.schemas.incidente import IncidenteOut, IncidenteCreate, IncidenteHistorialOut, IncidenteEstadoUpdate
+from app.services import notificacion_service
 import asyncio
 import mimetypes
 import os
@@ -218,6 +219,19 @@ async def registrar_incidente_inteligente(data: IncidenteCreate, id_usuario: int
     await db.commit()
     await db.refresh(nuevo_incidente)
 
+    # Notificar al cliente que su incidente fue registrado y analizado
+    try:
+        await notificacion_service.crear_notificacion(
+            db=db,
+            id_usuario=id_usuario,
+            titulo=f"Incidente #{nuevo_incidente.id_incidente} registrado",
+            mensaje=f"Tu reporte fue analizado por IA. Clasificacion: {ia_result['clasificacion']}. {ia_result['resumen'][:120]}",
+            tipo="NUEVO_INCIDENTE",
+            id_incidente=nuevo_incidente.id_incidente,
+        )
+    except Exception as exc:
+        logger.warning(f"No se pudo crear notificacion de registro: {exc}")
+
     return await obtener_detalle_incidente(nuevo_incidente.id_incidente, id_usuario, es_admin=False, es_taller=False, db=db)
 
 
@@ -330,6 +344,28 @@ async def actualizar_estado_incidente(id_incidente: int, id_usuario: int, data: 
     except Exception:
         await db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al actualizar el estado del servicio")
+
+    # Notificar al cliente del cambio de estado
+    try:
+        cliente_r = await db.execute(select(Cliente).where(Cliente.id_cliente == incidente.id_cliente))
+        cliente = cliente_r.scalar_one_or_none()
+        if cliente:
+            mensajes = {
+                "EN_PROCESO": "Tu incidente esta siendo atendido por el taller asignado.",
+                "RESUELTO":   "Tu incidente ha sido resuelto exitosamente. Gracias por usar nuestro servicio.",
+                "CANCELADO":  "Tu incidente ha sido cancelado.",
+            }
+            msg = mensajes.get(data.estado, f"El estado de tu incidente cambio a {data.estado}.")
+            await notificacion_service.crear_notificacion(
+                db=db,
+                id_usuario=cliente.id_usuario,
+                titulo=f"Incidente #{incidente.id_incidente} — {data.estado}",
+                mensaje=msg,
+                tipo="ESTADO_CAMBIO",
+                id_incidente=incidente.id_incidente,
+            )
+    except Exception as exc:
+        logger.warning(f"No se pudo crear notificacion de cambio de estado: {exc}")
 
     return await obtener_detalle_incidente(id_incidente, 0, es_admin=True, es_taller=False, db=db)
 

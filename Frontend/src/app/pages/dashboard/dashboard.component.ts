@@ -1,9 +1,10 @@
-import { Component, signal, computed, ViewEncapsulation, OnInit } from '@angular/core';
+import { Component, signal, computed, ViewEncapsulation, OnInit, OnDestroy } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { BitacoraService } from '../../services/bitacora.service';
+import { NotificacionesService } from '../../services/notificaciones.service';
 
 interface NavItem {
   label: string;
@@ -26,7 +27,7 @@ interface NavGroup {
   styleUrl: './dashboard.component.css',
   encapsulation: ViewEncapsulation.None,
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   sidebarOpen = signal(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
 
   navGroups = signal<NavGroup[]>([
@@ -58,23 +59,34 @@ export class DashboardComponent implements OnInit {
       section: 'GESTIÓN DE VEHÍCULOS',
       expanded: true,
       items: [
-        { label: 'Vehículos', icon: 'truck',   route: '/dashboard/vehiculos', roles: ['ADMINISTRADOR', 'CLIENTE'] },
+        { label: 'Vehículos', icon: 'truck',   route: '/dashboard/vehiculos', roles: ['CLIENTE'] },
       ],
     },
     {
       section: 'GESTIÓN DE INCIDENTES',
       expanded: true,
       items: [
-        { label: 'Registrar incidente', icon: 'plus-circle', route: '/dashboard/incidentes/nuevo', roles: ['ADMINISTRADOR', 'CLIENTE'] },
+        { label: 'Registrar incidente', icon: 'plus-circle', route: '/dashboard/incidentes/nuevo', roles: ['CLIENTE'] },
         { label: 'Incidentes', icon: 'alert-triangle', route: '/dashboard/incidentes', roles: ['ADMINISTRADOR', 'CLIENTE'] },
       ],
     },
     {
-      section: 'ASIGNACIÃ“N Y ATENCIÃ“N',
+      section: 'ASIGNACION Y ATENCION',
       expanded: true,
       items: [
-        { label: 'Solicitudes', icon: 'bell', route: '/dashboard/solicitudes-disponibles', roles: ['TALLER'] },
-        { label: 'Mis Servicios', icon: 'list', route: '/dashboard/servicios', roles: ['ADMINISTRADOR', 'TALLER'] },
+        { label: 'Solicitudes',    icon: 'bell',         route: '/dashboard/solicitudes-disponibles', roles: ['TALLER'] },
+        { label: 'Mis Servicios',  icon: 'list',         route: '/dashboard/servicios',               roles: ['ADMINISTRADOR', 'TALLER'] },
+        { label: 'Comunicación',   icon: 'chat',         route: '/dashboard/chats',                   roles: ['ADMINISTRADOR', 'TALLER', 'CLIENTE'] },
+        { label: 'Notificaciones', icon: 'notification', route: '/dashboard/notificaciones',          roles: ['ADMINISTRADOR', 'TALLER', 'CLIENTE'] },
+      ],
+    },
+    {
+      section: 'GESTION DE SERVICIOS',
+      expanded: true,
+      items: [
+        { label: 'Mis Incidentes', icon: 'alert-triangle', route: '/dashboard/incidentes', roles: ['CLIENTE'] },
+        { label: 'Mis Pagos',      icon: 'dollar',         route: '/dashboard/pagos',      roles: ['CLIENTE'] },
+        { label: 'Pagos (Admin)',  icon: 'dollar',         route: '/dashboard/pagos',      roles: ['ADMINISTRADOR'] },
       ],
     },
     {
@@ -93,30 +105,40 @@ export class DashboardComponent implements OnInit {
       .filter(g => g.items.length > 0);
   });
 
-  constructor(public auth: AuthService, private router: Router, private bitacora: BitacoraService) {}
+  constructor(public auth: AuthService, private router: Router, private bitacora: BitacoraService, public notif: NotificacionesService) {}
 
   ngOnInit() {
+    // Conectar WebSocket de notificaciones
+    const token = this.auth.getToken();
+    if (token) {
+      this.notif.conectar(token);
+      this.notif.contarNoLeidas().subscribe({ next: r => this.notif.noLeidas.set(r.count) });
+    }
+
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
         this.sidebarOpen.set(false);
       }
-      
-      // Auto-register navigation
+
       if (this.auth.getToken()) {
-        let modulo = 'Navegación';
+        let modulo = 'Navegacion';
         let accion = 'Acceso a ' + e.urlAfterRedirects;
-        
-        // Simple map
-        if (e.urlAfterRedirects.includes('/dashboard/usuarios')) modulo = 'Usuarios';
-        else if (e.urlAfterRedirects.includes('/dashboard/roles')) modulo = 'Roles y Permisos';
-        else if (e.urlAfterRedirects.includes('/dashboard/talleres')) modulo = 'Talleres';
-        else if (e.urlAfterRedirects.includes('/dashboard/vehiculos')) modulo = 'Vehículos';
-        else if (e.urlAfterRedirects.includes('/dashboard/incidentes')) modulo = 'Incidentes';
-        else if (e.urlAfterRedirects.includes('/dashboard/bitacora')) modulo = 'Bitácora';
-        
+
+        if (e.urlAfterRedirects.includes('/dashboard/usuarios'))       modulo = 'Usuarios';
+        else if (e.urlAfterRedirects.includes('/dashboard/roles'))     modulo = 'Roles y Permisos';
+        else if (e.urlAfterRedirects.includes('/dashboard/talleres'))  modulo = 'Talleres';
+        else if (e.urlAfterRedirects.includes('/dashboard/vehiculos')) modulo = 'Vehiculos';
+        else if (e.urlAfterRedirects.includes('/dashboard/incidentes'))modulo = 'Incidentes';
+        else if (e.urlAfterRedirects.includes('/dashboard/bitacora'))  modulo = 'Bitacora';
+        else if (e.urlAfterRedirects.includes('/dashboard/notificaciones')) modulo = 'Notificaciones';
+
         this.bitacora.logAction(modulo, accion).subscribe();
       }
     });
+  }
+
+  ngOnDestroy() {
+    this.notif.desconectar();
   }
 
   toggleGroup(group: NavGroup) {
@@ -147,6 +169,9 @@ export class DashboardComponent implements OnInit {
       'plus-circle': `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
       bell: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
       archive: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`,
+      notification: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
+      chat: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+      dollar: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
     };
     return icons[name] ?? '';
   }

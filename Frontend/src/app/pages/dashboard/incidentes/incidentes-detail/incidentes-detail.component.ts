@@ -1,13 +1,13 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { IncidenteService, IncidenteOut } from '../../../../core/services/incidente.service';
 import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-incidentes-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
     <div class="max-w-4xl mx-auto bg-white shadow rounded-lg p-6">
       <div class="flex items-center mb-6 gap-3 border-b pb-4">
@@ -42,6 +42,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                        'bg-yellow-100 text-yellow-800': inc.estado === 'REPORTADO',
                        'bg-blue-100 text-blue-800': inc.estado === 'EN_PROCESO',
                        'bg-green-100 text-green-800': inc.estado === 'RESUELTO',
+                       'bg-emerald-100 text-emerald-800': inc.estado === 'PAGADO',
                        'bg-red-100 text-red-800': inc.estado === 'CANCELADO'
                      }">
                  {{ inc.estado }}
@@ -82,6 +83,29 @@ import { AuthService } from '../../../../core/services/auth.service';
                     <i class="fas" [ngClass]="{'fa-magic': !asignando(), 'fa-spinner fa-spin': asignando()}"></i>
                     {{ asignando() ? 'El Sistema está evaluando...' : 'Simular Asignación del Sistema (CU12)' }}
                   </button>
+               </div>
+
+               <!-- Botón Chat CU15 - Visible cuando hay taller asignado -->
+               <div *ngIf="inc.id_taller" class="mt-4 border-t border-green-200 pt-3">
+                  <a [routerLink]="['/dashboard/chat', inc.id_incidente]"
+                     class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded focus:outline-none transition flex justify-center items-center gap-2">
+                    <i class="fas fa-comments"></i>
+                    Abrir Chat con el Taller
+                  </a>
+               </div>
+
+               <!-- Botón Pagar CU16 - Solo CLIENTE cuando RESUELTO -->
+               <div *ngIf="inc.estado === 'RESUELTO' && auth.rol === 'CLIENTE'" class="mt-3">
+                  <a [routerLink]="['/dashboard/pagos/checkout', inc.id_incidente]"
+                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded focus:outline-none transition flex justify-center items-center gap-2 text-sm">
+                    <i class="fas fa-credit-card"></i>
+                    Realizar Pago del Servicio
+                  </a>
+               </div>
+
+               <!-- Indicador PAGADO -->
+               <div *ngIf="inc.estado === 'PAGADO'" class="mt-3 bg-emerald-50 border border-emerald-200 rounded p-2.5 text-center">
+                  <span class="text-emerald-700 font-bold text-sm"><i class="fas fa-check-circle mr-1"></i>Servicio Pagado</span>
                </div>
              </div>
            </div>

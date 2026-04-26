@@ -1,0 +1,74 @@
+<div class="space-y-5">
+
+  <!-- Header -->
+  <div class="page-header mt-4">
+    <div>
+      <h1 class="page-title">Comunicación</h1>
+      <p class="page-sub">Chats activos con el taller asignado a tus incidentes</p>
+    </div>
+  </div>
+
+  <!-- Lista -->
+  <div class="form-card p-0 overflow-hidden">
+    @if (loading()) {
+      <div class="py-16 text-center text-slate-400">
+        <span class="spinner inline-block mr-2" style="border-top-color:#f97316;border-color:rgba(249,115,22,.3)"></span>
+        Cargando conversaciones...
+      </div>
+    } @else {
+
+      @for (inc of incidentes(); track inc.id_incidente) {
+        <a [routerLink]="['/dashboard/chat', inc.id_incidente]"
+           class="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 group">
+
+          <!-- Avatar -->
+          <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center shrink-0 shadow-sm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="font-semibold text-slate-900 text-sm leading-snug">
+                  Incidente #{{ inc.id_incidente }}
+                  <span class="font-normal text-slate-500 ml-1">—</span>
+                  <span class="font-normal text-slate-600 ml-1 text-xs">{{ inc.clasificacion_ia || 'Sin clasificar' }}</span>
+                </p>
+                <p class="text-xs text-slate-500 mt-0.5 truncate">
+                  <svg class="inline w-3 h-3 mr-0.5 -mt-0.5 text-orange-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                  </svg>
+                  {{ inc.taller_nombre || 'Taller asignado' }}
+                </p>
+              </div>
+              <div class="flex flex-col items-end gap-1 shrink-0">
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" [ngClass]="estadoClass(inc.estado)">
+                  {{ inc.estado }}
+                </span>
+                <span class="text-[10px] text-slate-400">{{ inc.created_at | date:'dd/MM/yy' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Flecha -->
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-300 group-hover:text-slate-500 transition-colors shrink-0">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </a>
+      } @empty {
+        <div class="py-16 text-center">
+          <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-slate-400">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <p class="text-slate-500 font-medium">No hay conversaciones activas</p>
+          <p class="text-slate-400 text-sm mt-1">El chat estará disponible cuando un taller sea asignado a tu incidente</p>
+        </div>
+      }
+    }
+  </div>
+</div>

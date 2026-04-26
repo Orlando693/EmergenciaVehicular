@@ -1,0 +1,240 @@
+<div class="max-w-2xl mx-auto space-y-5 py-4">
+
+  <!-- Header -->
+  <div class="flex items-center gap-3">
+    <button (click)="volver()"
+            class="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+    <div>
+      <h1 class="page-title leading-none">Pago del Servicio</h1>
+      <p class="page-sub mt-0.5">Incidente #{{ idIncidente() }}</p>
+    </div>
+  </div>
+
+  <!-- Error global -->
+  @if (error()) {
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- LOADING -->
+  @if (cargando()) {
+    <div class="form-card py-16 text-center text-slate-400">
+      <span class="spinner inline-block mr-2" style="border-top-color:#3b82f6;border-color:rgba(59,130,246,.3)"></span>
+      Cargando información del servicio...
+    </div>
+  }
+
+  <!-- ══ PASO 1: RESUMEN DE COSTO ══════════════════════════════════════════ -->
+  @if (!cargando() && paso() === 'COSTO' && costo()) {
+    <div class="form-card space-y-5">
+
+      <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
+        <div class="w-11 h-11 bg-emerald-500 rounded-xl flex items-center justify-center shadow-sm">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div>
+          <p class="font-bold text-slate-900">Resumen del Servicio</p>
+          <p class="text-sm text-slate-500">{{ costo()!.clasificacion_ia || 'Servicio vehicular' }}</p>
+        </div>
+      </div>
+
+      <!-- Desglose de costos -->
+      <div class="space-y-3">
+        <div class="flex justify-between items-center py-2 border-b border-slate-100">
+          <span class="text-sm text-slate-600">Costo del servicio</span>
+          <span class="font-bold text-slate-900 text-lg">${{ costo()!.monto_total | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex justify-between items-center py-2 border-b border-slate-100">
+          <div>
+            <span class="text-sm text-slate-600">Pago al taller</span>
+            <span class="ml-1 text-xs text-slate-400">(90%)</span>
+          </div>
+          <span class="text-sm font-semibold text-emerald-700">${{ costo()!.monto_taller | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex justify-between items-center py-2">
+          <div>
+            <span class="text-sm text-slate-600">Comisión plataforma</span>
+            <span class="ml-1 text-xs text-slate-400">(10%)</span>
+          </div>
+          <span class="text-sm font-semibold text-slate-500">${{ costo()!.comision_plataforma | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Total destacado -->
+      <div class="bg-slate-900 rounded-xl px-5 py-4 flex justify-between items-center">
+        <span class="text-white font-semibold">Total a pagar</span>
+        <span class="text-2xl font-black text-emerald-400">${{ costo()!.monto_total | number:'1.2-2' }}</span>
+      </div>
+
+      <button (click)="irAPago()"
+              class="btn-primary w-full justify-center py-3 text-base">
+        Continuar al pago →
+      </button>
+    </div>
+  }
+
+  <!-- ══ PASO 2: FORMULARIO DE PAGO ════════════════════════════════════════ -->
+  @if (!cargando() && paso() === 'PAGO' && costo()) {
+    <div class="form-card space-y-5">
+
+      <!-- Resumen pequeño -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex justify-between items-center">
+        <span class="text-sm text-slate-600">Total</span>
+        <span class="text-xl font-black text-slate-900">${{ costo()!.monto_total | number:'1.2-2' }}</span>
+      </div>
+
+      <!-- Selector de método -->
+      <div>
+        <p class="text-sm font-semibold text-slate-700 mb-3">Método de pago</p>
+        <div class="grid grid-cols-2 gap-2">
+          @for (m of metodos; track m.key) {
+            <button type="button"
+                    (click)="metodo.set(m.key)"
+                    class="flex flex-col items-center gap-1.5 px-3 py-3.5 rounded-xl border-2 text-sm font-semibold transition-all"
+                    [ngClass]="metodo() === m.key
+                      ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'">
+              <span class="text-xl leading-none">{{ m.icon }}</span>
+              {{ m.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Campos de tarjeta -->
+      @if (metodo() === 'TARJETA_CREDITO' || metodo() === 'TARJETA_DEBITO') {
+        <div class="space-y-4 pt-2">
+          <div>
+            <label class="form-label">Número de tarjeta</label>
+            <input type="text" [value]="numTarjeta" (input)="onCardInput($event)"
+                   placeholder="0000 0000 0000 0000" maxlength="19"
+                   class="form-input font-mono tracking-widest" />
+            <p class="text-xs text-slate-400 mt-1">Para simular un fallo, usa una tarjeta que termine en 0000.</p>
+          </div>
+          <div>
+            <label class="form-label">Nombre del titular</label>
+            <input type="text" [(ngModel)]="titular" placeholder="Nombre como aparece en la tarjeta" class="form-input" />
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Vencimiento</label>
+              <input type="text" [(ngModel)]="vencimiento" placeholder="MM/AA" maxlength="5" class="form-input" />
+            </div>
+            <div>
+              <label class="form-label">CVV</label>
+              <input type="password" [(ngModel)]="cvv" placeholder="•••" maxlength="4" class="form-input" />
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (metodo() === 'TRANSFERENCIA') {
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+          <p class="font-bold mb-1">Datos de transferencia</p>
+          <p>Banco: Banco Nacional Vehículos · Cuenta: <strong>001-0000-123456</strong></p>
+          <p>Beneficiario: <strong>EmergenciaVehicular S.A.</strong></p>
+        </div>
+      }
+
+      @if (metodo() === 'EFECTIVO') {
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+          <p class="font-bold mb-1">Pago en efectivo</p>
+          <p>El pago será confirmado al momento de la entrega del vehículo con el técnico asignado.</p>
+        </div>
+      }
+
+      <div class="flex gap-3 pt-2">
+        <button (click)="paso.set('COSTO')" class="btn-secondary flex-1 justify-center">
+          ← Atrás
+        </button>
+        <button (click)="pagar()" [disabled]="procesando()"
+                class="btn-primary flex-1 justify-center py-3">
+          @if (procesando()) {
+            <span class="spinner mr-2" style="border-color:rgba(255,255,255,.4);border-top-color:white"></span>
+            Procesando...
+          } @else {
+            🔒 Confirmar pago ${{ costo()!.monto_total | number:'1.2-2' }}
+          }
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ══ PASO 3: RESULTADO ══════════════════════════════════════════════════ -->
+  @if (!cargando() && paso() === 'RESULTADO' && resultado()) {
+
+    @if (resultado()!.estado === 'COMPLETADO') {
+      <!-- Éxito -->
+      <div class="form-card text-center space-y-5">
+        <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-2xl font-black text-slate-900">¡Pago exitoso!</h2>
+          <p class="text-slate-500 mt-1">Tu transacción fue procesada correctamente</p>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-xl divide-y divide-slate-200 text-sm text-left">
+          <div class="flex justify-between px-4 py-3">
+            <span class="text-slate-500">Referencia</span>
+            <span class="font-bold font-mono text-slate-900">{{ resultado()!.referencia }}</span>
+          </div>
+          <div class="flex justify-between px-4 py-3">
+            <span class="text-slate-500">Monto pagado</span>
+            <span class="font-bold text-emerald-700">${{ resultado()!.monto_total | number:'1.2-2' }}</span>
+          </div>
+          <div class="flex justify-between px-4 py-3">
+            <span class="text-slate-500">Método</span>
+            <span class="font-semibold text-slate-700">{{ resultado()!.metodo_pago | titlecase }}</span>
+          </div>
+          <div class="flex justify-between px-4 py-3">
+            <span class="text-slate-500">Fecha</span>
+            <span class="font-semibold text-slate-700">{{ resultado()!.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+        </div>
+
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-sm text-emerald-800">
+          El incidente ha sido marcado como <strong>PAGADO</strong>. ¡Gracias por usar EmergenciaVehicular!
+        </div>
+
+        <button (click)="volver()" class="btn-primary w-full justify-center">
+          Volver al incidente
+        </button>
+      </div>
+
+    } @else {
+      <!-- Error de pago -->
+      <div class="form-card text-center space-y-5">
+        <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-2xl font-black text-slate-900">Pago fallido</h2>
+          <p class="text-slate-500 mt-1">{{ resultado()!.descripcion_error }}</p>
+        </div>
+
+        <div class="flex gap-3">
+          <button (click)="volver()" class="btn-secondary flex-1 justify-center">Cancelar</button>
+          <button (click)="reintentar()" class="btn-primary flex-1 justify-center">
+            Reintentar pago
+          </button>
+        </div>
+      </div>
+    }
+  }
+
+</div>

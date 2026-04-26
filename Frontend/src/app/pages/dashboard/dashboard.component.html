@@ -93,13 +93,18 @@
       <div class="flex items-center gap-2">
 
         <!-- Notificaciones -->
-        <button class="relative p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+        <a routerLink="/dashboard/notificaciones"
+           class="relative p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
-          <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full ring-2 ring-white"></span>
-        </button>
+          @if (notif.noLeidas() > 0) {
+            <span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 ring-2 ring-white">
+              {{ notif.noLeidas() > 99 ? '99+' : notif.noLeidas() }}
+            </span>
+          }
+        </a>
 
         <!-- Separador -->
         <div class="w-px h-6 bg-slate-200 mx-1"></div>

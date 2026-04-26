@@ -9,7 +9,7 @@ from app.config import settings
 from app.database import engine, Base
 from app.models import *  # noqa: F401,F403 – registra todos los modelos en Base.metadata
 
-from app.routers import auth, usuarios, roles, talleres, tecnicos, vehiculos, incidentes, bitacora
+from app.routers import auth, usuarios, roles, talleres, tecnicos, vehiculos, incidentes, bitacora, notificaciones, chat, pagos
 
 
 @asynccontextmanager
@@ -48,6 +48,9 @@ app.include_router(tecnicos.router)
 app.include_router(vehiculos.router)
 app.include_router(incidentes.router)
 app.include_router(bitacora.router)
+app.include_router(notificaciones.router)
+app.include_router(chat.router)
+app.include_router(pagos.router)
 
 os.makedirs("public/uploads", exist_ok=True)
 app.mount("/public", StaticFiles(directory="public"), name="public")

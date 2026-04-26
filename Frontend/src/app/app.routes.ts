@@ -83,6 +83,26 @@ export const routes: Routes = [
         path: 'perfil',
         loadComponent: () => import('./pages/dashboard/perfil/perfil.component').then(m => m.PerfilComponent),
       },
+      {
+        path: 'notificaciones',
+        loadComponent: () => import('./pages/dashboard/notificaciones/notificaciones.component').then(m => m.NotificacionesComponent),
+      },
+      {
+        path: 'chats',
+        loadComponent: () => import('./pages/dashboard/chat/chats-list.component').then(m => m.ChatsListComponent),
+      },
+      {
+        path: 'chat/:id',
+        loadComponent: () => import('./pages/dashboard/chat/chat.component').then(m => m.ChatComponent),
+      },
+      {
+        path: 'pagos',
+        loadComponent: () => import('./pages/dashboard/pagos/mis-pagos.component').then(m => m.MisPagosComponent),
+      },
+      {
+        path: 'pagos/checkout/:id',
+        loadComponent: () => import('./pages/dashboard/pagos/pago-checkout.component').then(m => m.PagoCheckoutComponent),
+      },
     ],
   },
 
