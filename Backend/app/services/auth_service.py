@@ -16,9 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 async def login(email: str, password: str, db: AsyncSession) -> Token:
+    # Normalizar: BD puede tener mezcla de mayúsculas; el admin de crear_admin se guarda en minúsculas
+    email_norm = (email or "").strip().lower()
     result = await db.execute(
         select(Usuario)
-        .where(Usuario.email == email)
+        .where(func.lower(Usuario.email) == email_norm)
         .options(selectinload(Usuario.roles))
     )
     usuario = result.scalar_one_or_none()
