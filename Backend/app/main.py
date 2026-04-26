@@ -17,6 +17,23 @@ from app.routers import auth, usuarios, roles, talleres, tecnicos, vehiculos, in
 
 logger = logging.getLogger("emergencia.api")
 
+# Orígenes que NUNCA deben faltar (aunque en Railway CORS_ORIGINS apunte solo a localhost).
+_CORS_MANDATORY = (
+    "https://parcial1si2.web.app,https://parcial1si2.firebaseapp.com,"
+    "http://localhost:4200,http://127.0.0.1:4200,http://localhost:3000,http://127.0.0.1:3000"
+)
+# Regex de respaldo: mismo host en web.app o firebaseapp.com
+_CORS_ORIGIN_REGEX = r"^https://parcial1si2\.(web\.app|firebaseapp\.com)$"
+
+
+def _merge_cors_origins() -> list[str]:
+    out: set[str] = set()
+    for raw in (_CORS_MANDATORY + "," + (settings.CORS_ORIGINS or "")).split(","):
+        o = raw.strip().rstrip("/")
+        if o:
+            out.add(o)
+    return sorted(out)
+
 
 async def _init_db_schema() -> None:
     """Crea tablas y tipos ENUM si no existen. Ejecuta en background para no
@@ -44,25 +61,6 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="API REST para la Plataforma Inteligente de Atención de Emergencias Vehiculares",
     lifespan=lifespan,
-)
-
-# ── CORS ──────────────────────────────────────────────────────────────────────
-# Las peticiones desde Firebase (https://parcial1si2.web.app) y con JWT requieren
-# orígenes explícitos. Si CORS_ORIGINS queda "" (p. ej. variable vacía en Railway),
-# se usa el mismo listado que en app.config.
-_DEFAULT_CORS = (
-    "https://parcial1si2.web.app,https://parcial1si2.firebaseapp.com,"
-    "http://localhost:4200,http://127.0.0.1:4200,http://localhost:3000,http://127.0.0.1:3000"
-)
-_cors_raw = (settings.CORS_ORIGINS or "").strip() or _DEFAULT_CORS
-origins = [o.rstrip("/") for o in _cors_raw.split(",") if o.strip()]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 # ── Routers ───────────────────────────────────────────────────────────────────
@@ -116,3 +114,19 @@ async def health():
         "status": "ok" if db_ok else "degraded",
         "database": "ok" if db_ok else f"error: {db_error}",
     }
+
+
+# ── CORS (al final: envuelve toda la app, rutas y mounts) ─────────────────────
+# 1) Se fusionan CORS_MANDATORY + CORS_ORIGINS (Railway no puede “pisar” Firebase).
+# 2) allow_origin_regex cubre el mismo origen aunque haya un typo al listar.
+_cors_list = _merge_cors_origins()
+logger.info("CORS allow_origins (%d): %s", len(_cors_list), _cors_list)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_list,
+    allow_origin_regex=_CORS_ORIGIN_REGEX,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    max_age=86400,
+)
