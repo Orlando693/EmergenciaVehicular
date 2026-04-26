@@ -156,9 +156,9 @@ export class IncidentesFormComponent implements OnInit, AfterViewInit, OnDestroy
         this.map?.setView([lat, lng], 17);
       },
       () => {
-        this.errorMessage.set('No se pudo obtener la ubicacion GPS. Verifica los permisos del navegador o selecciona en el mapa.');
-      }
-    );
+          this.errorMessage.set('No se pudo obtener la ubicación GPS automáticamente. Puedes seleccionar en el mapa o simplemente ignorarlo y Generar el Diagnóstico con IA a continuación.');
+        },
+        { timeout: 10000 }
   }
 
   onImageChange(event: Event) {
