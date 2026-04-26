@@ -4,7 +4,9 @@ import logging
 import os
 import re
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -53,6 +55,16 @@ def _apply_cors_response_headers(response: Response, origin: str) -> None:
     response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Vary"] = "Origin"
+
+
+def _cors_dict_for_request(request: Request) -> dict[str, str]:
+    o = request.headers.get("origin")
+    if o and _cors_allows_origin(o):
+        return {
+            "Access-Control-Allow-Origin": o,
+            "Access-Control-Allow-Credentials": "true",
+        }
+    return {}
 
 
 class CORSEnforceMiddleware(BaseHTTPMiddleware):
@@ -107,6 +119,39 @@ app = FastAPI(
     description="API REST para la Plataforma Inteligente de Atención de Emergencias Vehiculares",
     lifespan=lifespan,
 )
+
+
+# Errores 4xx/5xx no pasan por el middleware (BaseHTTPMiddleware no añade CORS
+# a respuestas generadas por excepción). Añadimos CORS en los handlers.
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    h = _cors_dict_for_request(request)
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body},
+        headers=h,
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    h = _cors_dict_for_request(request)
+    if exc.headers:
+        h.update(dict(exc.headers))
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=h,
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Error no manejado en %s %s: %s", request.method, request.url.path, exc)
+    h = _cors_dict_for_request(request)
+    msg = "Error interno" if not settings.DEBUG else str(exc)
+    return JSONResponse(status_code=500, content={"detail": msg}, headers=h)
+
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(auth.router)

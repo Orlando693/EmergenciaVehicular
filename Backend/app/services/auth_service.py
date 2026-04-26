@@ -1,10 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.estado_util import texto_estado_usuario
 from app.core.security import verify_password, create_access_token
 from app.models.usuario import Usuario
 from app.schemas.auth import Token
@@ -23,10 +24,11 @@ async def login(email: str, password: str, db: AsyncSession) -> Token:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",
         )
-    if usuario.estado.value != "ACTIVO":
+    estado_txt = texto_estado_usuario(usuario.estado)
+    if estado_txt != "ACTIVO":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"La cuenta está {usuario.estado.value}",
+            detail=f"La cuenta está {estado_txt}",
         )
 
     roles = [r.nombre for r in usuario.roles]
@@ -34,7 +36,7 @@ async def login(email: str, password: str, db: AsyncSession) -> Token:
     await db.execute(
         update(Usuario)
         .where(Usuario.id_usuario == usuario.id_usuario)
-        .values(ultimo_acceso=datetime.utcnow())
+        .values(ultimo_acceso=datetime.now(timezone.utc))
     )
     await db.commit()
 

@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.estado_util import texto_estado_usuario
 from app.core.security import decode_token
 from app.database import get_db
 from app.models.usuario import Usuario
@@ -36,7 +37,7 @@ async def get_current_user(
         .options(selectinload(Usuario.roles))
     )
     usuario = result.scalar_one_or_none()
-    if usuario is None or usuario.estado.value != "ACTIVO":
+    if usuario is None or texto_estado_usuario(usuario.estado) != "ACTIVO":
         raise credentials_exception
     return usuario
 
