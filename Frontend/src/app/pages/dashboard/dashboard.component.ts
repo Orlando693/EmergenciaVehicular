@@ -39,12 +39,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ],
     },
     {
-      section: 'ADMINISTRACIÓN',
+      section: 'ADMINISTRACION',
       expanded: true,
       items: [
         { label: 'Usuarios',        icon: 'users',  route: '/dashboard/usuarios', roles: ['ADMINISTRADOR'] },
         { label: 'Roles y Permisos',icon: 'shield', route: '/dashboard/roles',    roles: ['ADMINISTRADOR'] },
-        { label: 'Bitácora',        icon: 'archive',route: '/dashboard/bitacora', roles: ['ADMINISTRADOR'] },
       ],
     },
     {
@@ -81,8 +80,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ],
     },
     {
-      section: 'GESTION DE SERVICIOS',
-      expanded: true,
+      section: 'GESTION DE SERVICIOS',      expanded: true,
       items: [
         { label: 'Mis Incidentes', icon: 'alert-triangle', route: '/dashboard/incidentes', roles: ['CLIENTE'] },
         { label: 'Mis Pagos',      icon: 'dollar',         route: '/dashboard/pagos',      roles: ['CLIENTE'] },
@@ -94,6 +92,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       expanded: true,
       items: [
         { label: 'Mi Perfil', icon: 'user', route: '/dashboard/perfil', roles: ['ADMINISTRADOR', 'TALLER', 'CLIENTE'] },
+      ],
+    },
+    {
+      section: 'BITACORA Y REPORTES',
+      expanded: true,
+      items: [
+        { label: 'Bitácora',  icon: 'archive', route: '/dashboard/bitacora', roles: ['ADMINISTRADOR'] },
+        { label: 'Reportes',  icon: 'report',  route: '/dashboard/reportes', roles: ['ADMINISTRADOR'] },
       ],
     },
   ]);
@@ -172,6 +178,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       notification: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
       chat: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
       dollar: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+      report: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
     };
     return icons[name] ?? '';
   }

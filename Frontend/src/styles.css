@@ -104,7 +104,12 @@
   .page-sub    { @apply text-sm text-slate-400 mt-0.5; }
 
   .table-card  { @apply bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden; }
-  .form-card   { @apply bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-5; }
+  .form-card   { @apply bg-white rounded-2xl border border-slate-100 shadow-sm p-5; }
+  .form-label  { @apply block text-xs font-semibold text-slate-600 mb-1; }
+  .form-input  { @apply w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-colors bg-white; }
+
+  .report-th { @apply px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider; }
+  .report-td { @apply px-4 py-3 text-sm text-slate-800; }
   .form-card-title { @apply text-base font-bold text-slate-900 mb-5; }
 
   .grid-form     { @apply grid grid-cols-1 sm:grid-cols-2 gap-4; }
@@ -219,4 +224,16 @@
 
   /* Tables scroll horizontally */
   .table-card { overflow-x: auto; }
+}
+
+/* ── Print styles ──────────────────────────────────────── */
+@media print {
+  body { background: white !important; }
+  .ev-sidebar, .sb-backdrop, header { display: none !important; }
+  main { padding: 0 !important; overflow: visible !important; }
+  .flex-1.flex.flex-col { display: block !important; }
+  .print\:hidden { display: none !important; }
+  .form-card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+  .print-section { break-inside: avoid; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

@@ -103,6 +103,10 @@ export const routes: Routes = [
         path: 'pagos/checkout/:id',
         loadComponent: () => import('./pages/dashboard/pagos/pago-checkout.component').then(m => m.PagoCheckoutComponent),
       },
+      {
+        path: 'reportes',
+        loadComponent: () => import('./pages/dashboard/reportes/reportes.component').then(m => m.ReportesComponent),
+      },
     ],
   },
 
