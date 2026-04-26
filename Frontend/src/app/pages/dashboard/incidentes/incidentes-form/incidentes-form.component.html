@@ -122,7 +122,7 @@
 
         <!-- Vehículo Afectado -->
         <div class="field-group">
-          <label class="field-label">Vehículo Afectado <span class="text-red-500">*</span></label>
+          <label class="field-label">Vehículo Afectado <span class="text-gray-400 text-xs ml-1">(Opcional)</span></label>
           <select formControlName="id_vehiculo" class="field-input"
                   [class.field-error]="f['id_vehiculo'].invalid && f['id_vehiculo'].touched">
             <option value="" disabled selected>Seleccione un vehículo...</option>
@@ -137,7 +137,7 @@
 
         <!-- Descripción -->
         <div class="field-group sm:col-span-2">
-          <label class="field-label">Descripción del problema <span class="text-red-500">*</span></label>
+          <label class="field-label">Descripción del problema <span class="text-gray-400 text-xs ml-1">(Opcional)</span></label>
           <textarea formControlName="descripcion" rows="4" class="field-input resize-none"
                     [class.field-error]="f['descripcion'].invalid && f['descripcion'].touched"
                     placeholder="Describe qué sucedió: ruidos, síntomas, circunstancias del accidente... Entre más detalle mejor diagnóstico recibirás."></textarea>
@@ -157,7 +157,7 @@
         <!-- ======= MAPA ======= -->
         <div class="field-group sm:col-span-2">
           <label class="field-label">
-            Ubicación en el Mapa <span class="text-red-500">*</span>
+            Ubicación en el Mapa <span class="text-gray-400 text-xs ml-1">(Opcional)</span>
             <span class="ml-2 text-xs font-normal text-slate-400">Haz clic en el mapa para marcar el lugar del incidente</span>
           </label>
 
@@ -191,7 +191,7 @@
           </div>
 
           @if (!latitud() && incidenteForm.touched) {
-            <p class="text-red-500 text-xs font-medium mt-1">Debes seleccionar la ubicación en el mapa</p>
+            <p class="text-red-500 text-xs font-medium mt-1"></p>
           }
         </div>
 

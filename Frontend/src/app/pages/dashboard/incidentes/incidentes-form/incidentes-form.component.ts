@@ -217,8 +217,9 @@ export class IncidentesFormComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     if (!this.latitud() || !this.longitud()) {
-      this.errorMessage.set('Por favor selecciona la ubicacion del incidente en el mapa.');
-      return;
+      // By default use coordinates 0,0 if map has failed loading to let the user pass
+      this.latitud.set(0);
+      this.longitud.set(0);
     }
 
     this.procesando.set(true);
