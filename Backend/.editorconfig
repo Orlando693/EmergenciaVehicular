@@ -1,0 +1,11 @@
+# Evita que requirements.txt (y texto plano) se guarde en UTF-16, lo cual rompe
+# `pip install -r` en Linux/Railway (caracteres nulos en el archivo).
+root = true
+
+[requirements.txt]
+charset = utf-8
+end_of_line = lf
+
+[*.py]
+charset = utf-8
+end_of_line = lf
