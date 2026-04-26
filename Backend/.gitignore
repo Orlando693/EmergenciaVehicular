@@ -38,3 +38,12 @@ Thumbs.db
 .pytest_cache/
 htmlcov/
 .coverage
+
+# Backups / comprimidos
+*.rar
+*.zip
+*.7z
+
+# Subidas de usuarios (no se versionan; el .gitkeep mantiene la carpeta)
+public/uploads/*
+!public/uploads/.gitkeep

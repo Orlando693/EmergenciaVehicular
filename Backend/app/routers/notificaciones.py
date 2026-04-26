@@ -33,11 +33,8 @@ async def marcar_leida(id_notificacion: int, db: DBDep, current_user: CurrentUse
     ok = await notificacion_service.marcar_leida(db, id_notificacion, current_user.id_usuario)
     if not ok:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notificacion no encontrada")
-    result = await notificacion_service.listar_notificaciones(db, current_user.id_usuario, skip=0, limit=1)
-    # Return the updated notification — re-fetch single
     from sqlalchemy import select
     from app.models.notificacion import Notificacion
-    from app.database import AsyncSession
     r = await db.execute(
         select(Notificacion).where(Notificacion.id_notificacion == id_notificacion)
     )

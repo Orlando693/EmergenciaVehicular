@@ -88,6 +88,58 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - Swagger UI: http://localhost:8000/docs
 - ReDoc:       http://localhost:8000/redoc
 
+## Despliegue en Railway
+
+### 1. Variables de entorno (en Railway → tu servicio → Variables)
+
+| Variable | Valor |
+|----------|-------|
+| `DATABASE_URL` | `postgresql+asyncpg://avnadmin:TU_PASSWORD@pg-3bd64a8c-netcrow.l.aivencloud.com:10829/defaultdb` |
+| `DB_SSL_REQUIRED` | `True` |
+| `SECRET_KEY` | Generar con `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `ALGORITHM` | `HS256` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` |
+| `DEBUG` | `False` |
+| `CORS_ORIGINS` | `https://parcial1si2.web.app` (sin `*` con credenciales) |
+| `GEMINI_API_KEY` | Tu clave real de Google AI Studio |
+| `UPLOAD_DIR` | `/data/uploads` (requiere Volume montado en `/data`) |
+
+### 2. Volume persistente para imágenes/audio
+
+Railway tiene **filesystem efímero**: cada redeploy borra el disco. Para que las
+fotos y audios subidos sobrevivan:
+
+1. En Railway → tu servicio → **Volumes** → **+ New Volume**
+2. Mount path: `/data`
+3. Setear `UPLOAD_DIR=/data/uploads` en Variables
+
+Si no creas el volumen, las imágenes anteriores se perderán al reiniciar pero
+el sistema seguirá funcionando para nuevas cargas.
+
+### 3. Primer deploy: sembrar roles, permisos y admin
+
+Tras el primer despliegue exitoso, ejecuta una sola vez (desde tu terminal local
+con Railway CLI o desde la UI → Shell):
+
+```bash
+railway run python crear_admin.py
+```
+
+Esto crea: roles (`CLIENTE`, `TALLER`, `ADMINISTRADOR`), permisos, y un usuario
+admin (`admin@emergencia.com` / `Admin1234`). **Cambia esa contraseña tras el
+primer login.**
+
+### 4. Healthchecks
+
+- `GET /` → ping rápido (Railway healthcheck por defecto).
+- `GET /health` → ping + verificación de la BD (`SELECT 1`).
+
+### 5. Frontend
+
+`Frontend/src/environments/environment.prod.ts` ya apunta a
+`https://emergenciavehicular-production.up.railway.app`. Si tu URL de Railway
+cambia, actualiza ese archivo y redeploya el frontend a Firebase Hosting.
+
 ## Flujo básico de prueba
 
 ```

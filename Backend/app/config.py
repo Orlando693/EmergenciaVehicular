@@ -19,6 +19,15 @@ class Settings(BaseSettings):
     # Google Gemini IA — obtén tu clave en https://aistudio.google.com/app/apikey
     GEMINI_API_KEY: str = ""
 
+    # Carpeta donde se guardan las subidas de imágenes/audio.
+    # Local:   "public/uploads"  (default, persiste mientras esté el repo)
+    # Railway: "/data/uploads"   (montar un Volume en /data para que persista)
+    UPLOAD_DIR: str = "public/uploads"
+
+    # Prefijo URL público bajo el que se sirven los archivos subidos.
+    # No cambiarlo salvo que sepas lo que haces (el frontend espera /public/uploads/...)
+    UPLOAD_URL_PREFIX: str = "/public/uploads"
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 

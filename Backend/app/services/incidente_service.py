@@ -3,6 +3,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.models.incidente import Incidente, IncidenteHistorial
 from app.models.cliente import Cliente
 from app.models.taller import Taller
@@ -19,6 +20,21 @@ from google import genai
 from google.genai import types as genai_types
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_upload_path(public_url: str | None) -> str | None:
+    """Convierte una URL pública (/public/uploads/X.jpg) al path real en disco.
+
+    Soporta tanto la convención por defecto (public/uploads) como un
+    UPLOAD_DIR personalizado (ej. /data/uploads en Railway con Volume)."""
+    if not public_url:
+        return None
+    prefix = settings.UPLOAD_URL_PREFIX.rstrip("/") + "/"
+    if public_url.startswith(prefix):
+        relative = public_url[len(prefix):]
+        return os.path.join(settings.UPLOAD_DIR, relative)
+    # Fallback: comportamiento histórico (URL relativa como "/public/uploads/X")
+    return public_url.lstrip("/")
 
 
 def _build_image_part(image_path: str):
@@ -115,16 +131,16 @@ async def procesar_con_ia(descripcion: str, audio_url: str | None, imagen_url: s
 
         # Imagen: se envia como inline bytes directamente
         if imagen_url:
-            image_path = imagen_url.lstrip("/")
-            image_part = _build_image_part(image_path)
+            image_path = _resolve_upload_path(imagen_url)
+            image_part = _build_image_part(image_path) if image_path else None
             if image_part:
                 content_parts.append(image_part)
                 fuentes_analizadas.append("imagen")
 
         # Audio: se sube al File API y se referencia
         if audio_url:
-            audio_path = audio_url.lstrip("/")
-            audio_ref = await asyncio.to_thread(_upload_and_wait_audio, client, audio_path)
+            audio_path = _resolve_upload_path(audio_url)
+            audio_ref = await asyncio.to_thread(_upload_and_wait_audio, client, audio_path) if audio_path else None
             if audio_ref:
                 content_parts.append(audio_ref)
                 fuentes_analizadas.append("audio")

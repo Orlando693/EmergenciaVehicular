@@ -2,6 +2,7 @@ import os
 import time
 from typing import Annotated
 from fastapi import APIRouter, status, Depends, UploadFile, File
+from app.config import settings
 from app.core.dependencies import DBDep, CurrentUser, require_roles
 from app.schemas.incidente import IncidenteOut, IncidenteCreate, IncidenteHistorialOut, IncidenteEstadoUpdate
 from app.services import incidente_service
@@ -26,16 +27,20 @@ async def upload_file(
     """
     Sube un archivo de evidencia (imagen o audio) al servidor para ser procesado por la IA.
     Retorna la URL relativa para adjuntar al payload de IncidenteCreate.
+
+    El directorio físico de almacenamiento se controla con la variable de entorno
+    UPLOAD_DIR (por defecto "public/uploads"). En Railway, configurar
+    UPLOAD_DIR=/data/uploads y montar un Volume en /data para persistencia.
     """
-    os.makedirs("public/uploads", exist_ok=True)
-    extension = os.path.splitext(file.filename)[1]
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    extension = os.path.splitext(file.filename or "")[1]
     filename = f"{int(time.time())}_{current_user.id_usuario}{extension}"
-    file_location = f"public/uploads/{filename}"
+    file_location = os.path.join(settings.UPLOAD_DIR, filename)
 
     with open(file_location, "wb") as f:
         f.write(await file.read())
 
-    return {"url": f"/public/uploads/{filename}"}
+    return {"url": f"{settings.UPLOAD_URL_PREFIX}/{filename}"}
 
 @router.patch(
     "/{id_incidente}/estado",
