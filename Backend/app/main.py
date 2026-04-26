@@ -67,6 +67,30 @@ def _cors_dict_for_request(request: Request) -> dict[str, str]:
     return {}
 
 
+def _chain_has_errno(exc: BaseException | None, errno: int) -> bool:
+    if exc is None:
+        return False
+    if isinstance(exc, OSError) and exc.errno == errno:
+        return True
+    return _chain_has_errno(exc.__cause__, errno) or _chain_has_errno(exc.__context__, errno)
+
+
+def _public_error_detail(exc: Exception) -> str | None:
+    """Mensaje seguro (sin traza) para el cliente cuando conocemos el fallo típico."""
+    if _chain_has_errno(exc, 2) or "Name or service not known" in str(exc):
+        return (
+            "No se puede conectar a PostgreSQL: el nombre del servidor en DATABASE_URL no se resuelve (DNS). "
+            "En Railway, abre Variables y pega de nuevo el connection string completo de Aiven (página del servicio → User & DB → conexión). "
+            "Sin comillas, sin saltos de línea; contraseña con caracteres raros codificada en la URL. "
+            "Hasta que /health muestre database ok, el login no funcionará."
+        )
+    if "connection refused" in str(exc).lower() or "Connection refused" in str(exc):
+        return (
+            "Conexión rechazada al puerto de PostgreSQL. Revisa el puerto en DATABASE_URL y el firewall (Aiven debe permitir conexión desde Internet / tu IP, no solo localhost)."
+        )
+    return None
+
+
 class CORSEnforceMiddleware(BaseHTTPMiddleware):
     """
     CORS explícito. CORSMiddleware de Starlette a veces no añade cabeceras en
@@ -149,7 +173,13 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.exception("Error no manejado en %s %s: %s", request.method, request.url.path, exc)
     h = _cors_dict_for_request(request)
-    msg = "Error interno" if not settings.DEBUG else str(exc)
+    public = _public_error_detail(exc)
+    if public:
+        msg = public
+    elif settings.DEBUG:
+        msg = str(exc)
+    else:
+        msg = "Error interno"
     return JSONResponse(status_code=500, content={"detail": msg}, headers=h)
 
 
