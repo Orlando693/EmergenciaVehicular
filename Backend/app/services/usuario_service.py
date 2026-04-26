@@ -18,7 +18,7 @@ async def _get_rol_or_404(nombre: str, db: AsyncSession) -> Rol:
 
 
 async def registrar_usuario(data: UsuarioCreate, db: AsyncSession) -> UsuarioOut:
-    existe = await db.execute(select(Usuario).where(Usuario.email == data.email))
+    existe = await db.execute(select(Usuario).where(func.lower(Usuario.email) == data.email.lower()))
     if existe.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="El email ya está registrado")
 

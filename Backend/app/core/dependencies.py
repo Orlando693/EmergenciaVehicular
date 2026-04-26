@@ -12,7 +12,7 @@ from app.core.security import decode_token
 from app.database import get_db
 from app.models.usuario import Usuario
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login/form")
 
 DBDep = Annotated[AsyncSession, Depends(get_db)]
 
