@@ -1,11 +1,12 @@
 from contextlib import asynccontextmanager
+import asyncio
+import logging
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
-import logging
-import os
 
 from app.config import settings
 from app.database import engine, Base, AsyncSessionLocal
@@ -17,11 +18,24 @@ from app.routers import auth, usuarios, roles, talleres, tecnicos, vehiculos, in
 logger = logging.getLogger("emergencia.api")
 
 
+async def _init_db_schema() -> None:
+    """Crea tablas y tipos ENUM si no existen. Ejecuta en background para no
+    bloquear el arranque: Railway hace healthcheck a / pocos segundos después
+    de levantar el proceso, y conectar a Aiven + create_all puede superar
+    el timeout o fallar con credenciales erróneas."""
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as exc:
+        logger.exception("init db schema failed (revisa DATABASE_URL, SSL, red): %s", exc)
+        return
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Crea tablas y tipos ENUM si no existen (idempotente).
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Importante: no await create_all aquí. Si bloquea, Uvicorn no acepta
+    # conexiones y el healthcheck de Railway falla.
+    asyncio.create_task(_init_db_schema())
     yield
 
 
