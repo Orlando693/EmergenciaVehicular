@@ -13,8 +13,13 @@ class Settings(BaseSettings):
     # SSL para proveedores cloud como Aiven (ponlo en True en producción con Aiven)
     DB_SSL_REQUIRED: bool = False
 
-    # Orígenes permitidos para CORS (separados por coma si son varios)
-    CORS_ORIGINS: str = ""
+    # Orígenes permitidos para CORS (separados por coma). Debe incluir el dominio
+    # de Firebase Hosting (p. ej. parcial1si2.web.app) o el login fallará en
+    # producción. Variable vacía en Railway se trata en main con el mismo listado.
+    CORS_ORIGINS: str = (
+        "https://parcial1si2.web.app,https://parcial1si2.firebaseapp.com,"
+        "http://localhost:4200,http://127.0.0.1:4200,http://localhost:3000,http://127.0.0.1:3000"
+    )
 
     # Google Gemini IA — obtén tu clave en https://aistudio.google.com/app/apikey
     GEMINI_API_KEY: str = ""

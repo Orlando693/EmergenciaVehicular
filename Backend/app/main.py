@@ -47,20 +47,20 @@ app = FastAPI(
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-# - Si CORS_ORIGINS está definido, se usan esos orígenes con credenciales.
-# - Si no está definido, se permite "*" SIN credenciales (combinación válida en
-#   navegadores; "*" + credenciales no es soportado por la spec de CORS).
-if settings.CORS_ORIGINS:
-    origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
-    allow_credentials = True
-else:
-    origins = ["*"]
-    allow_credentials = False
+# Las peticiones desde Firebase (https://parcial1si2.web.app) y con JWT requieren
+# orígenes explícitos. Si CORS_ORIGINS queda "" (p. ej. variable vacía en Railway),
+# se usa el mismo listado que en app.config.
+_DEFAULT_CORS = (
+    "https://parcial1si2.web.app,https://parcial1si2.firebaseapp.com,"
+    "http://localhost:4200,http://127.0.0.1:4200,http://localhost:3000,http://127.0.0.1:3000"
+)
+_cors_raw = (settings.CORS_ORIGINS or "").strip() or _DEFAULT_CORS
+origins = [o.rstrip("/") for o in _cors_raw.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=allow_credentials,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
