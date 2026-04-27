@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     # Google Gemini IA — obtén tu clave en https://aistudio.google.com/app/apikey
     GEMINI_API_KEY: str = ""
 
+    # Firebase Cloud Messaging. Configura uno de estos en Railway/local:
+    # FIREBASE_CREDENTIALS_PATH=/ruta/service-account.json
+    # FIREBASE_CREDENTIALS_JSON='{"type":"service_account",...}'
+    FIREBASE_CREDENTIALS_PATH: str = ""
+    FIREBASE_CREDENTIALS_JSON: str = ""
+
     # Carpeta donde se guardan las subidas de imágenes/audio.
     # Local:   "public/uploads"  (default, persiste mientras esté el repo)
     # Railway: "/data/uploads"   (montar un Volume en /data para que persista)

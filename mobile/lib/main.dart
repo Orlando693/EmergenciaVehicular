@@ -1,13 +1,16 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'core/services/auth_service.dart';
-import 'ui/pages/login/login_screen.dart';
+import 'core/services/push_notification_service.dart';
 import 'ui/pages/dashboard/dashboard_screen.dart';
+import 'ui/pages/login/login_screen.dart';
 import 'ui/shared/colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Intentar cargar la sesión si existe (ev_token en localStorage/SharedPreferences)
   final isLoggedIn = await AuthService.loadSession();
+  if (isLoggedIn) {
+    await PushNotificationService.init();
+  }
 
   runApp(MyApp(isLoggedIn: isLoggedIn));
 }

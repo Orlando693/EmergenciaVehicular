@@ -1,8 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
 
+from app.models.dispositivo_push import DispositivoPush
 from app.models.notificacion import Notificacion
 from app.core.ws_manager import ws_manager
+from app.services.firebase_push_service import enviar_push_token
 import logging
 
 logger = logging.getLogger(__name__)
@@ -41,7 +43,70 @@ async def crear_notificacion(
     except Exception as exc:
         logger.warning(f"[Notificacion] WS push fallido para usuario {id_usuario}: {exc}")
 
+    await _enviar_push_fcm(db, notif)
+
     return notif
+
+
+async def registrar_fcm_token(
+    db: AsyncSession,
+    id_usuario: int,
+    token: str,
+    platform: str | None = None,
+) -> DispositivoPush:
+    result = await db.execute(
+        select(DispositivoPush).where(DispositivoPush.fcm_token == token)
+    )
+    dispositivo = result.scalar_one_or_none()
+
+    if dispositivo:
+        dispositivo.id_usuario = id_usuario
+        dispositivo.platform = platform
+        dispositivo.activo = True
+    else:
+        dispositivo = DispositivoPush(
+            id_usuario=id_usuario,
+            fcm_token=token,
+            platform=platform,
+            activo=True,
+        )
+        db.add(dispositivo)
+
+    await db.commit()
+    await db.refresh(dispositivo)
+    return dispositivo
+
+
+async def _enviar_push_fcm(db: AsyncSession, notif: Notificacion) -> None:
+    result = await db.execute(
+        select(DispositivoPush).where(
+            DispositivoPush.id_usuario == notif.id_usuario,
+            DispositivoPush.activo == True,  # noqa: E712
+        )
+    )
+    dispositivos = result.scalars().all()
+
+    if not dispositivos:
+        return
+
+    data = {
+        "id_notificacion": str(notif.id_notificacion),
+        "tipo": notif.tipo,
+    }
+    if notif.id_incidente:
+        data["id_incidente"] = str(notif.id_incidente)
+
+    for dispositivo in dispositivos:
+        ok = await enviar_push_token(
+            dispositivo.fcm_token,
+            notif.titulo,
+            notif.mensaje,
+            data=data,
+        )
+        if not ok:
+            dispositivo.activo = False
+
+    await db.commit()
 
 
 async def listar_notificaciones(db: AsyncSession, id_usuario: int, skip: int = 0, limit: int = 20):

@@ -4,10 +4,24 @@ from typing import Annotated
 from app.core.dependencies import DBDep, CurrentUser, require_roles
 from app.core.ws_manager import ws_manager
 from app.core.security import decode_token
-from app.schemas.notificacion import NotificacionOut, NotificacionPage
+from app.schemas.notificacion import FCMTokenIn, FCMTokenOut, NotificacionOut, NotificacionPage
 from app.services import notificacion_service
 
 router = APIRouter(prefix="/notificaciones", tags=["Notificaciones", "CU14"])
+
+
+@router.post("/fcm-token", response_model=FCMTokenOut, status_code=status.HTTP_201_CREATED)
+async def registrar_fcm_token(
+    payload: FCMTokenIn,
+    db: DBDep,
+    current_user: CurrentUser,
+):
+    return await notificacion_service.registrar_fcm_token(
+        db,
+        current_user.id_usuario,
+        payload.token,
+        payload.platform,
+    )
 
 
 @router.get("", response_model=NotificacionPage)

@@ -6,6 +6,7 @@ from app.models.vehiculo import Vehiculo
 from app.models.incidente import Incidente, IncidenteHistorial
 from app.models.bitacora import Bitacora
 from app.models.notificacion import Notificacion
+from app.models.dispositivo_push import DispositivoPush
 from app.models.mensaje_chat import MensajeChat
 from app.models.pago import Pago
 
@@ -13,5 +14,5 @@ __all__ = [
     "Usuario", "Rol", "Permiso", "RolPermiso", "UsuarioRol",
     "Cliente", "Taller", "Tecnico", "Vehiculo",
     "Incidente", "IncidenteHistorial",
-    "Bitacora", "Notificacion", "MensajeChat", "Pago"
+    "Bitacora", "Notificacion", "DispositivoPush", "MensajeChat", "Pago"
 ]

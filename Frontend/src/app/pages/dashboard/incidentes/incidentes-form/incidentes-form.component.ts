@@ -30,6 +30,8 @@ export class IncidentesFormComponent implements OnInit, AfterViewInit, OnDestroy
 
   errorMessage = signal<string | null>(null);
   successMessage = signal<string | null>(null);
+  processMessage = signal<string | null>(null);
+  mapMessage = signal<string | null>(null);
 
   latitud = signal<number | null>(null);
   longitud = signal<number | null>(null);
@@ -87,11 +89,27 @@ export class IncidentesFormComponent implements OnInit, AfterViewInit, OnDestroy
 
   private initMap() {
     if (this.map) return;
-    this.map = L.map('incident-map').setView([4.6097, -74.0817], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const container = document.getElementById('incident-map');
+    if (!container) {
+      this.mapMessage.set('El mapa no esta disponible, pero puedes generar el diagnostico sin ubicacion.');
+      return;
+    }
+    try {
+      this.map = L.map('incident-map').setView([4.6097, -74.0817], 13);
+    } catch {
+      this.mapMessage.set('No se pudo cargar el mapa. Puedes continuar: se enviara ubicacion 0,0.');
+      return;
+    }
+
+    const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap contributors'
-    }).addTo(this.map);
+    });
+    tiles.on('tileerror', () => {
+      this.mapMessage.set('El mapa esta tardando en cargar. Puedes continuar: se enviara ubicacion 0,0.');
+    });
+    tiles.addTo(this.map);
+    setTimeout(() => this.map?.invalidateSize(), 350);
 
     this.map.on('click', (e: L.LeafletMouseEvent) => {
       this.setMapMarker(e.latlng.lat, e.latlng.lng);
@@ -144,7 +162,7 @@ export class IncidentesFormComponent implements OnInit, AfterViewInit, OnDestroy
 
   obtenerUbicacion() {
     if (!navigator.geolocation) {
-      this.errorMessage.set('La geolocalizacion no es soportada por este navegador.');
+      this.mapMessage.set('La geolocalizacion no es soportada por este navegador. Puedes continuar sin ubicacion.');
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -156,9 +174,10 @@ export class IncidentesFormComponent implements OnInit, AfterViewInit, OnDestroy
         this.map?.setView([lat, lng], 17);
       },
       () => {
-          this.errorMessage.set('No se pudo obtener la ubicación GPS automáticamente. Puedes seleccionar en el mapa o simplemente ignorarlo y Generar el Diagnóstico con IA a continuación.');
-        },
-        { timeout: 10000 }
+        this.mapMessage.set('No se pudo obtener la ubicacion GPS. Puedes seleccionar en el mapa o continuar sin ubicacion.');
+      },
+      { timeout: 10000 }
+    );
   }
 
   onImageChange(event: Event) {
@@ -210,6 +229,8 @@ export class IncidentesFormComponent implements OnInit, AfterViewInit, OnDestroy
 
   async onSubmit() {
     this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.processMessage.set(null);
 
     if (this.incidenteForm.invalid) {
       this.incidenteForm.markAllAsTouched();
@@ -220,21 +241,25 @@ export class IncidentesFormComponent implements OnInit, AfterViewInit, OnDestroy
       // By default use coordinates 0,0 if map has failed loading to let the user pass
       this.latitud.set(0);
       this.longitud.set(0);
+      this.mapMessage.set('Se enviara la solicitud sin ubicacion GPS precisa.');
     }
 
     this.procesando.set(true);
     this.mostrarResultado.set(false);
+    this.processMessage.set('Preparando tu reporte...');
 
     try {
       let imagenUrlV: string | undefined;
       let audioUrlV: string | undefined;
 
       if (this.imagenFile) {
+        this.processMessage.set('Subiendo imagen del incidente...');
         const resImg = await firstValueFrom(this.incidenteService.uploadEvidence(this.imagenFile));
         imagenUrlV = resImg.url;
       }
 
       if (this.audioFile) {
+        this.processMessage.set('Subiendo audio descriptivo...');
         const resAud = await firstValueFrom(this.incidenteService.uploadEvidence(this.audioFile));
         audioUrlV = resAud.url;
       }
@@ -248,18 +273,21 @@ export class IncidentesFormComponent implements OnInit, AfterViewInit, OnDestroy
         audio_url: audioUrlV
       };
 
+      this.processMessage.set('Consultando IA y generando diagnostico...');
       const res = await firstValueFrom(this.incidenteService.registrarIncidente(payload));
 
       this.bitacoraService.logAction('Incidentes', `Incidente registrado #${res.id_incidente} — Clasificación IA: ${res.clasificacion_ia ?? 'Pendiente'}`).subscribe();
 
       this.resultadoIA.set(res);
       this.mostrarResultado.set(true);
-      this.successMessage.set('Incidente registrado y analizado por IA exitosamente.');
+      this.successMessage.set(`Incidente #${res.id_incidente} registrado. Clasificacion IA: ${res.clasificacion_ia ?? 'OTRO'}.`);
+      this.processMessage.set(null);
       this.procesando.set(false);
 
     } catch (err: any) {
       this.procesando.set(false);
-      this.errorMessage.set(err.error?.detail ?? 'Ocurrio un error al registrar el incidente o subir archivos.');
+      this.processMessage.set(null);
+      this.errorMessage.set(err.error?.detail ?? 'No se pudo registrar el incidente. Revisa tu conexion e intenta de nuevo.');
     }
   }
 
@@ -267,3 +295,4 @@ export class IncidentesFormComponent implements OnInit, AfterViewInit, OnDestroy
     this.router.navigate(['/dashboard/incidentes']);
   }
 }
+

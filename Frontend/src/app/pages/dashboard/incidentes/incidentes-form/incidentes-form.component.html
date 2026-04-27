@@ -31,6 +31,12 @@
       {{ successMessage() }}
     </div>
   }
+  @if (processMessage()) {
+    <div class="alert info">
+      <span class="spinner mr-2"></span>
+      {{ processMessage() }}
+    </div>
+  }
 
   <!-- ===== RESULTADO IA (se muestra tras enviar) ===== -->
   @if (mostrarResultado() && resultadoIA(); as inc) {
@@ -76,6 +82,11 @@
         <p class="text-xs font-bold text-indigo-700 uppercase tracking-wide mb-2">Resumen del Análisis IA</p>
         <p class="text-sm text-slate-800 leading-relaxed">{{ inc.resumen_ia ?? 'Sin resumen disponible.' }}</p>
       </div>
+      @if (inc.resumen_ia?.includes('diagnostico preliminar local')) {
+        <div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 mb-5 text-sm">
+          Gemini no respondio en este intento. Se mostro un diagnostico local para no dejarte sin orientacion.
+        </div>
+      }
 
       <!-- Botón ir al detalle -->
       <div class="flex gap-3">
@@ -164,6 +175,11 @@
           <div class="rounded-xl overflow-hidden border border-slate-200 shadow-sm">
             <!-- El div del mapa debe tener un id único y altura fija -->
             <div id="incident-map" style="height: 340px; width: 100%; z-index: 0;"></div>
+            @if (mapMessage()) {
+              <div class="bg-amber-50 border-t border-amber-200 text-amber-800 px-3 py-2 text-xs">
+                {{ mapMessage() }}
+              </div>
+            }
 
             <!-- Barra inferior del mapa -->
             <div class="bg-slate-50 border-t border-slate-200 px-3 py-2.5 flex items-center gap-3">

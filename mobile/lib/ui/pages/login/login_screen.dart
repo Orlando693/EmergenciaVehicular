@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../shared/colors.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../dashboard/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -46,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (success) {
+      await PushNotificationService.init();
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const DashboardScreen()),

@@ -88,7 +88,7 @@ async def procesar_con_ia(descripcion: str, audio_url: str | None, imagen_url: s
     Procesa texto + imagen (inline bytes) + audio (File API).
     Si GEMINI_API_KEY no esta configurada devuelve analisis basico de texto.
     """
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY")
 
     if not api_key:
         logger.warning("GEMINI_API_KEY no configurada. Usando analisis de texto basico.")
@@ -170,7 +170,7 @@ RESUMEN: <resumen profesional de 2 oraciones>"""
 
         response = await asyncio.to_thread(
             client.models.generate_content,
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             contents=content_parts
         )
 
@@ -188,12 +188,20 @@ RESUMEN: <resumen profesional de 2 oraciones>"""
 
     except Exception as exc:
         logger.error(f"Error invocando Gemini: {exc}")
+        desc_lower = (descripcion or "").lower()
+        clasificacion = "MECANICO"
+        if any(w in desc_lower for w in ("choque", "accidente", "colision", "golpe", "impacto", "atropello")):
+            clasificacion = "COLISION"
+        elif any(w in desc_lower for w in ("neumatico", "llanta", "ponchado", "rueda", "pinchazo", "desinflad")):
+            clasificacion = "NEUMATICOS"
+        elif any(w in desc_lower for w in ("electrico", "bateria", "luz", "faro", "corto", "arranque", "no enciende", "no prende")):
+            clasificacion = "ELECTRICO"
         return {
-            "clasificacion": "MECANICO",
+            "clasificacion": clasificacion,
             "resumen": (
-                f"El sistema registro el incidente. "
-                f"Descripcion recibida: {descripcion[:120]}. "
-                "Se recomienda contactar al soporte tecnico para evaluacion."
+                "No se pudo completar la consulta externa con Gemini en este momento, "
+                f"pero se genero un diagnostico preliminar local de tipo {clasificacion}. "
+                "Mantente en un lugar seguro, evita mover el vehiculo si hay riesgo y espera asistencia."
             )
         }
 

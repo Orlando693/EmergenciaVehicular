@@ -8,6 +8,8 @@ class HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = AuthService.currentUser;
+    final esCliente = user?.rol == 'CLIENTE';
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -21,7 +23,7 @@ class HomeView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              '¡Bienvenido, ${user?.nombre ?? "Usuario"}!',
+              'Bienvenido, ${user?.nombre ?? "Usuario"}',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
@@ -35,7 +37,9 @@ class HomeView extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.blue950,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.slate400.withOpacity(0.3)),
+                border: Border.all(
+                  color: AppColors.slate400.withValues(alpha: 0.3),
+                ),
               ),
               child: Text(
                 'Rol activo: ${user?.rol ?? "Desconocido"}',
@@ -43,10 +47,12 @@ class HomeView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            const Text(
-              'Navega desde el menú inferior para usar las opciones de tu plan.',
+            Text(
+              esCliente
+                  ? 'Usa el menu inferior o el sidebar para abrir Diagnostico IA, Chat y Notificaciones.'
+                  : 'Navega desde el menu inferior para usar las opciones de tu plan.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.slate500, fontSize: 14),
+              style: const TextStyle(color: AppColors.slate500, fontSize: 14),
             ),
           ],
         ),

@@ -14,6 +14,7 @@ dnspython==2.8.0
 ecdsa==0.19.2
 email-validator==2.3.0
 fastapi==0.135.3
+firebase-admin==7.4.0
 google-ai-generativelanguage==0.6.15
 google-api-core==2.30.3
 google-api-python-client==2.194.0
