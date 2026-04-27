@@ -17,7 +17,14 @@ from app.config import settings
 from app.database import engine, Base, AsyncSessionLocal
 from app.models import *  # noqa: F401,F403 – registra todos los modelos en Base.metadata
 
-from app.routers import auth, usuarios, roles, talleres, tecnicos, vehiculos, incidentes, bitacora, notificaciones, chat, pagos, reportes
+from app.routers.general import auth
+from app.routers.administracion import usuarios, roles
+from app.routers.operaciones import talleres, tecnicos
+from app.routers.gestion_vehiculos import vehiculos
+from app.routers.gestion_incidentes import incidentes
+from app.routers.asignacion_atencion import notificaciones, chat
+from app.routers.gestion_servicios import pagos
+from app.routers.bitacora_reportes import bitacora, reportes
 
 
 logger = logging.getLogger("emergencia.api")
