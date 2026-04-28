@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from app.models.vehiculo import Vehiculo
 from app.models.cliente import Cliente
 from app.schemas.vehiculo import VehiculoCreate, VehiculoUpdate, VehiculoOut
+from app.services.asignacion_atencion import notificacion_service
 
 async def get_cliente_by_usuario_id(id_usuario: int, db: AsyncSession) -> Cliente:
     result = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario))
@@ -47,6 +48,14 @@ async def registrar_vehiculo(data: VehiculoCreate, id_usuario: int, db: AsyncSes
     except IntegrityError:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Error de integridad, posible placa duplicada")
+
+    await notificacion_service.crear_notificacion(
+        db=db,
+        id_usuario=id_usuario,
+        titulo="Vehiculo registrado",
+        mensaje=f"Tu vehiculo {nuevo_vehiculo.marca} {nuevo_vehiculo.modelo} con placa {nuevo_vehiculo.placa} fue registrado correctamente.",
+        tipo="VEHICULO",
+    )
 
     return VehiculoOut.model_validate(nuevo_vehiculo)
 
