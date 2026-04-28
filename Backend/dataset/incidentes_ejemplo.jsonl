@@ -1,0 +1,27 @@
+{"id":1,"rol":"cliente",
+"entrada":"Mi auto no enciende, el tablero prende muy debil y solo hace clic.",
+"salida":{"categoria":"electrico","probable_causa":"Bateria descargada o bornes flojos",
+"nivel_riesgo":"medio","recomendacion":"Revisar bornes, intentar puente de bateria y solicitar
+ asistencia si no arranca."}}
+
+{"id":2,"rol":"cliente",
+"entrada":"Se apaga cuando freno y huele a gasolina.",
+"salida":{"categoria":"motor","probable_causa":"Falla de inyectores, bujias o sensor de ralenti",
+"nivel_riesgo":"alto","recomendacion":"Evitar seguir conduciendo y pedir diagnostico mecanico."
+}}
+
+{"id":3,"rol":"cliente",
+"entrada":"Sale humo blanco y la aguja de temperatura sube rapido.",
+"salida":{"categoria":"refrigeracion","probable_causa":"Fuga de refrigerante o problema de junta de culata",
+"nivel_riesgo":"critico","recomendacion":"Apagar el motor y solicitar remolque."
+}}
+
+{"id":4,"rol":"cliente","entrada":"El freno esta muy suave y el auto tarda en parar.",
+"salida":{"categoria":"frenos","probable_causa":"Aire o fuga en el sistema de frenos",
+"nivel_riesgo":"critico","recomendacion":"No conducir y solicitar asistencia inmediata."
+}}
+
+{"id":5,"rol":"cliente","entrada":"El volante esta duro y hace ruido cuando giro.",
+"salida":{"categoria":"direccion","probable_causa":"Bajo fluido o falla de bomba de direccion",
+"nivel_riesgo":"alto","recomendacion":"Manejar solo lo minimo necesario y revisar direccion."
+}}

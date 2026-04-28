@@ -1,0 +1,12 @@
+id,sintomas,categoria,probable_causa,nivel_riesgo,recomendacion
+1,"El motor no enciende, las luces del tablero se ven debiles y se escucha un clic al girar la llave","electrico","Bateria descargada o bornes flojos","medio","Revisar bornes, intentar puente de bateria y evitar forzar el arranque repetidamente"
+2,"El auto se apaga al frenar, vibra en ralenti y huele a combustible","motor","Falla de inyectores, bujias o sensor de ralenti","alto","No conducir largas distancias, solicitar asistencia y revisar sistema de inyeccion"
+3,"Sale humo blanco del escape y el motor sube de temperatura","refrigeracion","Posible fuga de refrigerante o junta de culata comprometida","critico","Detener el vehiculo, apagar el motor y solicitar remolque"
+4,"El pedal de freno esta esponjoso y el vehiculo tarda en detenerse","frenos","Aire en el sistema o fuga de liquido de frenos","critico","No continuar conduciendo, revisar nivel de liquido y pedir asistencia inmediata"
+5,"La direccion esta dura y se escucha ruido al girar el volante","direccion","Bajo nivel de fluido hidraulico o falla en bomba de direccion","alto","Conducir solo si es necesario y a baja velocidad hasta revision tecnica"
+6,"El vehiculo pierde fuerza en subida y se enciende la luz de check engine","motor","Falla de sensores, filtro de combustible obstruido o problema de admision","medio","Realizar diagnostico con scanner y revisar filtros antes de continuar viajes largos"
+7,"Se escucha golpe metalico al pasar baches y el auto se inclina hacia un lado","suspension","Amortiguador, buje o rotula danada","alto","Evitar velocidad alta y revisar suspension antes de circular en carretera"
+8,"El aire acondicionado no enfria y se escucha un silbido al encenderlo","climatizacion","Bajo nivel de gas refrigerante o fuga en el sistema","bajo","Revisar presion del sistema y buscar fugas antes de recargar"
+9,"La caja automatica tarda en cambiar y da tirones al acelerar","transmision","Bajo nivel de fluido o desgaste interno de transmision","alto","Evitar aceleraciones bruscas y llevar a revision especializada"
+10,"El vehiculo se calienta en trafico pero baja la temperatura al avanzar","refrigeracion","Ventilador del radiador o termostato con falla","alto","Detenerse si la temperatura sube demasiado y revisar ventilador, fusibles y termostato"
+

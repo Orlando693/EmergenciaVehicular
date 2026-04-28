@@ -47,3 +47,6 @@ htmlcov/
 # Subidas de usuarios (no se versionan; el .gitkeep mantiene la carpeta)
 public/uploads/*
 !public/uploads/.gitkeep
+
+secrets/
+firebase-service-account.json
