@@ -105,14 +105,23 @@ class PushNotificationService {
 
   static Future<void> _showForegroundNotification(RemoteMessage message) async {
     final notification = message.notification;
-    final android = notification?.android;
+    final title = notification?.title ??
+        message.data['title'] ??
+        message.data['titulo'] ??
+        'Emergencia Vehicular';
+    final body = notification?.body ??
+        message.data['body'] ??
+        message.data['mensaje'] ??
+        'Tienes una nueva notificacion.';
 
-    if (notification == null || android == null) return;
+    if (title.toString().trim().isEmpty && body.toString().trim().isEmpty) {
+      return;
+    }
 
     await _localNotifications.show(
-      id: notification.hashCode,
-      title: notification.title,
-      body: notification.body,
+      id: message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch,
+      title: title.toString(),
+      body: body.toString(),
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           _channel.id,
@@ -120,7 +129,6 @@ class PushNotificationService {
           channelDescription: _channel.description,
           importance: Importance.max,
           priority: Priority.high,
-          icon: android.smallIcon,
         ),
       ),
       payload: jsonEncode(message.data),

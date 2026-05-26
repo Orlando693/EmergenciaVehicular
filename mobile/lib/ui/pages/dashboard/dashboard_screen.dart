@@ -4,6 +4,7 @@ import '../../shared/colors.dart';
 import '../incidentes/crear_incidente_screen.dart';
 import '../incidentes/mis_alertas_screen.dart';
 import '../login/login_screen.dart';
+import '../pagos/mis_pagos_screen.dart';
 import '../vehiculos/mis_vehiculos_screen.dart';
 import 'home_view.dart';
 import 'notificaciones_view.dart';
@@ -51,6 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (_isCliente) const MisVehiculosScreen(showAppBar: false),
       if (_isCliente) const MisAlertasScreen(showAppBar: false),
       if (_isCliente) const NotificacionesView(),
+      if (_isCliente) const MisPagosScreen(showAppBar: false),
       if (isAdmin) const UsuariosView(),
       const PerfilView(),
     ];
@@ -71,6 +73,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const BottomNavigationBarItem(
           icon: Icon(Icons.notifications_none),
           label: 'Avisos',
+        ),
+      if (_isCliente)
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.receipt_long),
+          label: 'Pagos',
         ),
       if (isAdmin)
         const BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Usuarios'),
@@ -163,7 +170,7 @@ class _DashboardDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = AuthService.currentUser;
     var perfilIndex = 1;
-    if (isCliente) perfilIndex = 4;
+    if (isCliente) perfilIndex = 5;
     if (isAdmin) perfilIndex = 2;
 
     return Drawer(
@@ -239,6 +246,12 @@ class _DashboardDrawer extends StatelessWidget {
                 label: 'Notificaciones',
                 index: 3,
                 onTap: () => onSelect(3),
+              ),
+              _drawerItem(
+                icon: Icons.receipt_long,
+                label: 'Mis pagos',
+                index: 4,
+                onTap: () => onSelect(4),
               ),
             ],
             if (isAdmin)
