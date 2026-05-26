@@ -7,6 +7,7 @@ class Bitacora(Base):
     __tablename__ = "bitacora"
 
     id_bitacora = Column(BigInteger, primary_key=True, autoincrement=True)
+    id_tenant = Column(BigInteger, ForeignKey("tenants.id_tenant"), nullable=False)
     modulo = Column(String(100), nullable=False)
     accion = Column(String(255), nullable=False)
     ip = Column(String(50))
@@ -16,3 +17,4 @@ class Bitacora(Base):
 
     id_usuario = Column(BigInteger, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True)
     usuario = relationship("Usuario")
+    tenant = relationship("Tenant")

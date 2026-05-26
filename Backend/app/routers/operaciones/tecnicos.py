@@ -15,21 +15,21 @@ async def crear_tecnico(
     db: DBDep,
 ):
     """El dueño del taller registra un técnico."""
-    taller = await taller_service.obtener_taller_por_usuario(current_user.id_usuario, db)
+    taller = await taller_service.obtener_taller_por_usuario(current_user.id_usuario, db, current_user.id_tenant)
     if taller.id_taller != id_taller:
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="No tienes permiso sobre este taller")
-    return await tecnico_service.crear_tecnico(id_taller, data, db)
+    return await tecnico_service.crear_tecnico(id_taller, current_user.id_tenant, data, db)
 
 
 @router.get("", response_model=list[TecnicoOut], summary="CU9 - Listar técnicos del taller")
 async def listar_tecnicos(id_taller: int, current_user: CurrentUser, db: DBDep):
-    return await tecnico_service.listar_tecnicos(id_taller, db)
+    return await tecnico_service.listar_tecnicos(id_taller, current_user.id_tenant, db)
 
 
 @router.get("/{id_tecnico}", response_model=TecnicoOut, summary="Obtener técnico")
 async def obtener_tecnico(id_taller: int, id_tecnico: int, db: DBDep, current_user: CurrentUser):
-    return await tecnico_service.obtener_tecnico(id_tecnico, db)
+    return await tecnico_service.obtener_tecnico(id_tecnico, id_taller, current_user.id_tenant, db)
 
 
 @router.put("/{id_tecnico}", response_model=TecnicoOut, summary="CU9 - Actualizar técnico")
@@ -40,11 +40,11 @@ async def actualizar_tecnico(
     current_user: CurrentUser,
     db: DBDep,
 ):
-    taller = await taller_service.obtener_taller_por_usuario(current_user.id_usuario, db)
+    taller = await taller_service.obtener_taller_por_usuario(current_user.id_usuario, db, current_user.id_tenant)
     if taller.id_taller != id_taller:
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="No tienes permiso sobre este taller")
-    return await tecnico_service.actualizar_tecnico(id_tecnico, data, db)
+    return await tecnico_service.actualizar_tecnico(id_tecnico, id_taller, current_user.id_tenant, data, db)
 
 
 @router.delete("/{id_tecnico}", summary="CU9 - Desactivar técnico")
@@ -54,8 +54,8 @@ async def eliminar_tecnico(
     current_user: CurrentUser,
     db: DBDep,
 ):
-    taller = await taller_service.obtener_taller_por_usuario(current_user.id_usuario, db)
+    taller = await taller_service.obtener_taller_por_usuario(current_user.id_usuario, db, current_user.id_tenant)
     if taller.id_taller != id_taller:
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="No tienes permiso sobre este taller")
-    return await tecnico_service.eliminar_tecnico(id_tecnico, db)
+    return await tecnico_service.eliminar_tecnico(id_tecnico, id_taller, current_user.id_tenant, db)

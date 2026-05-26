@@ -8,6 +8,7 @@ class Cliente(Base):
     __tablename__ = "clientes"
 
     id_cliente = Column(BigInteger, primary_key=True, autoincrement=True)
+    id_tenant = Column(BigInteger, ForeignKey("tenants.id_tenant"), nullable=False)
     id_usuario = Column(BigInteger, ForeignKey("usuarios.id_usuario", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, unique=True)
     ci = Column(String(30))
     direccion = Column(String(255))
@@ -16,4 +17,5 @@ class Cliente(Base):
     updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
     usuario = relationship("Usuario", back_populates="cliente")
+    tenant = relationship("Tenant")
     vehiculos = relationship("Vehiculo", back_populates="cliente")

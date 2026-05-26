@@ -206,13 +206,14 @@ RESUMEN: <resumen profesional de 2 oraciones>"""
         }
 
 
-async def registrar_incidente_inteligente(data: IncidenteCreate, id_usuario: int, db: AsyncSession) -> IncidenteOut:
-    cliente = await get_cliente_by_usuario_id(id_usuario, db)
+async def registrar_incidente_inteligente(data: IncidenteCreate, id_usuario: int, id_tenant: int, db: AsyncSession) -> IncidenteOut:
+    cliente = await get_cliente_by_usuario_id(id_usuario, id_tenant, db)
 
     # 1. Validar vehiculo
     vehiculo_stmt = select(Vehiculo).where(
         Vehiculo.id_vehiculo == data.id_vehiculo,
-        Vehiculo.id_cliente == cliente.id_cliente
+        Vehiculo.id_cliente == cliente.id_cliente,
+        Vehiculo.id_tenant == id_tenant,
     )
     veh_result = await db.execute(vehiculo_stmt)
     vehiculo = veh_result.scalar_one_or_none()
@@ -234,6 +235,7 @@ async def registrar_incidente_inteligente(data: IncidenteCreate, id_usuario: int
 
     # 3. Guardar Incidente
     nuevo_incidente = Incidente(
+        id_tenant=id_tenant,
         id_cliente=cliente.id_cliente,
         id_vehiculo=vehiculo.id_vehiculo,
         descripcion=data.descripcion,
@@ -253,6 +255,7 @@ async def registrar_incidente_inteligente(data: IncidenteCreate, id_usuario: int
 
     # Historial: evento de creacion
     hist_creacion = IncidenteHistorial(
+        id_tenant=id_tenant,
         id_incidente=nuevo_incidente.id_incidente,
         estado_anterior=None,
         estado_nuevo="REPORTADO",
@@ -270,15 +273,16 @@ async def registrar_incidente_inteligente(data: IncidenteCreate, id_usuario: int
             mensaje=f"Tu reporte fue analizado por IA. Clasificacion: {ia_result['clasificacion']}. {ia_result['resumen'][:120]}",
             tipo="NUEVO_INCIDENTE",
             id_incidente=nuevo_incidente.id_incidente,
+            id_tenant=id_tenant,
         )
     except Exception as exc:
         logger.warning(f"No se pudo crear notificacion de registro: {exc}")
 
-    return await obtener_detalle_incidente(nuevo_incidente.id_incidente, id_usuario, es_admin=False, es_taller=False, db=db)
+    return await obtener_detalle_incidente(nuevo_incidente.id_incidente, id_usuario, es_admin=False, es_taller=False, db=db, id_tenant=id_tenant)
 
 
-async def get_cliente_by_usuario_id(id_usuario: int, db: AsyncSession) -> Cliente:
-    result = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario))
+async def get_cliente_by_usuario_id(id_usuario: int, id_tenant: int, db: AsyncSession) -> Cliente:
+    result = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario, Cliente.id_tenant == id_tenant))
     cliente = result.scalar_one_or_none()
     if not cliente:
         raise HTTPException(
@@ -288,21 +292,21 @@ async def get_cliente_by_usuario_id(id_usuario: int, db: AsyncSession) -> Client
     return cliente
 
 
-async def consultar_historial_incidentes(id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession) -> list[IncidenteOut]:
+async def consultar_historial_incidentes(id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession, id_tenant: int) -> list[IncidenteOut]:
     stmt = select(Incidente).options(
         selectinload(Incidente.taller),
         selectinload(Incidente.vehiculo)
-    ).order_by(Incidente.created_at.desc())
+    ).where(Incidente.id_tenant == id_tenant).order_by(Incidente.created_at.desc())
 
     if not es_admin:
         if es_taller:
-            stmt_taller = select(Taller).where(Taller.id_usuario == id_usuario)
+            stmt_taller = select(Taller).where(Taller.id_usuario == id_usuario, Taller.id_tenant == id_tenant)
             res_taller = await db.execute(stmt_taller)
             taller = res_taller.scalar_one_or_none()
             id_taller = taller.id_taller if taller else -1
             stmt = stmt.where(Incidente.id_taller == id_taller)
         else:
-            cliente = await get_cliente_by_usuario_id(id_usuario, db)
+            cliente = await get_cliente_by_usuario_id(id_usuario, id_tenant, db)
             stmt = stmt.where(Incidente.id_cliente == cliente.id_cliente)
 
     result = await db.execute(stmt)
@@ -322,12 +326,13 @@ async def consultar_historial_incidentes(id_usuario: int, es_admin: bool, es_tal
     return response
 
 
-async def consultar_solicitudes_disponibles(db: AsyncSession) -> list[IncidenteOut]:
+async def consultar_solicitudes_disponibles(db: AsyncSession, id_tenant: int) -> list[IncidenteOut]:
     stmt = select(Incidente).options(
         selectinload(Incidente.vehiculo)
     ).where(
         Incidente.estado == "REPORTADO",
-        Incidente.id_taller.is_(None)
+        Incidente.id_taller.is_(None),
+        Incidente.id_tenant == id_tenant,
     ).order_by(Incidente.created_at.desc())
 
     result = await db.execute(stmt)
@@ -345,8 +350,8 @@ async def consultar_solicitudes_disponibles(db: AsyncSession) -> list[IncidenteO
     return response
 
 
-async def actualizar_estado_incidente(id_incidente: int, id_usuario: int, data: IncidenteEstadoUpdate, db: AsyncSession) -> IncidenteOut:
-    stmt_taller = select(Taller).where(Taller.id_usuario == id_usuario)
+async def actualizar_estado_incidente(id_incidente: int, id_usuario: int, data: IncidenteEstadoUpdate, db: AsyncSession, id_tenant: int) -> IncidenteOut:
+    stmt_taller = select(Taller).where(Taller.id_usuario == id_usuario, Taller.id_tenant == id_tenant)
     res_taller = await db.execute(stmt_taller)
     taller = res_taller.scalar_one_or_none()
 
@@ -355,7 +360,8 @@ async def actualizar_estado_incidente(id_incidente: int, id_usuario: int, data: 
 
     stmt = select(Incidente).where(
         Incidente.id_incidente == id_incidente,
-        Incidente.id_taller == taller.id_taller
+        Incidente.id_taller == taller.id_taller,
+        Incidente.id_tenant == id_tenant,
     )
     result = await db.execute(stmt)
     incidente = result.scalar_one_or_none()
@@ -373,6 +379,7 @@ async def actualizar_estado_incidente(id_incidente: int, id_usuario: int, data: 
     incidente.estado = data.estado
 
     historial = IncidenteHistorial(
+        id_tenant=id_tenant,
         id_incidente=incidente.id_incidente,
         estado_anterior=estado_viejo,
         estado_nuevo=data.estado,
@@ -389,7 +396,7 @@ async def actualizar_estado_incidente(id_incidente: int, id_usuario: int, data: 
 
     # Notificar al cliente del cambio de estado
     try:
-        cliente_r = await db.execute(select(Cliente).where(Cliente.id_cliente == incidente.id_cliente))
+        cliente_r = await db.execute(select(Cliente).where(Cliente.id_cliente == incidente.id_cliente, Cliente.id_tenant == id_tenant))
         cliente = cliente_r.scalar_one_or_none()
         if cliente:
             mensajes = {
@@ -405,22 +412,23 @@ async def actualizar_estado_incidente(id_incidente: int, id_usuario: int, data: 
                 mensaje=msg,
                 tipo="ESTADO_CAMBIO",
                 id_incidente=incidente.id_incidente,
+                id_tenant=id_tenant,
             )
     except Exception as exc:
         logger.warning(f"No se pudo crear notificacion de cambio de estado: {exc}")
 
-    return await obtener_detalle_incidente(id_incidente, 0, es_admin=True, es_taller=False, db=db)
+    return await obtener_detalle_incidente(id_incidente, 0, es_admin=True, es_taller=False, db=db, id_tenant=id_tenant)
 
 
-async def consultar_historial_servicio(id_incidente: int, id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession) -> list[IncidenteHistorialOut]:
-    stmt = select(Incidente).where(Incidente.id_incidente == id_incidente)
+async def consultar_historial_servicio(id_incidente: int, id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession, id_tenant: int) -> list[IncidenteHistorialOut]:
+    stmt = select(Incidente).where(Incidente.id_incidente == id_incidente, Incidente.id_tenant == id_tenant)
     if not es_admin:
         if es_taller:
-            stmt_taller = select(Taller).where(Taller.id_usuario == id_usuario)
+            stmt_taller = select(Taller).where(Taller.id_usuario == id_usuario, Taller.id_tenant == id_tenant)
             taller = (await db.execute(stmt_taller)).scalar_one_or_none()
             stmt = stmt.where(Incidente.id_taller == (taller.id_taller if taller else -1))
         else:
-            cliente = await get_cliente_by_usuario_id(id_usuario, db)
+            cliente = await get_cliente_by_usuario_id(id_usuario, id_tenant, db)
             stmt = stmt.where(Incidente.id_cliente == cliente.id_cliente)
 
     res = await db.execute(stmt)
@@ -428,19 +436,21 @@ async def consultar_historial_servicio(id_incidente: int, id_usuario: int, es_ad
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incidente no accesible")
 
     historial_stmt = select(IncidenteHistorial).where(
-        IncidenteHistorial.id_incidente == id_incidente
+        IncidenteHistorial.id_incidente == id_incidente,
+        IncidenteHistorial.id_tenant == id_tenant,
     ).order_by(IncidenteHistorial.created_at.desc())
     h_res = await db.execute(historial_stmt)
     return [IncidenteHistorialOut.model_validate(h) for h in h_res.scalars().all()]
 
 
-async def obtener_detalle_solicitud(id_incidente: int, db: AsyncSession) -> IncidenteOut:
+async def obtener_detalle_solicitud(id_incidente: int, db: AsyncSession, id_tenant: int) -> IncidenteOut:
     stmt = select(Incidente).options(
         selectinload(Incidente.vehiculo)
     ).where(
         Incidente.id_incidente == id_incidente,
         Incidente.estado == "REPORTADO",
-        Incidente.id_taller.is_(None)
+        Incidente.id_taller.is_(None),
+        Incidente.id_tenant == id_tenant,
     )
 
     result = await db.execute(stmt)
@@ -461,21 +471,22 @@ async def obtener_detalle_solicitud(id_incidente: int, db: AsyncSession) -> Inci
     return inc_data
 
 
-async def obtener_metricas_cliente(id_usuario: int, db: AsyncSession) -> dict:
+async def obtener_metricas_cliente(id_usuario: int, id_tenant: int, db: AsyncSession) -> dict:
     """Resumen de incidentes y pagos pendientes del cliente."""
-    cliente = await get_cliente_by_usuario_id(id_usuario, db)
+    cliente = await get_cliente_by_usuario_id(id_usuario, id_tenant, db)
 
     async def count_state(estado: str) -> int:
         r = await db.execute(
             select(func.count()).where(
                 Incidente.id_cliente == cliente.id_cliente,
-                Incidente.estado == estado
+                Incidente.estado == estado,
+                Incidente.id_tenant == id_tenant,
             ).select_from(Incidente)
         )
         return r.scalar_one()
 
     r_total = await db.execute(
-        select(func.count()).where(Incidente.id_cliente == cliente.id_cliente).select_from(Incidente)
+        select(func.count()).where(Incidente.id_cliente == cliente.id_cliente, Incidente.id_tenant == id_tenant).select_from(Incidente)
     )
     total = r_total.scalar_one()
     reportados   = await count_state("REPORTADO")
@@ -486,7 +497,7 @@ async def obtener_metricas_cliente(id_usuario: int, db: AsyncSession) -> dict:
 
     r_gastado = await db.execute(
         select(func.sum(Pago.monto_total))
-        .where(Pago.id_cliente == cliente.id_cliente, Pago.estado == "COMPLETADO")
+        .where(Pago.id_cliente == cliente.id_cliente, Pago.id_tenant == id_tenant, Pago.estado == "COMPLETADO")
     )
     gastado = float(r_gastado.scalar_one() or 0)
 
@@ -501,11 +512,11 @@ async def obtener_metricas_cliente(id_usuario: int, db: AsyncSession) -> dict:
     }
 
 
-async def obtener_detalle_incidente(id_incidente: int, id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession) -> IncidenteOut:
+async def obtener_detalle_incidente(id_incidente: int, id_usuario: int, es_admin: bool, es_taller: bool, db: AsyncSession, id_tenant: int) -> IncidenteOut:
     stmt = select(Incidente).options(
         selectinload(Incidente.vehiculo),
         selectinload(Incidente.taller)
-    ).where(Incidente.id_incidente == id_incidente)
+    ).where(Incidente.id_incidente == id_incidente, Incidente.id_tenant == id_tenant)
 
     result = await db.execute(stmt)
     incidente = result.scalar_one_or_none()
@@ -518,13 +529,13 @@ async def obtener_detalle_incidente(id_incidente: int, id_usuario: int, es_admin
 
     if not es_admin:
         if es_taller:
-            taller_stmt = select(Taller).where(Taller.id_usuario == id_usuario)
+            taller_stmt = select(Taller).where(Taller.id_usuario == id_usuario, Taller.id_tenant == id_tenant)
             taller_res = await db.execute(taller_stmt)
             taller = taller_res.scalar_one_or_none()
             if not taller or incidente.id_taller != taller.id_taller:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado para ver este servicio.")
         else:
-            cliente_stmt = select(Cliente).where(Cliente.id_usuario == id_usuario)
+            cliente_stmt = select(Cliente).where(Cliente.id_usuario == id_usuario, Cliente.id_tenant == id_tenant)
             cliente_res = await db.execute(cliente_stmt)
             cliente = cliente_res.scalar_one_or_none()
             if not cliente or incidente.id_cliente != cliente.id_cliente:

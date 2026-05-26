@@ -16,11 +16,12 @@ logger = logging.getLogger(__name__)
 async def verificar_acceso_chat(
     id_incidente: int,
     id_usuario: int,
+    id_tenant: int,
     rol: str,
     db: AsyncSession,
 ) -> Incidente:
     """Verifica que el usuario tiene derecho a acceder al chat de este incidente."""
-    r = await db.execute(select(Incidente).where(Incidente.id_incidente == id_incidente))
+    r = await db.execute(select(Incidente).where(Incidente.id_incidente == id_incidente, Incidente.id_tenant == id_tenant))
     incidente = r.scalar_one_or_none()
 
     if not incidente:
@@ -36,13 +37,13 @@ async def verificar_acceso_chat(
         return incidente
 
     if rol == "CLIENTE":
-        cr = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario))
+        cr = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario, Cliente.id_tenant == id_tenant))
         cliente = cr.scalar_one_or_none()
         if not cliente or cliente.id_cliente != incidente.id_cliente:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a este chat")
 
     elif rol == "TALLER":
-        tr = await db.execute(select(Taller).where(Taller.id_usuario == id_usuario))
+        tr = await db.execute(select(Taller).where(Taller.id_usuario == id_usuario, Taller.id_tenant == id_tenant))
         taller = tr.scalar_one_or_none()
         if not taller or taller.id_taller != incidente.id_taller:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a este chat")
@@ -52,20 +53,21 @@ async def verificar_acceso_chat(
 
 async def obtener_mensajes(
     id_incidente: int,
+    id_tenant: int,
     db: AsyncSession,
     skip: int = 0,
     limit: int = 100,
 ) -> dict:
     total_r = await db.execute(
         select(func.count())
-        .where(MensajeChat.id_incidente == id_incidente)
+        .where(MensajeChat.id_incidente == id_incidente, MensajeChat.id_tenant == id_tenant)
         .select_from(MensajeChat)
     )
     total = total_r.scalar_one()
 
     msgs_r = await db.execute(
         select(MensajeChat)
-        .where(MensajeChat.id_incidente == id_incidente)
+        .where(MensajeChat.id_incidente == id_incidente, MensajeChat.id_tenant == id_tenant)
         .order_by(MensajeChat.created_at.asc())
         .offset(skip).limit(limit)
     )
@@ -75,12 +77,14 @@ async def obtener_mensajes(
 async def crear_mensaje(
     id_incidente: int,
     id_usuario: int,
+    id_tenant: int,
     contenido: str,
     nombre_emisor: str,
     rol_emisor: str,
     db: AsyncSession,
 ) -> MensajeChat:
     msg = MensajeChat(
+        id_tenant=id_tenant,
         id_incidente=id_incidente,
         id_usuario=id_usuario,
         contenido=contenido,
@@ -96,6 +100,7 @@ async def crear_mensaje(
         await _notificar_destinatarios_chat(
             id_incidente=id_incidente,
             id_emisor=id_usuario,
+            id_tenant=id_tenant,
             rol_emisor=rol_emisor,
             nombre_emisor=nombre_emisor,
             contenido=contenido,
@@ -110,6 +115,7 @@ async def crear_mensaje(
 async def _notificar_destinatarios_chat(
     id_incidente: int,
     id_emisor: int,
+    id_tenant: int,
     rol_emisor: str,
     nombre_emisor: str,
     contenido: str,
@@ -119,7 +125,7 @@ async def _notificar_destinatarios_chat(
 
     Para no spamear, si ya existe una notificación MENSAJE_CHAT NO leída del mismo incidente
     para ese destinatario, se actualiza el mensaje y la fecha en lugar de crear una nueva."""
-    r = await db.execute(select(Incidente).where(Incidente.id_incidente == id_incidente))
+    r = await db.execute(select(Incidente).where(Incidente.id_incidente == id_incidente, Incidente.id_tenant == id_tenant))
     inc = r.scalar_one_or_none()
     if not inc or inc.id_taller is None:
         return
@@ -127,12 +133,12 @@ async def _notificar_destinatarios_chat(
     cliente_user_id: int | None = None
     taller_user_id: int | None = None
 
-    cr = await db.execute(select(Cliente).where(Cliente.id_cliente == inc.id_cliente))
+    cr = await db.execute(select(Cliente).where(Cliente.id_cliente == inc.id_cliente, Cliente.id_tenant == id_tenant))
     cliente = cr.scalar_one_or_none()
     if cliente:
         cliente_user_id = cliente.id_usuario
 
-    tr = await db.execute(select(Taller).where(Taller.id_taller == inc.id_taller))
+    tr = await db.execute(select(Taller).where(Taller.id_taller == inc.id_taller, Taller.id_tenant == id_tenant))
     taller = tr.scalar_one_or_none()
     if taller:
         taller_user_id = taller.id_usuario
@@ -168,6 +174,7 @@ async def _notificar_destinatarios_chat(
             .where(
                 Notificacion.id_usuario == id_dest,
                 Notificacion.id_incidente == id_incidente,
+                Notificacion.id_tenant == id_tenant,
                 Notificacion.tipo == "MENSAJE_CHAT",
                 Notificacion.leida == False,  # noqa: E712
             )
@@ -190,4 +197,5 @@ async def _notificar_destinatarios_chat(
                 mensaje=mensaje,
                 tipo="MENSAJE_CHAT",
                 id_incidente=id_incidente,
+                id_tenant=id_tenant,
             )

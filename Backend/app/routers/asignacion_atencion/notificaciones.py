@@ -19,6 +19,7 @@ async def registrar_fcm_token(
     return await notificacion_service.registrar_fcm_token(
         db,
         current_user.id_usuario,
+        current_user.id_tenant,
         payload.token,
         payload.platform,
     )
@@ -32,32 +33,32 @@ async def listar_notificaciones(
     limit: int = 20,
 ):
     return await notificacion_service.listar_notificaciones(
-        db, current_user.id_usuario, skip=skip, limit=limit
+        db, current_user.id_usuario, current_user.id_tenant, skip=skip, limit=limit
     )
 
 
 @router.get("/no-leidas")
 async def contar_no_leidas(db: DBDep, current_user: CurrentUser):
-    count = await notificacion_service.contar_no_leidas(db, current_user.id_usuario)
+    count = await notificacion_service.contar_no_leidas(db, current_user.id_usuario, current_user.id_tenant)
     return {"count": count}
 
 
 @router.patch("/{id_notificacion}/leer", response_model=NotificacionOut)
 async def marcar_leida(id_notificacion: int, db: DBDep, current_user: CurrentUser):
-    ok = await notificacion_service.marcar_leida(db, id_notificacion, current_user.id_usuario)
+    ok = await notificacion_service.marcar_leida(db, id_notificacion, current_user.id_usuario, current_user.id_tenant)
     if not ok:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notificacion no encontrada")
     from sqlalchemy import select
     from app.models.notificacion import Notificacion
     r = await db.execute(
-        select(Notificacion).where(Notificacion.id_notificacion == id_notificacion)
+        select(Notificacion).where(Notificacion.id_notificacion == id_notificacion, Notificacion.id_tenant == current_user.id_tenant)
     )
     return r.scalar_one()
 
 
 @router.patch("/leer-todas")
 async def marcar_todas_leidas(db: DBDep, current_user: CurrentUser):
-    await notificacion_service.marcar_todas_leidas(db, current_user.id_usuario)
+    await notificacion_service.marcar_todas_leidas(db, current_user.id_usuario, current_user.id_tenant)
     return {"message": "Todas las notificaciones marcadas como leidas"}
 
 

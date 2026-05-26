@@ -8,8 +8,8 @@ from app.models.cliente import Cliente
 from app.schemas.vehiculo import VehiculoCreate, VehiculoUpdate, VehiculoOut
 from app.services.asignacion_atencion import notificacion_service
 
-async def get_cliente_by_usuario_id(id_usuario: int, db: AsyncSession) -> Cliente:
-    result = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario))
+async def get_cliente_by_usuario_id(id_usuario: int, id_tenant: int, db: AsyncSession) -> Cliente:
+    result = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario, Cliente.id_tenant == id_tenant))
     cliente = result.scalar_one_or_none()
     if not cliente:
         raise HTTPException(
@@ -18,11 +18,11 @@ async def get_cliente_by_usuario_id(id_usuario: int, db: AsyncSession) -> Client
         )
     return cliente
 
-async def registrar_vehiculo(data: VehiculoCreate, id_usuario: int, db: AsyncSession) -> VehiculoOut:
-    cliente = await get_cliente_by_usuario_id(id_usuario, db)
+async def registrar_vehiculo(data: VehiculoCreate, id_usuario: int, id_tenant: int, db: AsyncSession) -> VehiculoOut:
+    cliente = await get_cliente_by_usuario_id(id_usuario, id_tenant, db)
     
     # Verificar si la placa ya existe para evitar errores no controlados
-    stmt = select(Vehiculo).where(Vehiculo.placa == data.placa)
+    stmt = select(Vehiculo).where(Vehiculo.placa == data.placa, Vehiculo.id_tenant == id_tenant)
     result = await db.execute(stmt)
     if result.scalar_one_or_none():
         raise HTTPException(
@@ -32,6 +32,7 @@ async def registrar_vehiculo(data: VehiculoCreate, id_usuario: int, db: AsyncSes
 
     nuevo_vehiculo = Vehiculo(
         id_cliente=cliente.id_cliente,
+        id_tenant=id_tenant,
         placa=data.placa,
         marca=data.marca,
         modelo=data.modelo,
@@ -55,23 +56,24 @@ async def registrar_vehiculo(data: VehiculoCreate, id_usuario: int, db: AsyncSes
         titulo="Vehiculo registrado",
         mensaje=f"Tu vehiculo {nuevo_vehiculo.marca} {nuevo_vehiculo.modelo} con placa {nuevo_vehiculo.placa} fue registrado correctamente.",
         tipo="VEHICULO",
+        id_tenant=id_tenant,
     )
 
     return VehiculoOut.model_validate(nuevo_vehiculo)
 
-async def consultar_vehiculos_cliente(id_usuario: int, db: AsyncSession) -> list[VehiculoOut]:
-    cliente = await get_cliente_by_usuario_id(id_usuario, db)
+async def consultar_vehiculos_cliente(id_usuario: int, id_tenant: int, db: AsyncSession) -> list[VehiculoOut]:
+    cliente = await get_cliente_by_usuario_id(id_usuario, id_tenant, db)
     
-    stmt = select(Vehiculo).where(Vehiculo.id_cliente == cliente.id_cliente)
+    stmt = select(Vehiculo).where(Vehiculo.id_cliente == cliente.id_cliente, Vehiculo.id_tenant == id_tenant)
     result = await db.execute(stmt)
     vehiculos = result.scalars().all()
     
     return [VehiculoOut.model_validate(v) for v in vehiculos]
 
-async def actualizar_vehiculo(id_vehiculo: int, data: VehiculoUpdate, id_usuario: int, db: AsyncSession) -> VehiculoOut:
-    cliente = await get_cliente_by_usuario_id(id_usuario, db)
+async def actualizar_vehiculo(id_vehiculo: int, data: VehiculoUpdate, id_usuario: int, id_tenant: int, db: AsyncSession) -> VehiculoOut:
+    cliente = await get_cliente_by_usuario_id(id_usuario, id_tenant, db)
     
-    stmt = select(Vehiculo).where(Vehiculo.id_vehiculo == id_vehiculo, Vehiculo.id_cliente == cliente.id_cliente)
+    stmt = select(Vehiculo).where(Vehiculo.id_vehiculo == id_vehiculo, Vehiculo.id_cliente == cliente.id_cliente, Vehiculo.id_tenant == id_tenant)
     result = await db.execute(stmt)
     vehiculo = result.scalar_one_or_none()
     
@@ -85,7 +87,7 @@ async def actualizar_vehiculo(id_vehiculo: int, data: VehiculoUpdate, id_usuario
     
     # If placa is being updated, verify it doesn't already exist for another vehicle
     if "placa" in update_data and update_data["placa"] != vehiculo.placa:
-        placa_stmt = select(Vehiculo).where(Vehiculo.placa == update_data["placa"])
+        placa_stmt = select(Vehiculo).where(Vehiculo.placa == update_data["placa"], Vehiculo.id_tenant == id_tenant)
         placa_result = await db.execute(placa_stmt)
         if placa_result.scalar_one_or_none():
             raise HTTPException(
@@ -105,10 +107,10 @@ async def actualizar_vehiculo(id_vehiculo: int, data: VehiculoUpdate, id_usuario
 
     return VehiculoOut.model_validate(vehiculo)
 
-async def obtener_vehiculo(id_vehiculo: int, id_usuario: int, db: AsyncSession) -> VehiculoOut:
-    cliente = await get_cliente_by_usuario_id(id_usuario, db)
+async def obtener_vehiculo(id_vehiculo: int, id_usuario: int, id_tenant: int, db: AsyncSession) -> VehiculoOut:
+    cliente = await get_cliente_by_usuario_id(id_usuario, id_tenant, db)
     
-    stmt = select(Vehiculo).where(Vehiculo.id_vehiculo == id_vehiculo, Vehiculo.id_cliente == cliente.id_cliente)
+    stmt = select(Vehiculo).where(Vehiculo.id_vehiculo == id_vehiculo, Vehiculo.id_cliente == cliente.id_cliente, Vehiculo.id_tenant == id_tenant)
     result = await db.execute(stmt)
     vehiculo = result.scalar_one_or_none()
     

@@ -12,6 +12,7 @@ class Tecnico(Base):
     __tablename__ = "tecnicos"
 
     id_tecnico = Column(BigInteger, primary_key=True, autoincrement=True)
+    id_tenant = Column(BigInteger, ForeignKey("tenants.id_tenant"), nullable=False)
     id_taller = Column(BigInteger, ForeignKey("talleres.id_taller", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     nombres = Column(String(100), nullable=False)
     apellidos = Column(String(100), nullable=False)
@@ -25,3 +26,4 @@ class Tecnico(Base):
     updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
     taller = relationship("Taller", back_populates="tecnicos")
+    tenant = relationship("Tenant")

@@ -18,7 +18,7 @@ from app.database import engine, Base, AsyncSessionLocal
 from app.models import *  # noqa: F401,F403 – registra todos los modelos en Base.metadata
 
 from app.routers.general import auth
-from app.routers.administracion import usuarios, roles
+from app.routers.administracion import usuarios, roles, tenants
 from app.routers.operaciones import talleres, tecnicos
 from app.routers.gestion_vehiculos import vehiculos
 from app.routers.gestion_incidentes import incidentes
@@ -130,6 +130,8 @@ class CORSEnforceMiddleware(BaseHTTPMiddleware):
 
 
 async def _init_db_schema() -> None:
+    # Bootstrap defensivo para entornos vacios. Las modificaciones de esquema en
+    # tablas existentes deben aplicarse con Alembic, no con create_all().
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -194,6 +196,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 app.include_router(auth.router)
 app.include_router(usuarios.router)
 app.include_router(roles.router)
+app.include_router(tenants.router)
 app.include_router(talleres.router)
 app.include_router(tecnicos.router)
 app.include_router(vehiculos.router)

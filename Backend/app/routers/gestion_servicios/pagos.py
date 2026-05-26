@@ -16,7 +16,7 @@ async def mis_pagos(
     _=Depends(require_roles("CLIENTE")),
 ):
     """Lista todos los pagos realizados por el cliente autenticado."""
-    return await pago_service.listar_pagos_cliente(current_user.id_usuario, db, skip=skip, limit=limit)
+    return await pago_service.listar_pagos_cliente(current_user.id_usuario, current_user.id_tenant, db, skip=skip, limit=limit)
 
 
 @router.get("/admin/todos", response_model=PagoPage)
@@ -28,7 +28,7 @@ async def todos_pagos(
     _=Depends(require_roles("ADMINISTRADOR")),
 ):
     """Lista todos los pagos (solo administradores)."""
-    return await pago_service.listar_todos_pagos(db, skip=skip, limit=limit)
+    return await pago_service.listar_todos_pagos(db, current_user.id_tenant, skip=skip, limit=limit)
 
 
 @router.get("/incidente/{id_incidente}/costo", response_model=CostoEstimado)
@@ -39,7 +39,7 @@ async def obtener_costo(
     _=Depends(require_roles("CLIENTE")),
 ):
     """Calcula el costo estimado del servicio y devuelve el pago existente si lo hay."""
-    return await pago_service.obtener_costo(id_incidente, current_user.id_usuario, db)
+    return await pago_service.obtener_costo(id_incidente, current_user.id_usuario, current_user.id_tenant, db)
 
 
 @router.get(
@@ -62,6 +62,7 @@ async def obtener_info_pago_endpoint(
     return await pago_service.obtener_info_pago(
         id_incidente=id_incidente,
         id_usuario=current_user.id_usuario,
+        id_tenant=current_user.id_tenant,
         es_admin=("ADMINISTRADOR" in nombres),
         es_taller=("TALLER" in nombres),
         es_cliente=("CLIENTE" in nombres),
@@ -81,6 +82,7 @@ async def realizar_pago(
     return await pago_service.iniciar_pago(
         id_incidente=id_incidente,
         id_usuario=current_user.id_usuario,
+        id_tenant=current_user.id_tenant,
         metodo_pago=body.metodo_pago,
         numero_tarjeta=body.numero_tarjeta,
         db=db,

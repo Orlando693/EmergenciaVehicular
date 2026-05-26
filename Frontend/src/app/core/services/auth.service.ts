@@ -7,6 +7,9 @@ import { LoginRequest, TokenResponse } from '../../models/auth.model';
 
 const TOKEN_KEY = 'ev_token';
 const SESSION_KEY = 'ev_session';
+const TENANT_ID_KEY = 'ev_id_tenant';
+const TENANT_NAME_KEY = 'ev_tenant_nombre';
+const TENANT_SLUG_KEY = 'ev_tenant_slug';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -23,6 +26,9 @@ export class AuthService {
         console.log(res);
         localStorage.setItem(TOKEN_KEY, res.access_token);
         localStorage.setItem(SESSION_KEY, JSON.stringify(res));
+        if (res.id_tenant != null) localStorage.setItem(TENANT_ID_KEY, String(res.id_tenant));
+        if (res.tenant_nombre) localStorage.setItem(TENANT_NAME_KEY, res.tenant_nombre);
+        if (res.tenant_slug) localStorage.setItem(TENANT_SLUG_KEY, res.tenant_slug);
         this.session.set(res);
       })
     );
@@ -31,6 +37,9 @@ export class AuthService {
   logout() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(TENANT_ID_KEY);
+    localStorage.removeItem(TENANT_NAME_KEY);
+    localStorage.removeItem(TENANT_SLUG_KEY);
     this.session.set(null);
     this.router.navigate(['/login']);
   }
@@ -53,6 +62,18 @@ export class AuthService {
 
   get idUsuario(): number {
     return this.session()?.id_usuario ?? 0;
+  }
+
+  get idTenant(): number {
+    return this.session()?.id_tenant ?? Number(localStorage.getItem(TENANT_ID_KEY) || 0);
+  }
+
+  get tenantNombre(): string {
+    return this.session()?.tenant_nombre ?? localStorage.getItem(TENANT_NAME_KEY) ?? '';
+  }
+
+  get tenantSlug(): string {
+    return this.session()?.tenant_slug ?? localStorage.getItem(TENANT_SLUG_KEY) ?? '';
   }
 
   private _loadSession(): TokenResponse | null {

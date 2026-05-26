@@ -8,6 +8,7 @@ class Vehiculo(Base):
     __tablename__ = "vehiculos"
 
     id_vehiculo = Column(BigInteger, primary_key=True, autoincrement=True)
+    id_tenant = Column(BigInteger, ForeignKey("tenants.id_tenant"), nullable=False)
     id_cliente = Column(BigInteger, ForeignKey("clientes.id_cliente", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     placa = Column(String(20), nullable=False, unique=True)
     marca = Column(String(80), nullable=False)
@@ -21,3 +22,4 @@ class Vehiculo(Base):
     updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
     cliente = relationship("Cliente", back_populates="vehiculos")
+    tenant = relationship("Tenant")

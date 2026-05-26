@@ -27,8 +27,8 @@ async def obtener_historial(
 ):
     """Obtiene el historial de mensajes de un incidente."""
     rol = current_user.roles[0].nombre if current_user.roles else "DESCONOCIDO"
-    await chat_service.verificar_acceso_chat(id_incidente, current_user.id_usuario, rol, db)
-    data = await chat_service.obtener_mensajes(id_incidente, db, skip=skip, limit=limit)
+    await chat_service.verificar_acceso_chat(id_incidente, current_user.id_usuario, current_user.id_tenant, rol, db)
+    data = await chat_service.obtener_mensajes(id_incidente, current_user.id_tenant, db, skip=skip, limit=limit)
     data["en_linea"] = chat_manager.participantes_en_linea(id_incidente)
     return data
 
@@ -65,12 +65,15 @@ async def ws_chat(id_incidente: int, ws: WebSocket, token: str = Query(...)):
         if not usuario:
             await ws.close(code=1008)
             return
+        if usuario.id_tenant is None or token_data.id_tenant is None or int(usuario.id_tenant) != int(token_data.id_tenant):
+            await ws.close(code=1008)
+            return
 
         rol = usuario.roles[0].nombre if usuario.roles else "DESCONOCIDO"
         nombre = f"{usuario.nombres} {usuario.apellidos}".strip()
 
         try:
-            await chat_service.verificar_acceso_chat(id_incidente, id_usuario, rol, db)
+            await chat_service.verificar_acceso_chat(id_incidente, id_usuario, usuario.id_tenant, rol, db)
         except HTTPException:
             await ws.close(code=1008)
             return
@@ -96,6 +99,7 @@ async def ws_chat(id_incidente: int, ws: WebSocket, token: str = Query(...)):
                 msg = await chat_service.crear_mensaje(
                     id_incidente=id_incidente,
                     id_usuario=id_usuario,
+                    id_tenant=token_data.id_tenant,
                     contenido=contenido,
                     nombre_emisor=nombre,
                     rol_emisor=rol,

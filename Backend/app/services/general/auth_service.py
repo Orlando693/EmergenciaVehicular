@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.config import settings
 from app.core.estado_util import texto_estado_usuario
 from app.core.security import create_access_token, verify_password
+from app.models.tenant import Tenant
 from app.models.usuario import Usuario
 from app.schemas.auth import Token
 
@@ -37,6 +38,20 @@ async def login(email: str, password: str, db: AsyncSession) -> Token:
             detail=f"La cuenta está {estado_txt}",
         )
 
+    if usuario.id_tenant is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="La cuenta no tiene tenant asignado. Ejecuta la migracion multi-tenant.",
+        )
+
+    tenant_result = await db.execute(select(Tenant).where(Tenant.id_tenant == usuario.id_tenant))
+    tenant = tenant_result.scalar_one_or_none()
+    if not tenant or tenant.estado != "ACTIVO":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El tenant de la cuenta no existe o no esta activo",
+        )
+
     roles = [r.nombre for r in usuario.roles]
 
     # Hora en el servidor PostgreSQL (Aiven): evita 500 por fechas aware/naive con asyncpg
@@ -61,6 +76,7 @@ async def login(email: str, password: str, db: AsyncSession) -> Token:
                 "sub": str(usuario.id_usuario),
                 "email": usuario.email,
                 "roles": roles,
+                "id_tenant": int(usuario.id_tenant),
             }
         )
     except Exception as exc:
@@ -75,6 +91,9 @@ async def login(email: str, password: str, db: AsyncSession) -> Token:
             rol=roles[0] if roles else "SIN_ROL",
             id_usuario=int(usuario.id_usuario),
             nombre=(f"{usuario.nombres or ''} {usuario.apellidos or ''}").strip() or "Usuario",
+            id_tenant=int(usuario.id_tenant),
+            tenant_nombre=tenant.nombre,
+            tenant_slug=tenant.slug,
         )
     except Exception as exc:
         logger.exception("Login: error al validar respuesta: %s", exc)

@@ -1,3 +1,4 @@
+from app.models.tenant import Tenant
 from app.models.usuario import Usuario, Rol, Permiso, RolPermiso, UsuarioRol
 from app.models.cliente import Cliente
 from app.models.taller import Taller
@@ -11,6 +12,7 @@ from app.models.mensaje_chat import MensajeChat
 from app.models.pago import Pago
 
 __all__ = [
+    "Tenant",
     "Usuario", "Rol", "Permiso", "RolPermiso", "UsuarioRol",
     "Cliente", "Taller", "Tecnico", "Vehiculo",
     "Incidente", "IncidenteHistorial",

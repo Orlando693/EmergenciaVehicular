@@ -8,6 +8,7 @@ class MensajeChat(Base):
     __tablename__ = "mensajes_chat"
 
     id_mensaje      = Column(BigInteger, primary_key=True, autoincrement=True)
+    id_tenant       = Column(BigInteger, ForeignKey("tenants.id_tenant"), nullable=False)
     id_incidente    = Column(BigInteger, ForeignKey("incidentes.id_incidente", ondelete="CASCADE"), nullable=False, index=True)
     id_usuario      = Column(BigInteger, ForeignKey("usuarios.id_usuario",  ondelete="SET NULL"),  nullable=True)
 
@@ -18,4 +19,5 @@ class MensajeChat(Base):
     created_at      = Column(DateTime, nullable=False, default=func.now())
 
     incidente = relationship("Incidente")
+    tenant    = relationship("Tenant")
     usuario   = relationship("Usuario")

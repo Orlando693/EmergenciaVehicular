@@ -81,8 +81,8 @@ async def asignar_permisos_a_rol(id_rol: int, id_permisos: list[int], db: AsyncS
     return rol
 
 
-async def asignar_roles_a_usuario(id_usuario: int, id_roles: list[int], db: AsyncSession) -> dict:
-    result = await db.execute(select(Usuario).where(Usuario.id_usuario == id_usuario))
+async def asignar_roles_a_usuario(id_usuario: int, id_roles: list[int], db: AsyncSession, id_tenant: int) -> dict:
+    result = await db.execute(select(Usuario).where(Usuario.id_usuario == id_usuario, Usuario.id_tenant == id_tenant))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 

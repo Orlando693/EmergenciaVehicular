@@ -31,33 +31,33 @@ def _parse_dt(s: str | None) -> datetime | None:
 
 # ── Resumen general ───────────────────────────────────────────────────────────
 
-async def resumen_general(db: AsyncSession) -> ResumenGeneral:
+async def resumen_general(db: AsyncSession, id_tenant: int) -> ResumenGeneral:
     # Incidentes por estado
     estados = ["REPORTADO", "EN_PROCESO", "RESUELTO", "PAGADO", "CANCELADO"]
     conteos: dict[str, int] = {}
     for est in estados:
         r = await db.execute(
-            select(func.count()).where(Incidente.estado == est).select_from(Incidente)
+            select(func.count()).where(Incidente.estado == est, Incidente.id_tenant == id_tenant).select_from(Incidente)
         )
         conteos[est] = r.scalar_one()
     total_inc = sum(conteos.values())
 
     # Usuarios y clientes
-    r_users   = await db.execute(select(func.count()).select_from(Usuario))
-    r_clients = await db.execute(select(func.count()).select_from(Cliente))
+    r_users   = await db.execute(select(func.count()).where(Usuario.id_tenant == id_tenant).select_from(Usuario))
+    r_clients = await db.execute(select(func.count()).where(Cliente.id_tenant == id_tenant).select_from(Cliente))
     r_talleres = await db.execute(
-        select(func.count()).where(Taller.estado_registro == "APROBADO").select_from(Taller)
+        select(func.count()).where(Taller.estado_registro == "APROBADO", Taller.id_tenant == id_tenant).select_from(Taller)
     )
 
     # Pagos
     r_pagos = await db.execute(
-        select(func.count()).where(Pago.estado == "COMPLETADO").select_from(Pago)
+        select(func.count()).where(Pago.estado == "COMPLETADO", Pago.id_tenant == id_tenant).select_from(Pago)
     )
     r_ingresos = await db.execute(
-        select(func.sum(Pago.monto_total)).where(Pago.estado == "COMPLETADO")
+        select(func.sum(Pago.monto_total)).where(Pago.estado == "COMPLETADO", Pago.id_tenant == id_tenant)
     )
     r_comision = await db.execute(
-        select(func.sum(Pago.comision_plataforma)).where(Pago.estado == "COMPLETADO")
+        select(func.sum(Pago.comision_plataforma)).where(Pago.estado == "COMPLETADO", Pago.id_tenant == id_tenant)
     )
 
     return ResumenGeneral(
@@ -80,12 +80,13 @@ async def resumen_general(db: AsyncSession) -> ResumenGeneral:
 
 async def reporte_incidentes(
     db: AsyncSession,
+    id_tenant: int,
     desde: str | None = None,
     hasta: str | None = None,
     estado: str | None = None,
     id_taller: int | None = None,
 ) -> ReporteIncidentes:
-    stmt = select(Incidente, Taller.razon_social).outerjoin(Taller, Incidente.id_taller == Taller.id_taller)
+    stmt = select(Incidente, Taller.razon_social).outerjoin(Taller, Incidente.id_taller == Taller.id_taller).where(Incidente.id_tenant == id_tenant)
 
     if _parse_dt(desde):
         stmt = stmt.where(Incidente.created_at >= _parse_dt(desde))
@@ -123,12 +124,14 @@ async def reporte_incidentes(
 
 async def reporte_usuarios(
     db: AsyncSession,
+    id_tenant: int,
     desde: str | None = None,
     hasta: str | None = None,
     rol: str | None = None,
 ) -> ReporteUsuarios:
     stmt = (
         select(Usuario)
+        .where(Usuario.id_tenant == id_tenant)
         .options(selectinload(Usuario.roles))
         .order_by(Usuario.created_at.desc())
     )
@@ -165,8 +168,8 @@ async def reporte_usuarios(
 
 # ── Talleres ──────────────────────────────────────────────────────────────────
 
-async def reporte_talleres(db: AsyncSession) -> ReporteTalleres:
-    talleres_r = await db.execute(select(Taller))
+async def reporte_talleres(db: AsyncSession, id_tenant: int) -> ReporteTalleres:
+    talleres_r = await db.execute(select(Taller).where(Taller.id_tenant == id_tenant))
     talleres = talleres_r.scalars().all()
 
     items: list[ItemTaller] = []
@@ -175,23 +178,25 @@ async def reporte_talleres(db: AsyncSession) -> ReporteTalleres:
     for t in talleres:
         # Servicios totales (incidentes asignados)
         r_total = await db.execute(
-            select(func.count()).where(Incidente.id_taller == t.id_taller).select_from(Incidente)
+            select(func.count()).where(Incidente.id_taller == t.id_taller, Incidente.id_tenant == id_tenant).select_from(Incidente)
         )
         total_svc = r_total.scalar_one()
 
         r_comp = await db.execute(
             select(func.count()).where(
                 Incidente.id_taller == t.id_taller,
+                Incidente.id_tenant == id_tenant,
                 Incidente.estado.in_(["RESUELTO", "PAGADO"])
             ).select_from(Incidente)
         )
         comp_svc = r_comp.scalar_one()
 
         # Ingresos del taller (de pagos completados)
-        sub_inc = select(Incidente.id_incidente).where(Incidente.id_taller == t.id_taller)
+        sub_inc = select(Incidente.id_incidente).where(Incidente.id_taller == t.id_taller, Incidente.id_tenant == id_tenant)
         r_ing = await db.execute(
             select(func.sum(Pago.monto_taller)).where(
                 Pago.id_incidente.in_(sub_inc),
+                Pago.id_tenant == id_tenant,
                 Pago.estado == "COMPLETADO"
             )
         )
@@ -214,12 +219,13 @@ async def reporte_talleres(db: AsyncSession) -> ReporteTalleres:
 
 async def reporte_pagos(
     db: AsyncSession,
+    id_tenant: int,
     desde: str | None = None,
     hasta: str | None = None,
     estado: str | None = None,
     metodo: str | None = None,
 ) -> ReportePagos:
-    stmt = select(Pago).order_by(Pago.created_at.desc())
+    stmt = select(Pago).where(Pago.id_tenant == id_tenant).order_by(Pago.created_at.desc())
 
     if _parse_dt(desde):
         stmt = stmt.where(Pago.created_at >= _parse_dt(desde))
