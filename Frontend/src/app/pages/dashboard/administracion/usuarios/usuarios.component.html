@@ -179,6 +179,27 @@
                           (click)="toggleEstado(u)">
                     {{ u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
                   </button>
+                  @if (u.estado === 'BLOQUEADO') {
+                    <button class="usr-action-btn usr-act-btn"
+                            title="Desbloquear usuario"
+                            (click)="desbloquear(u)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                      </svg>
+                      Desbloquear
+                    </button>
+                  } @else {
+                    <button class="usr-action-btn text-rose-600 border-rose-200 hover:bg-rose-50"
+                            title="Bloquear usuario"
+                            (click)="bloquear(u)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 0-9.9 1"></path>
+                      </svg>
+                      Bloquear
+                    </button>
+                  }
                 </div>
               </td>
             </tr>

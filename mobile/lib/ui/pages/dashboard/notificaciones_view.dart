@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/notificacion_service.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../../shared/colors.dart';
 import '../chat/chat_screen.dart';
 
@@ -19,6 +20,7 @@ class _NotificacionesViewState extends State<NotificacionesView> {
   @override
   void initState() {
     super.initState();
+    PushNotificationService.registrarTokenActual();
     _cargar();
   }
 

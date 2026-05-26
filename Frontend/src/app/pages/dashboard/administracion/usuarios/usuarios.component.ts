@@ -130,4 +130,26 @@ export class UsuariosComponent implements OnInit {
       error: (err) => this.error.set(err.error?.detail ?? 'Error al cambiar estado'),
     });
   }
+
+  desbloquear(u: Usuario) {
+    this.srv.cambiarEstado(u.id_usuario, 'ACTIVO').subscribe({
+      next: (updated) => {
+        this.usuarios.update(list => list.map(x => x.id_usuario === u.id_usuario ? updated : x));
+        this.success.set('Usuario desbloqueado correctamente');
+        setTimeout(() => this.success.set(''), 3000);
+      },
+      error: (err) => this.error.set(err.error?.detail ?? 'Error al desbloquear usuario'),
+    });
+  }
+
+  bloquear(u: Usuario) {
+    this.srv.cambiarEstado(u.id_usuario, 'BLOQUEADO').subscribe({
+      next: (updated) => {
+        this.usuarios.update(list => list.map(x => x.id_usuario === u.id_usuario ? updated : x));
+        this.success.set('Usuario bloqueado correctamente');
+        setTimeout(() => this.success.set(''), 3000);
+      },
+      error: (err) => this.error.set(err.error?.detail ?? 'Error al bloquear usuario'),
+    });
+  }
 }

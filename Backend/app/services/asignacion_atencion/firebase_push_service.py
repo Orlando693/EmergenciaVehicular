@@ -29,7 +29,7 @@ def _firebase_ready() -> bool:
         elif settings.FIREBASE_CREDENTIALS_PATH:
             cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
         else:
-            logger.info("Firebase push desactivado: no hay credenciales configuradas")
+            logger.warning("Firebase push desactivado: no hay credenciales configuradas")
             return False
 
         initialize_app(cred)
@@ -44,9 +44,9 @@ async def enviar_push_token(
     titulo: str,
     mensaje: str,
     data: dict[str, str] | None = None,
-) -> bool:
+) -> bool | None:
     if not _firebase_ready():
-        return False
+        return None
 
     from firebase_admin import messaging
 

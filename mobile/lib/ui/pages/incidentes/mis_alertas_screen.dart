@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/services/incidente_service.dart';
 import '../../shared/colors.dart';
 import '../chat/chat_screen.dart';
+import '../pagos/pago_checkout_screen.dart';
 
 class MisAlertasScreen extends StatefulWidget {
   final bool showAppBar;
@@ -99,11 +100,14 @@ class _MisAlertasScreenState extends State<MisAlertasScreen> {
     final estado = item['estado']?.toString() ?? 'DESCONOCIDO';
     if (estado == 'ASIGNADO' || estado == 'EN_PROCESO') {
       estadoColor = AppColors.orange500;
-    } else if (estado == 'RESUELTO') {
+    } else if (estado == 'RESUELTO' || estado == 'PAGADO') {
       estadoColor = Colors.green;
     } else if (estado == 'CANCELADO') {
       estadoColor = AppColors.red500;
     }
+
+    final puedePagar = estado == 'RESUELTO';
+    final pagado = estado == 'PAGADO';
 
     return Card(
       color: AppColors.slate800,
@@ -202,6 +206,61 @@ class _MisAlertasScreenState extends State<MisAlertasScreen> {
               ),
             ],
             const SizedBox(height: 16),
+            if (pagado) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.35)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Servicio pagado correctamente',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (puedePagar) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final id = item['id_incidente'];
+                    if (id is! int) return;
+
+                    final paid = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => PagoCheckoutScreen(idIncidente: id),
+                      ),
+                    );
+
+                    if (paid == true) {
+                      await _cargarAlertas();
+                    }
+                  },
+                  icon: const Icon(Icons.payments_outlined),
+                  label: const Text('Pagar servicio'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.orange500,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(

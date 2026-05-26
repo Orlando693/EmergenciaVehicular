@@ -87,6 +87,11 @@ async def _enviar_push_fcm(db: AsyncSession, notif: Notificacion) -> None:
     dispositivos = result.scalars().all()
 
     if not dispositivos:
+        logger.warning(
+            "[Notificacion] Usuario %s no tiene dispositivos FCM activos para notificacion %s",
+            notif.id_usuario,
+            notif.id_notificacion,
+        )
         return
 
     data = {
@@ -103,8 +108,23 @@ async def _enviar_push_fcm(db: AsyncSession, notif: Notificacion) -> None:
             notif.mensaje,
             data=data,
         )
-        if not ok:
+        if ok is True:
+            logger.info(
+                "[Notificacion] FCM enviado a usuario %s dispositivo %s",
+                notif.id_usuario,
+                dispositivo.id_dispositivo,
+            )
+        elif ok is False:
+            logger.warning(
+                "[Notificacion] FCM rechazo token, desactivando dispositivo %s",
+                dispositivo.id_dispositivo,
+            )
             dispositivo.activo = False
+        else:
+            logger.warning(
+                "[Notificacion] FCM no enviado por configuracion del servidor; token se mantiene activo para dispositivo %s",
+                dispositivo.id_dispositivo,
+            )
 
     await db.commit()
 
