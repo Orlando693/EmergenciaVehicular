@@ -25,6 +25,7 @@ from app.routers.gestion_incidentes import incidentes
 from app.routers.asignacion_atencion import notificaciones, chat
 from app.routers.gestion_servicios import pagos
 from app.routers.bitacora_reportes import bitacora, reportes
+from app.routers.gestion_operativaAtencion import router as atencion_tiempo_real
 
 
 logger = logging.getLogger("emergencia.api")
@@ -206,6 +207,7 @@ app.include_router(notificaciones.router)
 app.include_router(chat.router)
 app.include_router(pagos.router)
 app.include_router(reportes.router)
+app.include_router(atencion_tiempo_real.router)
 
 # ── Static uploads ────────────────────────────────────────────────────────────
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
