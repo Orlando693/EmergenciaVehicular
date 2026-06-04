@@ -35,6 +35,11 @@ export class AuthService {
   }
 
   logout() {
+    // Limpiar cola offline del tenant actual antes de cerrar sesión
+    const tenantId = this.idTenant;
+    if (tenantId) {
+      localStorage.removeItem(`emergencias_offline_${tenantId}`);
+    }
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(TENANT_ID_KEY);

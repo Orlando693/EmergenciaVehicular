@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, from, of, BehaviorSubject } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { AuthService } from '../core/services/auth.service';
 
 export interface EmergenciaOffline {
   client_sync_id: string;
@@ -16,18 +17,21 @@ export interface EmergenciaOffline {
   providedIn: 'root'
 })
 export class OfflineSyncService {
-  private apiUrl = `${environment.apiUrl}/atencion-tiempo-real/sincronizar-emergencia-offline`;
-  private getStatusUrl = `${environment.apiUrl}/atencion-tiempo-real/sincronizaciones`;
-  private storageKey = 'emergencias_offline';
+  private apiUrl = `${environment.apiUrl}/sincronizacion-offline/sincronizar-emergencia-offline`;
+  private getStatusUrl = `${environment.apiUrl}/sincronizacion-offline/sincronizaciones`;
 
-  // Observable para notificar a los componentes sobre cambios en las emergencias locales
+  /** Clave de storage aislada por tenant para evitar mezcla de datos entre tenants */
+  private get storageKey(): string {
+    const tenantId = this.authService.idTenant;
+    return tenantId ? `emergencias_offline_${tenantId}` : 'emergencias_offline_guest';
+  }
+
   private emergenciasSubject = new BehaviorSubject<EmergenciaOffline[]>([]);
   public emergencias$ = this.emergenciasSubject.asObservable();
 
-  // Simulación de red para testing del CU
   public simulatorIsOnline = true;
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private authService: AuthService) {
     this.emergenciasSubject.next(this.getLocalEmergencias());
     
     // Escuchar eventos de red reales (si aplica)

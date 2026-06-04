@@ -117,11 +117,11 @@ export const routes: Routes = [
       },
       {
         path: 'cotizaciones',
-        loadComponent: () => import('./pages/dashboard/gestion-operativa-atencion/cotizaciones/cotizaciones-list/cotizaciones-list.component').then(m => m.CotizacionesListComponent),
+        loadComponent: () => import('./pages/dashboard/gestion-comercial-servicio/cotizaciones/cotizaciones-list/cotizaciones-list.component').then(m => m.CotizacionesListComponent),
       },
       {
         path: 'cotizaciones/detalle/:id',
-        loadComponent: () => import('./pages/dashboard/gestion-operativa-atencion/cotizaciones/cotizaciones-detail/cotizaciones-detail.component').then(m => m.CotizacionesDetailComponent),
+        loadComponent: () => import('./pages/dashboard/gestion-comercial-servicio/cotizaciones/cotizaciones-detail/cotizaciones-detail.component').then(m => m.CotizacionesDetailComponent),
       },
     ],
   },

@@ -5,7 +5,7 @@ import bcrypt
 from jose import JWTError, jwt
 
 from app.config import settings
-from app.schemas.auth import TokenData
+from app.general.auth.schemas import TokenData
 
 
 def hash_password(password: str) -> str:

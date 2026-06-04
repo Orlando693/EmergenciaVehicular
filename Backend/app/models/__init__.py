@@ -1,23 +1,28 @@
-from app.models.tenant import Tenant
-from app.models.usuario import Usuario, Rol, Permiso, RolPermiso, UsuarioRol
-from app.models.cliente import Cliente
-from app.models.taller import Taller
-from app.models.tecnico import Tecnico
-from app.models.vehiculo import Vehiculo
-from app.models.incidente import Incidente, IncidenteHistorial
-from app.models.bitacora import Bitacora
-from app.models.notificacion import Notificacion
-from app.models.dispositivo_push import DispositivoPush
-from app.models.mensaje_chat import MensajeChat
-from app.models.pago import Pago
-from app.models.emergencia_offline_sync import EmergenciaOfflineSync
-from app.models.cotizacion_reparacion import CotizacionReparacion
+"""
+Hub de re-exportación de modelos SQLAlchemy.
+Garantiza que todos los modelos queden registrados en Base.metadata
+para que Alembic y create_all() los detecten correctamente.
+"""
+from app.administracion.tenants.model import Tenant
+from app.administracion.usuarios.model import Usuario, Rol, Permiso, RolPermiso, UsuarioRol, Cliente
+from app.operaciones.talleres.model import Taller
+from app.operaciones.tecnicos.model import Tecnico
+from app.gestion_vehiculos.vehiculos.model import Vehiculo
+from app.gestion_incidentes.incidentes.model import Incidente, IncidenteHistorial
+from app.bitacora_reportes.bitacora.model import Bitacora
+from app.asignacion_atencion.notificaciones.model import Notificacion, DispositivoPush
+from app.asignacion_atencion.chat.model import MensajeChat
+from app.gestion_servicios.pagos.model import Pago
+from app.gestion_operativa_atencion.sincronizacion_offline.model import EmergenciaOfflineSync
+from app.gestion_operativa_atencion.cotizaciones.model import CotizacionReparacion
+from app.gestion_operativa_atencion.gestionar_atencion_reparacion.model import EstimacionAtencion
 
 __all__ = [
     "Tenant",
-    "Usuario", "Rol", "Permiso", "RolPermiso", "UsuarioRol",
-    "Cliente", "Taller", "Tecnico", "Vehiculo",
+    "Usuario", "Rol", "Permiso", "RolPermiso", "UsuarioRol", "Cliente",
+    "Taller", "Tecnico", "Vehiculo",
     "Incidente", "IncidenteHistorial",
     "Bitacora", "Notificacion", "DispositivoPush", "MensajeChat", "Pago",
     "EmergenciaOfflineSync", "CotizacionReparacion",
+    "EstimacionAtencion",
 ]

@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.core.estado_util import texto_estado_usuario
 from app.core.security import decode_token
 from app.database import get_db
-from app.models.usuario import Usuario
+from app.administracion.usuarios.model import Usuario
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login/form")
 
