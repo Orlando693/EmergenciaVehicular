@@ -66,6 +66,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       expanded: true,
       items: [
         { label: 'Registrar incidente', icon: 'plus-circle', route: '/dashboard/incidentes/nuevo', roles: ['CLIENTE'] },
+        { label: 'Registro Offline', icon: 'wifi-off', route: '/dashboard/sincronizacion-offline', roles: ['CLIENTE'] },
         { label: 'Incidentes', icon: 'alert-triangle', route: '/dashboard/incidentes', roles: ['ADMINISTRADOR', 'CLIENTE'] },
       ],
     },
@@ -73,6 +74,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       section: 'ASIGNACION Y ATENCION',
       expanded: true,
       items: [
+        { label: 'Cotizaciones', icon: 'clipboard', route: '/dashboard/cotizaciones', roles: ['CLIENTE', 'TALLER'] },
         { label: 'Solicitudes',    icon: 'bell',         route: '/dashboard/solicitudes-disponibles', roles: ['TALLER'] },
         { label: 'Mis Servicios',  icon: 'list',         route: '/dashboard/servicios',               roles: ['ADMINISTRADOR', 'TALLER'] },
         { label: 'Comunicación',   icon: 'chat',         route: '/dashboard/chats',                   roles: ['ADMINISTRADOR', 'TALLER', 'CLIENTE'] },

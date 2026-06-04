@@ -107,6 +107,22 @@ export const routes: Routes = [
         path: 'reportes',
         loadComponent: () => import('./pages/dashboard/bitacora-reportes/reportes/reportes.component').then(m => m.ReportesComponent),
       },
+      {
+        path: 'atencion-tiempo-real/:id',
+        loadComponent: () => import('./pages/dashboard/gestion-operativa-atencion/atencion-tiempo-real/atencion-tiempo-real.component').then(m => m.AtencionTiempoRealComponent),
+      },
+      {
+        path: 'sincronizacion-offline',
+        loadComponent: () => import('./pages/dashboard/gestion-operativa-atencion/sincronizacion-offline/sincronizacion-offline.component').then(m => m.SincronizacionOfflineComponent),
+      },
+      {
+        path: 'cotizaciones',
+        loadComponent: () => import('./pages/dashboard/gestion-operativa-atencion/cotizaciones/cotizaciones-list/cotizaciones-list.component').then(m => m.CotizacionesListComponent),
+      },
+      {
+        path: 'cotizaciones/detalle/:id',
+        loadComponent: () => import('./pages/dashboard/gestion-operativa-atencion/cotizaciones/cotizaciones-detail/cotizaciones-detail.component').then(m => m.CotizacionesDetailComponent),
+      },
     ],
   },
 

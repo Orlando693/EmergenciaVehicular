@@ -1,0 +1,71 @@
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+  <div class="sm:flex sm:justify-between sm:items-center mb-8">
+    <div class="mb-4 sm:mb-0">
+      <h1 class="text-2xl md:text-3xl text-slate-800 font-bold">Gestión de Cotizaciones 📝</h1>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="text-center py-8">
+      <div class="inline-block animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+      <p class="mt-2 text-slate-500">Cargando...</p>
+  </div>
+
+  <div *ngIf="error" class="bg-rose-100 text-rose-700 p-4 rounded mb-6">
+      {{ error }}
+  </div>
+
+  <!-- Contenedor general tabla -->
+  <div *ngIf="!loading && !error" class="bg-white shadow-sm rounded-sm border border-slate-200">
+    <div class="overflow-x-auto">
+      <table class="table-auto w-full">
+        <thead class="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
+          <tr>
+            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-left">ID</div></th>
+            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-left">Incidente</div></th>
+            <th *ngIf="esCliente" class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-left">Taller</div></th>
+            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-center">Estado</div></th>
+            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-left">Fecha Solicitud</div></th>
+            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-right">Precio Est.</div></th>
+            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"></th>
+          </tr>
+        </thead>
+        <tbody class="text-sm divide-y divide-slate-200">
+            <tr *ngIf="cotizaciones.length === 0">
+              <td colspan="7" class="px-2 py-4 text-center text-slate-500">No hay cotizaciones registradas.</td>
+            </tr>
+            <tr *ngFor="let cotizacion of cotizaciones">
+              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div class="text-slate-800 font-medium">#{{ cotizacion.id_cotizacion }}</div>
+              </td>
+              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div class="text-slate-500">Incidente #{{ cotizacion.id_incidente }}</div>
+              </td>
+              <td *ngIf="esCliente" class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div class="text-slate-800">{{ cotizacion.taller_nombre || 'N/A' }}</div>
+              </td>
+              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap text-center">
+                <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [ngClass]="{
+                        'bg-amber-100 text-amber-600': cotizacion.estado === 'PENDIENTE',
+                        'bg-emerald-100 text-emerald-600': cotizacion.estado === 'RESPONDIDA',
+                        'bg-blue-100 text-blue-600': cotizacion.estado === 'ACEPTADA',
+                        'bg-rose-100 text-rose-600': cotizacion.estado === 'RECHAZADA'
+                      }">
+                  {{ cotizacion.estado }}
+                </span>
+              </td>
+              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                <div class="text-slate-500">{{ cotizacion.created_at | date:'short' }}</div>
+              </td>
+              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap text-right">
+                <div class="font-medium text-slate-800">{{ cotizacion.precio_estimado ? ('Bs ' + cotizacion.precio_estimado) : '-' }}</div>
+              </td>
+              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap w-px">
+                <a [routerLink]="['/dashboard/cotizaciones/detalle', cotizacion.id_cotizacion]" class="btn border-slate-200 hover:border-slate-300 text-indigo-500">Ver Detalle</a>
+              </td>
+            </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

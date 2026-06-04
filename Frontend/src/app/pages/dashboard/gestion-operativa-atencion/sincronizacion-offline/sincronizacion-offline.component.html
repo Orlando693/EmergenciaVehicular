@@ -1,0 +1,136 @@
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+  
+  <!-- Header -->
+  <div class="sm:flex sm:justify-between sm:items-center mb-8">
+    <div class="mb-4 sm:mb-0">
+      <h1 class="text-2xl md:text-3xl text-slate-800 font-bold">Registro Offline de Emergencias 📴</h1>
+      <p class="text-sm text-slate-500 mt-1">
+        Cree emergencias incluso si no tiene internet. Se sincronizarán automáticamente al regresar la conexión.
+      </p>
+    </div>
+
+    <!-- Toggle de red simulada (Solo para demostración del CU19) -->
+    <div class="flex items-center space-x-3 bg-white p-3 shadow-sm rounded-lg border border-slate-200">
+      <span class="text-sm font-medium text-slate-600">Simulador de Red:</span>
+      <button 
+        (click)="toggleNetworkSimulator()"
+        [ngClass]="isOnlineUI ? 'bg-emerald-100 text-emerald-600 border-emerald-200' : 'bg-rose-100 text-rose-600 border-rose-200'"
+        class="inline-flex items-center justify-center px-4 py-1.5 border rounded-full text-sm font-medium transition-colors cursor-pointer">
+        <span class="w-2 h-2 rounded-full mr-2" [ngClass]="isOnlineUI ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+        {{ isOnlineUI ? 'Conexión Estable' : 'Sin Conexión (Offline)' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+    <!-- FORMULARIO DE REGISTRO -->
+    <div class="xl:col-span-1">
+      <div class="bg-white p-6 shadow-sm rounded-lg border border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-800 mb-4">Nueva Emergencia</h2>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de Incidente</label>
+            <select [(ngModel)]="tipoIncidente" class="form-select w-full rounded border-slate-300">
+              <option value="FALLA_MECANICA">Falla Mecánica</option>
+              <option value="ACCIDENTE">Accidente</option>
+              <option value="ASISTENCIA">Asistencia (Cambio de llanta/batería)</option>
+              <option value="OTRO">Otro</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+            <textarea [(ngModel)]="descripcion" rows="4" placeholder="Detalle lo sucedido..." class="form-textarea w-full rounded border-slate-300"></textarea>
+          </div>
+
+          <div>
+            <button (click)="registrarEmergencia()" 
+                    [ngClass]="isOnlineUI ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-slate-700 hover:bg-slate-800'"
+                    class="btn text-white w-full py-2 px-4 rounded transition-colors shadow flex justify-center items-center">
+              <svg *ngIf="!isOnlineUI" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+              {{ isOnlineUI ? 'Registrar y Sincronizar' : 'Guardar Localmente' }}
+            </button>
+            <p *ngIf="!isOnlineUI" class="text-xs text-center text-slate-500 mt-2">La solicitud será guardada hasta tener conexión.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTA DE EMERGENCIAS LOCALES / ESTADO DE SINCRONIZACION -->
+    <div class="xl:col-span-2">
+      <div class="bg-white p-6 shadow-sm rounded-lg border border-slate-200 min-h-[400px]">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold text-slate-800">Caja de Sincronización</h2>
+          <div class="space-x-2">
+            <button (click)="forzarSincronizacion()" [disabled]="!isOnlineUI" class="text-sm text-indigo-500 hover:text-indigo-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+              Forzar Sincronización
+            </button>
+            <button (click)="limpiarHistorial()" class="text-sm text-rose-500 hover:text-rose-600 font-medium ml-4">
+              Limpiar Terminados
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="emergencias.length === 0" class="flex flex-col items-center justify-center p-8 text-slate-500">
+          <svg class="w-12 h-12 mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          <p>No hay emergencias en la cola local.</p>
+        </div>
+
+        <!-- Lista de Tarjetas (Cards) -->
+        <div class="space-y-4" *ngIf="emergencias.length > 0">
+          <div *ngFor="let emer of emergencias" class="flex flex-col border border-slate-200 rounded-lg p-4 bg-slate-50 relative overflow-hidden">
+            <!-- Indicador lateral -->
+            <div class="absolute left-0 top-0 bottom-0 w-1" 
+                 [ngClass]="{
+                   'bg-amber-400': emer.estado_sync === 'PENDIENTE',
+                   'bg-blue-400': emer.estado_sync === 'SINCRONIZANDO',
+                   'bg-emerald-400': emer.estado_sync === 'SINCRONIZADA',
+                   'bg-rose-400': emer.estado_sync === 'ERROR'
+                 }">
+            </div>
+            
+            <div class="flex justify-between items-start pl-2">
+              <div>
+                <h3 class="text-md font-semibold text-slate-800">{{ emer.incidente.tipo_incidente }}</h3>
+                <p class="text-sm text-slate-600 mt-1 line-clamp-2 max-w-md">{{ emer.incidente.descripcion }}</p>
+                <div class="text-xs text-slate-500 mt-2 font-mono text-opacity-50">Local ID: {{ emer.client_sync_id.substring(0,8) }}...</div>
+              </div>
+
+              <!-- Badge Estado -->
+              <div class="ml-4 shrink-0 flex flex-col items-end">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide border shadow-sm"
+                     [ngClass]="{
+                       'bg-amber-50 text-amber-600 border-amber-200': emer.estado_sync === 'PENDIENTE',
+                       'bg-blue-50 text-blue-600 border-blue-200': emer.estado_sync === 'SINCRONIZANDO',
+                       'bg-emerald-50 text-emerald-600 border-emerald-200': emer.estado_sync === 'SINCRONIZADA',
+                       'bg-rose-50 text-rose-600 border-rose-200': emer.estado_sync === 'ERROR'
+                     }">
+                  <!-- Spinner if syncing -->
+                  <svg *ngIf="emer.estado_sync === 'SINCRONIZANDO'" class="animate-spin w-3 h-3 mr-1.5" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  
+                  {{ emer.estado_sync }}
+                </span>
+                
+                <span class="text-xs text-slate-400 mt-2">
+                  {{ emer.created_at_local | date:'shortTime' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Error message if any -->
+            <div *ngIf="emer.estado_sync === 'ERROR' && emer.mensaje_error" class="ml-2 mt-3 pt-2 border-t border-slate-200">
+              <p class="text-xs text-rose-600">Error: {{ emer.mensaje_error }}</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

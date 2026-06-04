@@ -1,0 +1,127 @@
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+  <!-- Cabecera -->
+  <div class="sm:flex sm:justify-between sm:items-center mb-8">
+    <div class="mb-4 sm:mb-0 flex items-center space-x-4">
+      <button (click)="goBack()" class="text-slate-400 hover:text-indigo-500 rounded-full transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+      </button>
+      <h1 class="text-2xl md:text-3xl text-slate-800 font-bold">Detalle de Cotización <span *ngIf="idCotizacion">#{{ idCotizacion }}</span> </h1>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="text-center py-8">
+    <div class="inline-block animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+  </div>
+
+  <div *ngIf="error" class="bg-rose-100 text-rose-700 p-4 rounded mb-6">
+      {{ error }}
+  </div>
+
+  <div *ngIf="!loading && cotizacion" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <!-- INFO SOLICITUD CLIENTE -->
+    <div class="bg-white p-6 shadow-sm rounded-lg border border-slate-200">
+      <div class="flex justify-between items-center mb-4 border-b pb-4">
+        <h2 class="text-lg font-semibold text-slate-800">Solicitud de Cliente</h2>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+              [ngClass]="{
+                'bg-amber-100 text-amber-800': cotizacion.estado === 'PENDIENTE',
+                'bg-emerald-100 text-emerald-800': cotizacion.estado === 'RESPONDIDA'
+              }">
+          Estado: {{ cotizacion.estado }}
+        </span>
+      </div>
+
+      <div class="space-y-4 text-sm text-slate-600">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="font-medium text-slate-800">Fecha Solicitud</p>
+            <p>{{ cotizacion.created_at | date:'short' }}</p>
+          </div>
+          <div>
+            <p class="font-medium text-slate-800">Incidente ID</p>
+            <p>#{{ cotizacion.id_incidente }} ({{ cotizacion.incidente_estado || 'Activo' }})</p>
+          </div>
+        </div>
+        
+        <div>
+          <p class="font-medium text-slate-800">Descripción o Requerimientos Adicionales</p>
+          <div class="bg-slate-50 p-3 rounded border border-slate-100 mt-1 whitespace-pre-wrap">
+            {{ cotizacion.descripcion_solicitud || 'Sin requerimiento adicional' }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESPUESTA TALLER (Sólo editable por taller si esta pendiente, sino vista para ambos) -->
+    <div class="bg-white p-6 shadow-sm rounded-lg border border-slate-200">
+      <h2 class="text-lg font-semibold text-slate-800 mb-4 border-b pb-4">
+        {{ cotizacion.estado === 'PENDIENTE' && esTaller ? 'Responder Cotización' : 'Respuesta del Taller' }}
+      </h2>
+
+      <!-- Formulario para TALLER (Si es pendiente) -->
+      <div *ngIf="esTaller && cotizacion.estado === 'PENDIENTE'" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Precio Estimado (Bs)</label>
+          <input type="number" [(ngModel)]="precioEst" class="form-input w-full rounded border-slate-300" min="0">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Detalle del Daño</label>
+          <textarea [(ngModel)]="detalleDanio" rows="2" class="form-textarea w-full rounded border-slate-300"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Tiempo Estimado</label>
+          <input type="text" [(ngModel)]="tiempoEst" placeholder="Ej. 2 días hábiles" class="form-input w-full rounded border-slate-300">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Condiciones de Servicio / Garantía</label>
+          <textarea [(ngModel)]="condiciones" rows="2" class="form-textarea w-full rounded border-slate-300"></textarea>
+        </div>
+        <div class="pt-2">
+          <button (click)="enviarRespuesta()" class="btn bg-indigo-500 hover:bg-indigo-600 text-white w-full rounded py-2 transition-colors">
+            Enviar Respuesta al Cliente
+          </button>
+        </div>
+      </div>
+
+      <!-- Vista de solo lectura (Respondida) -->
+      <div *ngIf="cotizacion.estado === 'RESPONDIDA'" class="space-y-4 text-sm text-slate-600">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="font-medium text-slate-800">Fecha Respuesta</p>
+            <p>{{ cotizacion.respuesta_at | date:'short' }}</p>
+          </div>
+          <div>
+            <p class="font-medium text-slate-800 text-emerald-600">Precio Estimado</p>
+            <p class="text-lg font-bold text-slate-800">Bs {{ cotizacion.precio_estimado }}</p>
+          </div>
+        </div>
+
+        <div>
+          <p class="font-medium text-slate-800">Tiempo Estimado</p>
+          <p>{{ cotizacion.tiempo_estimado }}</p>
+        </div>
+
+        <div>
+          <p class="font-medium text-slate-800">Diagnóstico / Detalle del Daño</p>
+          <div class="bg-slate-50 p-3 rounded border border-slate-100 mt-1">
+            {{ cotizacion.detalle_danio }}
+          </div>
+        </div>
+
+        <div>
+          <p class="font-medium text-slate-800">Condiciones y Garantía</p>
+          <div class="bg-slate-50 p-3 rounded border border-slate-100 mt-1">
+            {{ cotizacion.condiciones_servicio }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Pendiente vista cliente -->
+      <div *ngIf="!esTaller && cotizacion.estado === 'PENDIENTE'" class="flex flex-col items-center justify-center p-8 text-slate-400">
+        <svg class="w-12 h-12 mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <p>El taller está preparando su respuesta...</p>
+      </div>
+
+    </div>
+  </div>
+</div>
