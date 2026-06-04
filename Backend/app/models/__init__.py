@@ -16,6 +16,7 @@ from app.gestion_servicios.pagos.model import Pago
 from app.gestion_operativa_atencion.sincronizacion_offline.model import EmergenciaOfflineSync
 from app.gestion_operativa_atencion.cotizaciones.model import CotizacionReparacion
 from app.gestion_operativa_atencion.gestionar_atencion_reparacion.model import EstimacionAtencion
+from app.gestion_comercial_servicio.procesar_pago_pasarela.model import PagoGatewayTransaccion
 
 __all__ = [
     "Tenant",
@@ -25,4 +26,5 @@ __all__ = [
     "Bitacora", "Notificacion", "DispositivoPush", "MensajeChat", "Pago",
     "EmergenciaOfflineSync", "CotizacionReparacion",
     "EstimacionAtencion",
+    "PagoGatewayTransaccion",
 ]

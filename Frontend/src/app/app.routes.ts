@@ -123,6 +123,30 @@ export const routes: Routes = [
         path: 'cotizaciones/detalle/:id',
         loadComponent: () => import('./pages/dashboard/gestion-comercial-servicio/cotizaciones/cotizaciones-detail/cotizaciones-detail.component').then(m => m.CotizacionesDetailComponent),
       },
+      {
+        path: 'seleccionar-taller',
+        loadComponent: () => import('./pages/dashboard/gestion-comercial-servicio/seleccionar-taller/seleccionar-taller-list/seleccionar-taller-list.component').then(m => m.SeleccionarTallerListComponent),
+      },
+      {
+        path: 'gestionar-atencion',
+        loadComponent: () => import('./pages/dashboard/gestion-operativa-atencion/gestionar-atencion-reparacion/gestionar-atencion-list/gestionar-atencion-list.component').then(m => m.GestionarAtencionListComponent),
+      },
+      {
+        path: 'gestionar-atencion/:id',
+        loadComponent: () => import('./pages/dashboard/gestion-operativa-atencion/gestionar-atencion-reparacion/gestionar-atencion-form/gestionar-atencion-form.component').then(m => m.GestionarAtencionFormComponent),
+      },
+      {
+        path: 'seleccionar-taller/:id',
+        loadComponent: () => import('./pages/dashboard/gestion-comercial-servicio/seleccionar-taller/seleccionar-taller-comparar/seleccionar-taller-comparar.component').then(m => m.SeleccionarTallerCompararComponent),
+      },
+      {
+        path: 'procesar-pago',
+        loadComponent: () => import('./pages/dashboard/gestion-comercial-servicio/procesar-pago-pasarela/procesar-pago-list/procesar-pago-list.component').then(m => m.ProcesarPagoListComponent),
+      },
+      {
+        path: 'procesar-pago/:id',
+        loadComponent: () => import('./pages/dashboard/gestion-comercial-servicio/procesar-pago-pasarela/procesar-pago-checkout/procesar-pago-checkout.component').then(m => m.ProcesarPagoCheckoutComponent),
+      },
     ],
   },
 

@@ -35,6 +35,7 @@ from app.gestion_operativa_atencion.sincronizacion_offline.router import router 
 from app.gestion_operativa_atencion.cotizaciones.router import router as cotizaciones_router
 from app.gestion_comercial_servicio.seleccionar_taller_servicio.router import router as seleccionar_taller_router
 from app.gestion_operativa_atencion.gestionar_atencion_reparacion.router import router as gestionar_atencion_router
+from app.gestion_comercial_servicio.procesar_pago_pasarela.router import router as procesar_pago_router
 
 
 logger = logging.getLogger("emergencia.api")
@@ -221,6 +222,7 @@ app.include_router(sincronizacion_offline_router)
 app.include_router(cotizaciones_router)
 app.include_router(seleccionar_taller_router)
 app.include_router(gestionar_atencion_router)
+app.include_router(procesar_pago_router)
 
 # ── Static uploads ────────────────────────────────────────────────────────────
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)

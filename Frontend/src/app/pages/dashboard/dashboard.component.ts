@@ -39,7 +39,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ],
     },
     {
-      section: 'ADMINISTRACION',
+      section: 'ADMINISTRACIÓN',
       expanded: true,
       items: [
         { label: 'Usuarios',        icon: 'users',  route: '/dashboard/usuarios', roles: ['ADMINISTRADOR'] },
@@ -58,35 +58,51 @@ export class DashboardComponent implements OnInit, OnDestroy {
       section: 'GESTIÓN DE VEHÍCULOS',
       expanded: true,
       items: [
-        { label: 'Vehículos', icon: 'truck',   route: '/dashboard/vehiculos', roles: ['CLIENTE'] },
+        { label: 'Vehículos', icon: 'truck', route: '/dashboard/vehiculos', roles: ['CLIENTE'] },
       ],
     },
     {
       section: 'GESTIÓN DE INCIDENTES',
       expanded: true,
       items: [
-        { label: 'Registrar incidente', icon: 'plus-circle', route: '/dashboard/incidentes/nuevo', roles: ['CLIENTE'] },
-        { label: 'Registro Offline', icon: 'wifi-off', route: '/dashboard/sincronizacion-offline', roles: ['CLIENTE'] },
-        { label: 'Incidentes', icon: 'alert-triangle', route: '/dashboard/incidentes', roles: ['ADMINISTRADOR', 'CLIENTE'] },
+        { label: 'Registrar Incidente', icon: 'plus-circle',    route: '/dashboard/incidentes/nuevo', roles: ['CLIENTE'] },
+        { label: 'Mis Incidentes',      icon: 'alert-triangle', route: '/dashboard/incidentes',       roles: ['CLIENTE'] },
+        { label: 'Incidentes',          icon: 'alert-triangle', route: '/dashboard/incidentes',       roles: ['ADMINISTRADOR'] },
       ],
     },
     {
-      section: 'ASIGNACION Y ATENCION',
+      section: 'ASIGNACIÓN Y ATENCIÓN',
       expanded: true,
       items: [
-        { label: 'Cotizaciones', icon: 'clipboard', route: '/dashboard/cotizaciones', roles: ['CLIENTE', 'TALLER'] },
-        { label: 'Solicitudes',    icon: 'bell',         route: '/dashboard/solicitudes-disponibles', roles: ['TALLER'] },
-        { label: 'Mis Servicios',  icon: 'list',         route: '/dashboard/servicios',               roles: ['ADMINISTRADOR', 'TALLER'] },
-        { label: 'Comunicación',   icon: 'chat',         route: '/dashboard/chats',                   roles: ['ADMINISTRADOR', 'TALLER', 'CLIENTE'] },
-        { label: 'Notificaciones', icon: 'notification', route: '/dashboard/notificaciones',          roles: ['ADMINISTRADOR', 'TALLER', 'CLIENTE'] },
+        { label: 'Solicitudes Disponibles', icon: 'bell',         route: '/dashboard/solicitudes-disponibles', roles: ['TALLER'] },
+        { label: 'Mis Servicios',           icon: 'list',         route: '/dashboard/servicios',               roles: ['ADMINISTRADOR', 'TALLER'] },
+        { label: 'Comunicación',            icon: 'chat',         route: '/dashboard/chats',                   roles: ['ADMINISTRADOR', 'TALLER', 'CLIENTE'] },
+        { label: 'Notificaciones',          icon: 'notification', route: '/dashboard/notificaciones',          roles: ['ADMINISTRADOR', 'TALLER', 'CLIENTE'] },
       ],
     },
     {
-      section: 'GESTION DE SERVICIOS',      expanded: true,
+      section: 'GESTIÓN OPERATIVA DE ATENCIÓN',
+      expanded: true,
       items: [
-        { label: 'Mis Incidentes', icon: 'alert-triangle', route: '/dashboard/incidentes', roles: ['CLIENTE'] },
-        { label: 'Mis Pagos',      icon: 'dollar',         route: '/dashboard/pagos',      roles: ['CLIENTE'] },
-        { label: 'Pagos (Admin)',  icon: 'dollar',         route: '/dashboard/pagos',      roles: ['ADMINISTRADOR'] },
+        { label: 'Sincronización Offline',   icon: 'wifi-off', route: '/dashboard/sincronizacion-offline', roles: ['CLIENTE'] },
+        { label: 'Estimaciones de Atención', icon: 'clock',    route: '/dashboard/gestionar-atencion',     roles: ['TALLER', 'CLIENTE'] },
+      ],
+    },
+    {
+      section: 'GESTIÓN COMERCIAL Y SERVICIO',
+      expanded: true,
+      items: [
+        { label: 'Cotizaciones',    icon: 'clipboard',    route: '/dashboard/cotizaciones',    roles: ['CLIENTE', 'TALLER'] },
+        { label: 'Seleccionar Taller', icon: 'map-pin',   route: '/dashboard/seleccionar-taller', roles: ['CLIENTE'] },
+        { label: 'Procesar Pago',   icon: 'credit-card',  route: '/dashboard/procesar-pago',   roles: ['CLIENTE'] },
+      ],
+    },
+    {
+      section: 'GESTIÓN DE SERVICIOS',
+      expanded: true,
+      items: [
+        { label: 'Mis Pagos',     icon: 'dollar', route: '/dashboard/pagos', roles: ['CLIENTE'] },
+        { label: 'Pagos (Admin)', icon: 'dollar', route: '/dashboard/pagos', roles: ['ADMINISTRADOR'] },
       ],
     },
     {
@@ -97,11 +113,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ],
     },
     {
-      section: 'BITACORA Y REPORTES',
+      section: 'BITÁCORA Y REPORTES',
       expanded: true,
       items: [
-        { label: 'Bitácora',  icon: 'archive', route: '/dashboard/bitacora', roles: ['ADMINISTRADOR'] },
-        { label: 'Reportes',  icon: 'report',  route: '/dashboard/reportes', roles: ['ADMINISTRADOR'] },
+        { label: 'Bitácora', icon: 'archive', route: '/dashboard/bitacora', roles: ['ADMINISTRADOR'] },
+        { label: 'Reportes', icon: 'report',  route: '/dashboard/reportes', roles: ['ADMINISTRADOR'] },
       ],
     },
   ]);
@@ -181,6 +197,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
       chat: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
       dollar: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
       report: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+      'map-pin':    `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+      'clock':      `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+      'wifi-off':   `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`,
+      'clipboard':  `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`,
+      'credit-card':`<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`,
     };
     return icons[name] ?? '';
   }

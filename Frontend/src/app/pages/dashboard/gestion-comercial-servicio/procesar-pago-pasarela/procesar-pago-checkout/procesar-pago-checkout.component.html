@@ -1,0 +1,325 @@
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-4xl mx-auto">
+
+  <!-- Volver -->
+  <a routerLink="/dashboard/procesar-pago"
+     class="inline-flex items-center gap-2 text-sm text-indigo-500 hover:text-indigo-700 font-medium mb-6">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    Volver a mis servicios
+  </a>
+
+  <!-- Spinner carga info -->
+  <div *ngIf="loadingInfo" class="text-center py-20">
+    <div class="inline-block animate-spin w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+    <p class="mt-3 text-slate-500">Cargando información del pago...</p>
+  </div>
+
+  <!-- Error carga info -->
+  <div *ngIf="!loadingInfo && errorInfo"
+       class="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-lg">
+    {{ errorInfo }}
+  </div>
+
+  <!-- ───────────── PANTALLA INFO ───────────── -->
+  <ng-container *ngIf="!loadingInfo && info && pantalla === 'info'">
+
+    <h1 class="text-2xl font-bold text-slate-800 mb-1">Resumen del Pago</h1>
+    <p class="text-slate-500 text-sm mb-6">Servicio #{{ idIncidente }}</p>
+
+    <div class="grid gap-5 md:grid-cols-2">
+
+      <!-- Tarjeta monto -->
+      <div class="bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-2xl shadow-lg p-6 flex flex-col justify-between">
+        <div>
+          <p class="text-indigo-100 text-sm font-medium mb-1">Monto total</p>
+          <p class="text-4xl font-extrabold tracking-tight">${{ info.monto_total | number:'1.2-2' }}</p>
+        </div>
+        <div class="mt-6 pt-4 border-t border-white/20 grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <p class="text-indigo-200 text-xs">Para el taller</p>
+            <p class="font-semibold">${{ info.monto_taller | number:'1.2-2' }}</p>
+          </div>
+          <div>
+            <p class="text-indigo-200 text-xs">Comisión plataforma</p>
+            <p class="font-semibold">${{ info.comision_plataforma | number:'1.2-2' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalle del servicio -->
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-3">
+        <h2 class="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-3">Detalle</h2>
+
+        <div class="flex justify-between text-sm">
+          <span class="text-slate-500">Estado servicio</span>
+          <span class="font-medium text-slate-800">{{ info.estado_incidente }}</span>
+        </div>
+        <div class="flex justify-between text-sm" *ngIf="info.cotizacion_aceptada_id">
+          <span class="text-slate-500">Cotización aceptada</span>
+          <span class="font-medium text-slate-800">#{{ info.cotizacion_aceptada_id }}</span>
+        </div>
+        <div class="flex justify-between text-sm" *ngIf="info.precio_cotizacion">
+          <span class="text-slate-500">Precio cotizado</span>
+          <span class="font-medium text-slate-800">${{ info.precio_cotizacion | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex justify-between text-sm" *ngIf="info.pago_estado">
+          <span class="text-slate-500">Estado del pago</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                [ngClass]="badgeEstado(info.pago_estado || '')">
+            {{ info.pago_estado }}
+          </span>
+        </div>
+        <div class="flex justify-between text-sm" *ngIf="info.pago_referencia">
+          <span class="text-slate-500">Referencia</span>
+          <span class="font-mono text-slate-800 text-xs">{{ info.pago_referencia }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aviso sandbox -->
+    <div class="mt-5 bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-700 flex gap-3">
+      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      </svg>
+      <div>
+        <p class="font-semibold mb-1">Modo Sandbox — Tarjetas de prueba</p>
+        <p class="text-amber-600">Termina en <strong>0000</strong> → Pago rechazado &nbsp;|&nbsp; Termina en <strong>0001</strong> → Pendiente &nbsp;|&nbsp; Cualquier otro → Aprobado</p>
+      </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="mt-6 flex flex-col sm:flex-row gap-3">
+      <button (click)="irAFormulario()"
+              *ngIf="info.pago_estado !== 'PAGADO'"
+              class="btn bg-indigo-500 hover:bg-indigo-600 text-white flex-1 justify-center text-center">
+        <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+        </svg>
+        Pagar ahora
+      </button>
+      <button (click)="verHistorial()"
+              class="btn bg-white border-slate-200 hover:border-slate-300 text-slate-600">
+        Ver historial de intentos
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- ───────────── PANTALLA FORMULARIO ───────────── -->
+  <ng-container *ngIf="!loadingInfo && pantalla === 'formulario'">
+
+    <h1 class="text-2xl font-bold text-slate-800 mb-1">Datos de pago</h1>
+    <p class="text-slate-500 text-sm mb-6">
+      Monto a cobrar: <strong class="text-indigo-600">${{ info?.monto_total | number:'1.2-2' }}</strong>
+    </p>
+
+    <!-- Selector método -->
+    <div class="bg-white border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
+      <p class="text-sm font-semibold text-slate-600 mb-3">Método de pago</p>
+      <div class="flex flex-wrap gap-3">
+        <label *ngFor="let m of ['TARJETA','TRANSFERENCIA','EFECTIVO']"
+               class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="metodo" [value]="m" [(ngModel)]="metodo" class="text-indigo-600"/>
+          <span class="text-sm text-slate-700">{{ m }}</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Formulario tarjeta -->
+    <div *ngIf="metodo === 'TARJETA'"
+         class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 mb-5">
+      <p class="text-sm font-semibold text-slate-600 mb-1">Datos de la tarjeta</p>
+
+      <div class="space-y-1">
+        <label class="block text-xs text-slate-500">Número de tarjeta</label>
+        <input type="text" placeholder="1234 5678 9012 3456" maxlength="19"
+               [value]="numeroTarjeta"
+               (input)="formatearTarjeta($event)"
+               class="form-input w-full rounded-lg border-slate-200 font-mono text-sm focus:border-indigo-400 focus:ring-indigo-300"/>
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-xs text-slate-500">Nombre del titular</label>
+        <input type="text" placeholder="JUAN PEREZ" [(ngModel)]="nombreTitular"
+               class="form-input w-full rounded-lg border-slate-200 text-sm uppercase focus:border-indigo-400 focus:ring-indigo-300"/>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-1">
+          <label class="block text-xs text-slate-500">Vencimiento</label>
+          <input type="text" placeholder="MM/AA" maxlength="5"
+                 [value]="vencimiento"
+                 (input)="formatearVencimiento($event)"
+                 class="form-input w-full rounded-lg border-slate-200 font-mono text-sm focus:border-indigo-400 focus:ring-indigo-300"/>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs text-slate-500">CVV</label>
+          <input type="password" placeholder="123" maxlength="4" [(ngModel)]="cvv"
+                 class="form-input w-full rounded-lg border-slate-200 font-mono text-sm focus:border-indigo-400 focus:ring-indigo-300"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info transferencia/efectivo -->
+    <div *ngIf="metodo !== 'TARJETA'"
+         class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-5 text-sm text-blue-700">
+      <p *ngIf="metodo === 'TRANSFERENCIA'">
+        Se generará una referencia de transferencia bancaria. Sigue las instrucciones para completar el pago.
+      </p>
+      <p *ngIf="metodo === 'EFECTIVO'">
+        Se generará un código de pago en efectivo. Puedes pagarlo en cualquier punto autorizado.
+      </p>
+    </div>
+
+    <!-- Error pago -->
+    <div *ngIf="errorPago"
+         class="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-lg mb-5 flex items-start gap-3">
+      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      {{ errorPago }}
+    </div>
+
+    <!-- Botones -->
+    <div class="flex flex-col sm:flex-row gap-3">
+      <button (click)="pantalla = 'info'"
+              class="btn bg-white border-slate-200 hover:border-slate-300 text-slate-600">
+        ← Volver al resumen
+      </button>
+      <button (click)="confirmarPago()"
+              [disabled]="!camposValidos || procesando"
+              class="btn flex-1 bg-indigo-500 hover:bg-indigo-600 text-white justify-center
+                     disabled:opacity-50 disabled:cursor-not-allowed">
+        <span *ngIf="!procesando" class="flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Confirmar pago — ${{ info?.monto_total | number:'1.2-2' }}
+        </span>
+        <span *ngIf="procesando" class="flex items-center justify-center gap-2">
+          <span class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+          Procesando...
+        </span>
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- ───────────── PANTALLA RESULTADO ───────────── -->
+  <ng-container *ngIf="!loadingInfo && pantalla === 'resultado'">
+
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center">
+      <div class="text-6xl mb-4">
+        {{ iconoResultado(resultado?.estado_pago ?? info?.pago_estado ?? '') }}
+      </div>
+
+      <h2 class="text-2xl font-bold text-slate-800 mb-2">
+        {{ resultado?.mensaje ?? 'Estado del pago' }}
+      </h2>
+
+      <p class="text-slate-500 mb-6">
+        Servicio #{{ idIncidente }} &nbsp;·&nbsp;
+        <span class="font-medium">${{ (resultado?.monto_total ?? info?.monto_total) | number:'1.2-2' }}</span>
+      </p>
+
+      <!-- Detalles transacción -->
+      <div *ngIf="resultado?.transaccion" class="text-left bg-slate-50 rounded-xl p-5 mb-6 space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-slate-500">Estado</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                [ngClass]="badgeEstado(resultado!.transaccion.estado)">
+            {{ resultado!.transaccion.estado }}
+          </span>
+        </div>
+        <div class="flex justify-between" *ngIf="resultado!.transaccion.gateway_referencia">
+          <span class="text-slate-500">Referencia</span>
+          <span class="font-mono text-xs">{{ resultado!.transaccion.gateway_referencia }}</span>
+        </div>
+        <div class="flex justify-between" *ngIf="resultado!.transaccion.gateway_mensaje">
+          <span class="text-slate-500">Mensaje gateway</span>
+          <span class="text-slate-700">{{ resultado!.transaccion.gateway_mensaje }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Método</span>
+          <span class="text-slate-700">{{ resultado!.transaccion.metodo_pago }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Intento N°</span>
+          <span class="text-slate-700">{{ resultado!.transaccion.intento_numero }}</span>
+        </div>
+      </div>
+
+      <!-- Acciones resultado -->
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button *ngIf="resultado?.estado_pago === 'RECHAZADO'"
+                (click)="pantalla = 'formulario'"
+                class="btn bg-indigo-500 hover:bg-indigo-600 text-white">
+          Reintentar pago
+        </button>
+        <button (click)="verHistorial()"
+                class="btn bg-white border-slate-200 hover:border-slate-300 text-slate-600">
+          Ver historial de intentos
+        </button>
+        <a routerLink="/dashboard/procesar-pago"
+           class="btn bg-white border-slate-200 hover:border-slate-300 text-slate-600">
+          Volver al listado
+        </a>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ───────────── PANTALLA HISTORIAL ───────────── -->
+  <ng-container *ngIf="pantalla === 'historial'">
+
+    <div class="flex items-center gap-3 mb-6">
+      <button (click)="pantalla = 'info'"
+              class="btn bg-white border-slate-200 hover:border-slate-300 text-slate-600">
+        ← Volver
+      </button>
+      <h2 class="text-xl font-bold text-slate-800">Historial de intentos</h2>
+    </div>
+
+    <div *ngIf="loadingHistorial" class="text-center py-12">
+      <div class="inline-block animate-spin w-6 h-6 border-4 border-indigo-400 border-t-transparent rounded-full"></div>
+    </div>
+
+    <div *ngIf="!loadingHistorial && transacciones.length === 0"
+         class="bg-white border border-slate-200 rounded-lg p-10 text-center text-slate-400">
+      No hay intentos de pago registrados todavía.
+    </div>
+
+    <div *ngIf="!loadingHistorial && transacciones.length > 0"
+         class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-x-auto">
+      <table class="table-auto w-full text-sm">
+        <thead class="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="px-4 py-3 text-left">N°</th>
+            <th class="px-4 py-3 text-left">Método</th>
+            <th class="px-4 py-3 text-left">Monto</th>
+            <th class="px-4 py-3 text-center">Estado</th>
+            <th class="px-4 py-3 text-left">Referencia</th>
+            <th class="px-4 py-3 text-left">Mensaje</th>
+            <th class="px-4 py-3 text-left">Fecha</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let t of transacciones" class="hover:bg-slate-50 transition-colors">
+            <td class="px-4 py-3 text-slate-500">{{ t.intento_numero }}</td>
+            <td class="px-4 py-3">{{ t.metodo_pago }}</td>
+            <td class="px-4 py-3 font-mono">${{ t.monto | number:'1.2-2' }}</td>
+            <td class="px-4 py-3 text-center">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                    [ngClass]="badgeEstado(t.estado)">
+                {{ t.estado }}
+              </span>
+            </td>
+            <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ t.gateway_referencia ?? '—' }}</td>
+            <td class="px-4 py-3 text-slate-600 max-w-xs truncate">{{ t.gateway_mensaje ?? '—' }}</td>
+            <td class="px-4 py-3 text-slate-400 text-xs">{{ t.created_at | date:'dd/MM/yy HH:mm' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+</div>

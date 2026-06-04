@@ -1,0 +1,116 @@
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+
+  <!-- Encabezado -->
+  <div class="sm:flex sm:justify-between sm:items-center mb-8">
+    <div class="mb-4 sm:mb-0">
+      <h1 class="text-2xl md:text-3xl text-slate-800 font-bold">
+        {{ esTaller ? 'Gestión de Estimaciones ⏱️' : 'Tiempos de Atención 🔧' }}
+      </h1>
+      <p class="text-slate-500 mt-1 text-sm">
+        <ng-container *ngIf="esTaller">
+          Registra y actualiza los tiempos estimados de llegada y reparación para cada servicio asignado.
+        </ng-container>
+        <ng-container *ngIf="esCliente">
+          Consulta los tiempos estimados informados por el taller para tus emergencias activas.
+        </ng-container>
+      </p>
+    </div>
+    <button (click)="cargarIncidentes()"
+            class="btn bg-white border-slate-200 hover:border-slate-300 text-slate-600 flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Actualizar
+    </button>
+  </div>
+
+  <!-- Spinner -->
+  <div *ngIf="loading" class="text-center py-12">
+    <div class="inline-block animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+    <p class="mt-2 text-slate-500">Cargando servicios...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-lg mb-6 flex items-start gap-3">
+    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span>{{ error }}</span>
+  </div>
+
+  <ng-container *ngIf="!loading && !error">
+
+    <!-- Sin servicios -->
+    <div *ngIf="incidentes.length === 0"
+         class="bg-white border border-slate-200 rounded-lg p-12 text-center shadow-sm">
+      <svg class="w-14 h-14 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <h3 class="text-slate-700 font-semibold text-lg mb-2">
+        {{ esTaller ? 'No tienes servicios activos asignados' : 'No hay servicios activos' }}
+      </h3>
+      <p class="text-slate-400 text-sm">
+        {{ esTaller
+          ? 'Los servicios en estado EN_PROCESO o ASIGNADO aparecerán aquí.'
+          : 'Tus servicios activos con estimaciones del taller aparecerán aquí.' }}
+      </p>
+    </div>
+
+    <!-- Tabla de servicios -->
+    <div *ngIf="incidentes.length > 0"
+         class="bg-white shadow-sm rounded-lg border border-slate-200 overflow-x-auto">
+      <table class="table-auto w-full text-sm">
+        <thead class="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="px-4 py-3 text-left">Servicio</th>
+            <th class="px-4 py-3 text-left">Descripción</th>
+            <th *ngIf="esCliente" class="px-4 py-3 text-left">Taller</th>
+            <th class="px-4 py-3 text-center">Estado</th>
+            <th class="px-4 py-3 text-left">Fecha</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let inc of incidentes" class="hover:bg-slate-50 transition-colors">
+
+            <td class="px-4 py-3">
+              <div class="font-semibold text-slate-800">#{{ inc.id_incidente }}</div>
+              <div *ngIf="inc.vehiculo_placa" class="text-xs text-slate-400 mt-0.5">
+                {{ inc.vehiculo_placa }} · {{ inc.vehiculo_marca }} {{ inc.vehiculo_modelo }}
+              </div>
+            </td>
+
+            <td class="px-4 py-3 max-w-xs">
+              <p class="text-slate-600 truncate">{{ inc.descripcion }}</p>
+              <p *ngIf="inc.direccion" class="text-xs text-slate-400 truncate mt-0.5">📍 {{ inc.direccion }}</p>
+            </td>
+
+            <td *ngIf="esCliente" class="px-4 py-3">
+              <span class="text-slate-700">{{ inc.taller_nombre || '—' }}</span>
+            </td>
+
+            <td class="px-4 py-3 text-center">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    [ngClass]="badgeClase(inc.estado)">
+                {{ inc.estado }}
+              </span>
+            </td>
+
+            <td class="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">
+              {{ inc.created_at | date:'dd/MM/yyyy' }}
+            </td>
+
+            <td class="px-4 py-3 text-right">
+              <a [routerLink]="['/dashboard/gestionar-atencion', inc.id_incidente]"
+                 class="btn border-slate-200 hover:border-slate-300 text-indigo-500 text-xs whitespace-nowrap">
+                {{ esTaller ? 'Gestionar estimación' : 'Ver estimación' }}
+              </a>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </ng-container>
+</div>

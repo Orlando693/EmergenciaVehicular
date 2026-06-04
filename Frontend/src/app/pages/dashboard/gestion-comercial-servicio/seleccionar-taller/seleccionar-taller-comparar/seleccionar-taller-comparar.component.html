@@ -1,0 +1,295 @@
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+
+  <!-- Encabezado -->
+  <div class="sm:flex sm:items-center sm:justify-between mb-8">
+    <div class="flex items-center gap-3 mb-4 sm:mb-0">
+      <button (click)="goBack()"
+              class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <div>
+        <h1 class="text-2xl md:text-3xl text-slate-800 font-bold">
+          Comparar Cotizaciones
+          <span class="text-slate-400 font-normal text-lg ml-1">#{{ idIncidente }}</span>
+        </h1>
+        <p class="text-slate-400 text-sm mt-0.5">
+          Revisa y compara las opciones disponibles para elegir el taller más conveniente.
+        </p>
+      </div>
+    </div>
+    <button (click)="cargarDatos()"
+            class="btn bg-white border-slate-200 hover:border-slate-300 text-slate-600 flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Actualizar
+    </button>
+  </div>
+
+  <!-- Spinner -->
+  <div *ngIf="loading" class="text-center py-16">
+    <div class="inline-block animate-spin w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+    <p class="mt-3 text-slate-500">Cargando cotizaciones...</p>
+  </div>
+
+  <!-- Error de carga -->
+  <div *ngIf="!loading && error"
+       class="bg-amber-50 border border-amber-200 rounded-lg p-8 text-center">
+    <svg class="w-12 h-12 mx-auto text-amber-400 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+      <path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+    </svg>
+    <h3 class="font-semibold text-amber-800 mb-1">Sin cotizaciones disponibles</h3>
+    <p class="text-amber-700 text-sm max-w-md mx-auto">{{ error }}</p>
+    <button (click)="cargarDatos()" class="mt-4 btn bg-amber-500 hover:bg-amber-600 text-white">
+      Reintentar
+    </button>
+  </div>
+
+  <ng-container *ngIf="!loading && !error">
+
+    <!-- Banner: taller ya seleccionado -->
+    <div *ngIf="seleccionActual"
+         class="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-5 flex items-start gap-4">
+      <div class="flex-shrink-0 bg-emerald-500 rounded-full p-2">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <div>
+        <p class="font-semibold text-emerald-800">
+          Taller seleccionado: {{ seleccionActual.taller_nombre || 'Taller #' + seleccionActual.id_taller }}
+        </p>
+        <p class="text-emerald-700 text-sm mt-0.5" *ngIf="seleccionActual.taller_direccion">
+          📍 {{ seleccionActual.taller_direccion }}
+        </p>
+        <p class="text-emerald-600 text-xs mt-1">
+          Estado del servicio: <strong>{{ seleccionActual.estado_incidente }}</strong>
+        </p>
+      </div>
+    </div>
+
+    <!-- Alerta de éxito tras seleccionar -->
+    <div *ngIf="mensajeExito"
+         class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+      <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+      </svg>
+      <p class="text-blue-700 text-sm">{{ mensajeExito }}</p>
+    </div>
+
+    <!-- Grid de tarjetas de comparación -->
+    <div *ngIf="cotizaciones.length > 0">
+      <p class="text-slate-500 text-sm mb-4">
+        {{ cotizaciones.length }} cotización{{ cotizaciones.length !== 1 ? 'es' : '' }} disponible{{ cotizaciones.length !== 1 ? 's' : '' }}
+        <span *ngIf="!seleccionActual" class="text-indigo-500 font-medium"> — Selecciona la más conveniente</span>
+      </p>
+
+      <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div *ngFor="let cot of cotizaciones"
+             class="bg-white border rounded-xl shadow-sm flex flex-col transition-all"
+             [ngClass]="{
+               'border-emerald-400 ring-2 ring-emerald-200': esSeleccionada(cot),
+               'border-slate-200 hover:shadow-md': !esSeleccionada(cot)
+             }">
+
+          <!-- Encabezado de la tarjeta -->
+          <div class="p-5 border-b border-slate-100">
+            <div class="flex items-start justify-between mb-2">
+              <h3 class="font-bold text-slate-800 text-base leading-snug">
+                {{ cot.taller_nombre || 'Taller #' + cot.id_taller }}
+              </h3>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ml-2 flex-shrink-0"
+                    [ngClass]="badgeClase(cot.estado)">
+                {{ cot.estado }}
+              </span>
+            </div>
+
+            <!-- Dirección -->
+            <p *ngIf="cot.taller_direccion" class="text-slate-400 text-xs flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ cot.taller_direccion }}
+            </p>
+
+            <!-- Calificación -->
+            <div class="flex items-center gap-1 mt-2">
+              <ng-container *ngFor="let s of estrellas(cot.taller_calificacion)">
+                <svg class="w-4 h-4"
+                     [ngClass]="s === 'full' ? 'text-amber-400' : 'text-slate-200'"
+                     fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+              </ng-container>
+              <span class="text-xs text-slate-400 ml-1">
+                {{ cot.taller_calificacion ? (cot.taller_calificacion | number:'1.1-1') + '/5' : 'Sin calificación' }}
+              </span>
+            </div>
+
+            <!-- Acepta remolque -->
+            <span *ngIf="cot.taller_acepta_remolque"
+                  class="inline-block mt-2 text-xs bg-violet-50 text-violet-600 border border-violet-200 rounded px-2 py-0.5">
+              🚛 Acepta remolque
+            </span>
+          </div>
+
+          <!-- Detalles de la cotización -->
+          <div class="p-5 flex-1 space-y-3 text-sm">
+
+            <!-- Precio -->
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                Precio estimado
+              </span>
+              <span class="font-bold text-slate-800 text-base">
+                {{ cot.precio_estimado ? ('Bs ' + (cot.precio_estimado | number:'1.2-2')) : 'Por definir' }}
+              </span>
+            </div>
+
+            <!-- Tiempo estimado -->
+            <div *ngIf="cot.tiempo_estimado" class="flex items-center justify-between">
+              <span class="text-slate-500 flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Tiempo estimado
+              </span>
+              <span class="text-slate-700 font-medium">{{ cot.tiempo_estimado }}</span>
+            </div>
+
+            <!-- Detalle del daño -->
+            <div *ngIf="cot.detalle_danio" class="bg-slate-50 rounded-lg p-3">
+              <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Detalle del daño</p>
+              <p class="text-slate-600 text-xs leading-relaxed">{{ cot.detalle_danio }}</p>
+            </div>
+
+            <!-- Condiciones del servicio -->
+            <div *ngIf="cot.condiciones_servicio" class="bg-blue-50 rounded-lg p-3">
+              <p class="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Condiciones del servicio</p>
+              <p class="text-blue-600 text-xs leading-relaxed">{{ cot.condiciones_servicio }}</p>
+            </div>
+
+            <!-- Descripción de la solicitud -->
+            <div *ngIf="cot.descripcion_solicitud" class="text-xs text-slate-400 italic">
+              Solicitud: "{{ cot.descripcion_solicitud }}"
+            </div>
+
+            <div class="text-xs text-slate-400 pt-1">
+              Respondida: {{ cot.respuesta_at ? (cot.respuesta_at | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}
+            </div>
+          </div>
+
+          <!-- Acción -->
+          <div class="px-5 pb-5">
+
+            <!-- Ya seleccionada -->
+            <div *ngIf="esSeleccionada(cot)"
+                 class="flex items-center justify-center gap-2 bg-emerald-500 text-white rounded-lg py-2.5 text-sm font-semibold">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path d="M5 13l4 4L19 7"/>
+              </svg>
+              Taller seleccionado
+            </div>
+
+            <!-- Ya hay selección pero no es esta -->
+            <div *ngIf="seleccionActual && !esSeleccionada(cot)"
+                 class="text-center py-2.5 text-xs text-slate-400 bg-slate-50 rounded-lg border border-slate-200">
+              No seleccionada
+            </div>
+
+            <!-- Sin selección aún -->
+            <button *ngIf="!seleccionActual"
+                    (click)="iniciarSeleccion(cot)"
+                    [disabled]="procesando"
+                    class="w-full btn bg-indigo-500 hover:bg-indigo-600 text-white justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+              Seleccionar este taller
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- Modal de confirmación -->
+  <div *ngIf="mostrarConfirmacion"
+       class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fade-in">
+
+      <div class="text-center mb-5">
+        <div class="w-14 h-14 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-3">
+          <svg class="w-7 h-7 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800 mb-1">Confirmar selección de taller</h3>
+        <p class="text-slate-500 text-sm">
+          ¿Deseas seleccionar a
+          <strong class="text-slate-700">{{ cotizacionDestacada?.taller_nombre || 'este taller' }}</strong>
+          para atender tu emergencia?
+        </p>
+      </div>
+
+      <!-- Resumen de la cotización -->
+      <div *ngIf="cotizacionDestacada" class="bg-slate-50 rounded-xl p-4 mb-5 space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-slate-500">Precio estimado</span>
+          <span class="font-bold text-slate-800">
+            {{ cotizacionDestacada.precio_estimado ? ('Bs ' + (cotizacionDestacada.precio_estimado | number:'1.2-2')) : 'Por definir' }}
+          </span>
+        </div>
+        <div *ngIf="cotizacionDestacada.tiempo_estimado" class="flex justify-between">
+          <span class="text-slate-500">Tiempo estimado</span>
+          <span class="text-slate-700">{{ cotizacionDestacada.tiempo_estimado }}</span>
+        </div>
+        <div *ngIf="cotizacionDestacada.taller_direccion" class="flex justify-between">
+          <span class="text-slate-500">Dirección</span>
+          <span class="text-slate-700 text-right max-w-[200px]">{{ cotizacionDestacada.taller_direccion }}</span>
+        </div>
+      </div>
+
+      <!-- Advertencia -->
+      <p class="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-5 flex items-center gap-2">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+        </svg>
+        Esta acción rechazará automáticamente las demás cotizaciones.
+      </p>
+
+      <!-- Error -->
+      <div *ngIf="mensajeError" class="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg p-3 mb-4 flex items-start gap-2">
+        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        {{ mensajeError }}
+      </div>
+
+      <!-- Botones -->
+      <div class="flex gap-3">
+        <button (click)="cancelarSeleccion()"
+                [disabled]="procesando"
+                class="flex-1 btn bg-white border-slate-200 hover:border-slate-300 text-slate-600 justify-center disabled:opacity-50">
+          Cancelar
+        </button>
+        <button (click)="confirmarSeleccion()"
+                [disabled]="procesando"
+                class="flex-1 btn bg-indigo-500 hover:bg-indigo-600 text-white justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+          <span *ngIf="!procesando">Confirmar selección</span>
+          <span *ngIf="procesando" class="flex items-center gap-2">
+            <svg class="animate-spin w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor"/>
+            </svg>
+            Procesando...
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

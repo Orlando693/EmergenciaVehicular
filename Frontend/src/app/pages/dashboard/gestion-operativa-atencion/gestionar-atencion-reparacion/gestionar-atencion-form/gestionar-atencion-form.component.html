@@ -1,0 +1,306 @@
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+
+  <!-- Encabezado -->
+  <div class="flex items-center gap-3 mb-8">
+    <button (click)="goBack()"
+            class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M19 12H5M12 5l-7 7 7 7"/>
+      </svg>
+    </button>
+    <div>
+      <h1 class="text-2xl md:text-3xl text-slate-800 font-bold">
+        {{ esTaller ? 'Gestionar Estimación ⏱️' : 'Tiempos Estimados 🔧' }}
+        <span class="text-slate-400 font-normal text-lg ml-1">#{{ idIncidente }}</span>
+      </h1>
+      <p class="text-slate-400 text-sm mt-0.5">
+        {{ esTaller
+          ? 'Registra o actualiza los tiempos estimados de llegada y reparación.'
+          : 'Información del tiempo de atención informada por el taller.' }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Spinner -->
+  <div *ngIf="loading" class="text-center py-14">
+    <div class="inline-block animate-spin w-9 h-9 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+    <p class="mt-3 text-slate-500">Cargando información del servicio...</p>
+  </div>
+
+  <ng-container *ngIf="!loading">
+
+    <!-- Error incidente -->
+    <div *ngIf="errorIncidente"
+         class="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-lg mb-6 flex items-start gap-3">
+      <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+      </svg>
+      {{ errorIncidente }}
+    </div>
+
+    <!-- Alerta de éxito -->
+    <div *ngIf="mensajeExito"
+         class="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start gap-3">
+      <svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path d="M5 13l4 4L19 7"/>
+      </svg>
+      <p class="text-emerald-700 text-sm">{{ mensajeExito }}</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- ─── Columna izquierda: info del incidente ─────────────────────────── -->
+      <div *ngIf="incidente" class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-4">
+        <h2 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/>
+          </svg>
+          Información del servicio
+        </h2>
+
+        <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+          <div>
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-0.5">Estado</p>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  [ngClass]="{
+                    'bg-amber-100 text-amber-700': incidente.estado === 'ASIGNADO',
+                    'bg-blue-100 text-blue-700':   incidente.estado === 'EN_PROCESO',
+                    'bg-emerald-100 text-emerald-700': incidente.estado === 'RESUELTO'
+                  }">
+              {{ incidente.estado }}
+            </span>
+          </div>
+
+          <div *ngIf="incidente.vehiculo_placa">
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-0.5">Vehículo</p>
+            <p class="text-slate-700 font-medium">{{ incidente.vehiculo_placa }}</p>
+            <p class="text-slate-500 text-xs">{{ incidente.vehiculo_marca }} {{ incidente.vehiculo_modelo }}</p>
+          </div>
+
+          <div *ngIf="incidente.taller_nombre && esCliente" class="col-span-2">
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-0.5">Taller</p>
+            <p class="text-slate-700">{{ incidente.taller_nombre }}</p>
+          </div>
+
+          <div *ngIf="incidente.direccion" class="col-span-2">
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-0.5">Ubicación</p>
+            <p class="text-slate-600 flex items-start gap-1">
+              <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ incidente.direccion }}
+            </p>
+          </div>
+
+          <div class="col-span-2">
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-0.5">Descripción</p>
+            <p class="text-slate-600">{{ incidente.descripcion }}</p>
+          </div>
+
+          <div>
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-0.5">Registrado</p>
+            <p class="text-slate-600">{{ incidente.created_at | date:'dd/MM/yyyy HH:mm' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Columna derecha: estimación ───────────────────────────────────── -->
+      <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+
+        <!-- Sin estimación registrada aún -->
+        <ng-container *ngIf="!estimacion && !modoEdicion">
+          <div class="text-center py-10">
+            <div class="w-14 h-14 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <h3 class="text-slate-700 font-semibold mb-2">Sin estimación registrada</h3>
+            <p class="text-slate-400 text-sm mb-6">
+              {{ esTaller
+                  ? 'Registra los tiempos estimados de llegada y reparación para este servicio.'
+                  : 'El taller aún no ha registrado los tiempos estimados.' }}
+            </p>
+            <button *ngIf="esTaller"
+                    (click)="activarEdicion()"
+                    class="btn bg-indigo-500 hover:bg-indigo-600 text-white px-6">
+              <svg class="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              Registrar estimación
+            </button>
+          </div>
+        </ng-container>
+
+        <!-- Estimación registrada — vista -->
+        <ng-container *ngIf="estimacion && !modoEdicion">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+              <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path d="M5 13l4 4L19 7"/>
+              </svg>
+              Estimación registrada
+            </h2>
+            <button *ngIf="esTaller"
+                    (click)="activarEdicion()"
+                    class="btn border-slate-200 hover:border-slate-300 text-indigo-500 text-xs flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              Actualizar
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Tiempo llegada -->
+            <div class="flex items-start gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-0.5">Tiempo de llegada</p>
+                <p class="text-slate-800 font-bold text-lg">
+                  {{ estimacion.tiempo_llegada || '—' }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Tiempo reparación -->
+            <div class="flex items-start gap-4 p-4 bg-violet-50 rounded-xl border border-violet-100">
+              <div class="w-10 h-10 bg-violet-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-violet-600 uppercase tracking-wide mb-0.5">Tiempo de reparación</p>
+                <p class="text-slate-800 font-bold text-lg">
+                  {{ estimacion.tiempo_reparacion || '—' }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Observaciones -->
+            <div *ngIf="estimacion.observacion"
+                 class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Observaciones del taller</p>
+              <p class="text-slate-600 text-sm leading-relaxed">{{ estimacion.observacion }}</p>
+            </div>
+
+            <!-- Metadatos -->
+            <div class="flex gap-4 text-xs text-slate-400 pt-2 border-t border-slate-100">
+              <span>Registrado: {{ estimacion.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+              <span *ngIf="estimacion.updated_at !== estimacion.created_at">
+                · Actualizado: {{ estimacion.updated_at | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- ─── Formulario (registro / edición) ────────────────────────────── -->
+        <ng-container *ngIf="modoEdicion && esTaller">
+          <h2 class="text-base font-semibold text-slate-800 mb-5">
+            {{ estimacion ? 'Actualizar estimación' : 'Registrar estimación' }}
+          </h2>
+
+          <!-- Campo tiempo llegada -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Tiempo estimado de llegada
+              <span class="text-slate-400 font-normal">(ej: "15 minutos", "~30 min")</span>
+            </label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3"/>
+                </svg>
+              </span>
+              <input type="text"
+                     [(ngModel)]="tiempoLlegada"
+                     maxlength="150"
+                     placeholder="ej: 20 minutos"
+                     class="form-input pl-9 w-full rounded-lg border-slate-300 text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+            </div>
+          </div>
+
+          <!-- Campo tiempo reparación -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Tiempo estimado de reparación
+              <span class="text-slate-400 font-normal">(ej: "2 horas", "aprox. 3 h")</span>
+            </label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                </svg>
+              </span>
+              <input type="text"
+                     [(ngModel)]="tiempoReparacion"
+                     maxlength="150"
+                     placeholder="ej: 2 horas"
+                     class="form-input pl-9 w-full rounded-lg border-slate-300 text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+            </div>
+          </div>
+
+          <!-- Campo observaciones -->
+          <div class="mb-5">
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Observaciones
+              <span class="text-slate-400 font-normal">(opcional)</span>
+            </label>
+            <textarea [(ngModel)]="observacion"
+                      rows="3"
+                      maxlength="1000"
+                      placeholder="Información adicional para el cliente..."
+                      class="form-textarea w-full rounded-lg border-slate-300 text-sm resize-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+            <p class="text-xs text-slate-400 mt-1 text-right">{{ observacion.length }}/1000</p>
+          </div>
+
+          <!-- Validación -->
+          <p *ngIf="!tiempoLlegada.trim() && !tiempoReparacion.trim()"
+             class="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded px-3 py-2 mb-4 flex items-center gap-2">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+            </svg>
+            Ingresa al menos el tiempo de llegada o el tiempo de reparación.
+          </p>
+
+          <!-- Error -->
+          <div *ngIf="mensajeError"
+               class="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg p-3 mb-4 flex items-start gap-2">
+            <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+            </svg>
+            {{ mensajeError }}
+          </div>
+
+          <!-- Botones -->
+          <div class="flex gap-3">
+            <button (click)="cancelarEdicion()"
+                    [disabled]="guardando"
+                    class="flex-1 btn bg-white border-slate-200 hover:border-slate-300 text-slate-600 justify-center disabled:opacity-50">
+              Cancelar
+            </button>
+            <button (click)="guardar()"
+                    [disabled]="guardando || (!tiempoLlegada.trim() && !tiempoReparacion.trim())"
+                    class="flex-1 btn bg-indigo-500 hover:bg-indigo-600 text-white justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+              <span *ngIf="!guardando">
+                {{ estimacion ? 'Actualizar' : 'Registrar' }}
+              </span>
+              <span *ngIf="guardando" class="flex items-center gap-2">
+                <svg class="animate-spin w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10"/><path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor"/>
+                </svg>
+                Guardando...
+              </span>
+            </button>
+          </div>
+        </ng-container>
+
+      </div><!-- fin columna derecha -->
+    </div><!-- fin grid -->
+  </ng-container>
+</div>

@@ -19,8 +19,13 @@ export class AuthService {
 
   constructor(private http: HttpClient, private router: Router) {}
 
+  verificarWorkspace(slug: string) {
+    return this.http.get<{ nombre: string; slug: string }>(
+      `${this.api}/auth/workspace/${encodeURIComponent(slug)}`
+    );
+  }
+
   login(credentials: LoginRequest) {
-    console.log(credentials);
     return this.http.post<TokenResponse>(`${this.api}/auth/login`, credentials).pipe(
       tap(res => {
         console.log(res);

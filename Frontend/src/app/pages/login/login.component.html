@@ -1,6 +1,6 @@
 ﻿<div class="min-h-screen flex">
 
-  <!-- Panel izquierdo -->
+  <!-- Panel izquierdo (decorativo) -->
   <div class="hidden lg:flex lg:w-[58%] flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 p-12 relative overflow-hidden">
     <div class="absolute inset-0 pointer-events-none overflow-hidden">
       <div class="absolute -top-24 -right-24 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
@@ -48,180 +48,262 @@
       </div>
     </div>
     <div class="relative z-10 flex items-center gap-8 border-t border-slate-700/50 pt-8">
-      <div>
-        <p class="text-2xl font-bold text-white">3</p>
-        <p class="text-slate-500 text-xs mt-0.5">Roles de acceso</p>
-      </div>
+      <div><p class="text-2xl font-bold text-white">3</p><p class="text-slate-500 text-xs mt-0.5">Roles de acceso</p></div>
       <div class="w-px h-8 bg-slate-700"></div>
-      <div>
-        <p class="text-2xl font-bold text-white">17</p>
-        <p class="text-slate-500 text-xs mt-0.5">Módulos funcionales</p>
-      </div>
+      <div><p class="text-2xl font-bold text-white">23+</p><p class="text-slate-500 text-xs mt-0.5">Módulos funcionales</p></div>
       <div class="w-px h-8 bg-slate-700"></div>
-      <div>
-        <p class="text-2xl font-bold text-white">24/7</p>
-        <p class="text-slate-500 text-xs mt-0.5">Disponibilidad</p>
-      </div>
+      <div><p class="text-2xl font-bold text-white">24/7</p><p class="text-slate-500 text-xs mt-0.5">Disponibilidad</p></div>
     </div>
   </div>
 
-  <!-- Panel derecho: formulario -->
+  <!-- Panel derecho -->
   <div class="flex-1 flex items-center justify-center bg-white p-8 overflow-y-auto">
     <div class="w-full max-w-[400px]">
 
-      <!-- Logo y Título -->
-      <div class="mb-6">
-        <div class="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-orange-500/25">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
-            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-          </svg>
-        </div>
-        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">
-          {{ isRegisterMode() ? 'Crear una cuenta' : 'Iniciar sesión' }}
-        </h2>
-        <p class="text-slate-500 text-sm mt-1">
-          {{ isRegisterMode() ? 'Regístrate como cliente para reportar emergencias' : 'Ingresa tus credenciales para acceder al panel' }}
-        </p>
+      <!-- Logo -->
+      <div class="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-orange-500/25">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
       </div>
 
-      <!-- Credenciales de prueba (Solo en Login) -->
-      @if (!isRegisterMode()) {
-        <div class="mb-6">
-          <p class="text-xs text-slate-400 font-medium mb-2 uppercase tracking-wide">Acceso rápido de prueba</p>
-          <div class="flex flex-col gap-2">
-            @for (cred of demoCredentials; track cred.role) {
-              <button type="button" (click)="fillCredential(cred)"
-                      class="flex items-center gap-3 w-full text-left px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/60 transition-all group cursor-pointer">
-                <div class="flex-1 min-w-0">
-                  <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-700 block leading-tight">{{ cred.role }}</span>
-                  <span class="text-xs text-slate-400 truncate block">{{ cred.email }}</span>
-                </div>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                     class="text-slate-300 group-hover:text-blue-400 shrink-0 transition-colors">
-                  <polyline points="9 18 15 12 9 6"/>
+      <!-- ══════════════════════════════════════
+           PASO 1: WORKSPACE
+           ══════════════════════════════════════ -->
+      @if (pantalla() === 'workspace') {
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight mb-1">Acceder al sistema</h2>
+        <p class="text-slate-500 text-sm mb-8">Ingresa el nombre de tu workspace para continuar</p>
+
+        <div class="space-y-4">
+          <div>
+            <label class="field-label">Nombre del workspace</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
                 </svg>
-              </button>
-            }
+              </span>
+              <input
+                type="text"
+                [(ngModel)]="workspaceSlug"
+                placeholder="ej: emergencia-vehicular"
+                class="field-input pl-10"
+                (keydown.enter)="continuarWorkspace()"
+                autocomplete="off"
+              />
+            </div>
+            <p class="text-slate-400 text-xs mt-1.5">
+              El workspace es el identificador único de tu organización.
+            </p>
           </div>
+
+          @if (errorWorkspace()) {
+            <div class="flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 mt-0.5">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              {{ errorWorkspace() }}
+            </div>
+          }
+
+          <button
+            type="button"
+            (click)="continuarWorkspace()"
+            [disabled]="loadingWorkspace() || !workspaceSlug.trim()"
+            class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-xl transition-colors text-sm">
+            @if (loadingWorkspace()) {
+              <span class="spinner"></span> Verificando...
+            } @else {
+              Continuar
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            }
+          </button>
+        </div>
+
+        <!-- Acceso rápido demo -->
+        <div class="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+          <p class="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-2">Demo rápido</p>
+          <button
+            type="button"
+            (click)="workspaceSlug = 'emergencia-vehicular'"
+            class="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+            emergencia-vehicular
+          </button>
         </div>
       }
 
-      <!-- Formulario -->
-      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="space-y-4">
+      <!-- ══════════════════════════════════════
+           PASO 2: CREDENCIALES
+           ══════════════════════════════════════ -->
+      @if (pantalla() === 'credenciales') {
 
-        @if (isRegisterMode()) {
-          <div class="grid grid-cols-2 gap-4">
-            <!-- Nombres -->
-            <div>
-              <label class="field-label">Nombres</label>
-              <input formControlName="nombres" type="text" placeholder="Juan" class="field-input px-3.5"
-                     [class.border-red-300]="nombresCtrl.invalid && nombresCtrl.touched" />
-            </div>
-            <!-- Apellidos -->
-            <div>
-              <label class="field-label">Apellidos</label>
-              <input formControlName="apellidos" type="text" placeholder="Pérez" class="field-input px-3.5"
-                     [class.border-red-300]="apellidosCtrl.invalid && apellidosCtrl.touched" />
-            </div>
-          </div>
-          <!-- Teléfono -->
-          <div>
-            <label class="field-label">Teléfono (Opcional)</label>
-            <input formControlName="telefono" type="text" placeholder="12345678" class="field-input px-3.5" />
-          </div>
-        }
-
-        <!-- Email -->
-        <div>
-          <label class="field-label">Correo electrónico</label>
-          <div class="relative">
-            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/>
+        <!-- Banner del workspace activo -->
+        <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shrink-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
               </svg>
-            </span>
-            <input formControlName="email" type="email" placeholder="correo@ejemplo.com"
-                   autocomplete="email" class="field-input pl-10"
-                   [class.border-red-300]="emailCtrl.invalid && emailCtrl.touched" />
+            </div>
+            <div class="min-w-0">
+              <p class="font-semibold text-slate-800 text-sm truncate">{{ workspaceNombre() }}</p>
+              <p class="text-slate-400 text-xs">Workspace: <span class="font-mono">{{ workspaceSlug }}</span></p>
+            </div>
           </div>
-          @if (emailCtrl.touched && emailCtrl.hasError('required')) {
-            <p class="text-red-500 text-xs mt-1">Campo requerido</p>
-          } @else if (emailCtrl.touched && emailCtrl.hasError('email')) {
-            <p class="text-red-500 text-xs mt-1">Formato de email inválido</p>
-          }
+          <button
+            type="button"
+            (click)="volverAWorkspace()"
+            class="text-xs text-slate-500 hover:text-blue-600 font-medium ml-3 shrink-0 flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+            </svg>
+            Cambiar
+          </button>
         </div>
 
-        <!-- Contraseña -->
-        <div>
-          <label class="field-label">Contraseña</label>
-          <div class="relative">
-            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-            </span>
-            <input formControlName="password" [type]="showPassword() ? 'text' : 'password'"
-                   placeholder="••••••••" autocomplete="current-password"
-                   class="field-input pl-10 pr-11"
-                   [class.border-red-300]="passwordCtrl.invalid && passwordCtrl.touched" />
-            <button type="button" (click)="togglePassword()"
-                    class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
-              @if (showPassword()) {
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              } @else {
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              }
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight mb-1">
+          {{ isRegisterMode() ? 'Crear una cuenta' : 'Iniciar sesión' }}
+        </h2>
+        <p class="text-slate-500 text-sm mb-5">
+          {{ isRegisterMode()
+            ? 'Regístrate como cliente en ' + workspaceNombre()
+            : 'Credenciales del personal de ' + workspaceNombre() }}
+        </p>
+
+        <!-- Demo credentials -->
+        @if (!isRegisterMode()) {
+          <div class="mb-5 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <p class="text-xs text-slate-400 font-semibold uppercase tracking-wide">Solo desarrollo — credenciales demo</p>
+            <button type="button" (click)="usarCredencialDemo('admin@emergencia.com', 'Admin1234')"
+                    class="flex items-center gap-2 w-full text-left hover:bg-white px-2 py-1 rounded-lg transition-colors group">
+              <span class="text-xs font-bold text-blue-600 w-28 shrink-0">Administrador:</span>
+              <span class="text-xs text-slate-500 font-mono group-hover:text-blue-500">admin&#64;emergencia.com / Admin1234</span>
+            </button>
+            <button type="button" (click)="usarCredencialDemo('taller@emergencia.com', 'Taller1234')"
+                    class="flex items-center gap-2 w-full text-left hover:bg-white px-2 py-1 rounded-lg transition-colors group">
+              <span class="text-xs font-bold text-emerald-600 w-28 shrink-0">Taller:</span>
+              <span class="text-xs text-slate-500 font-mono group-hover:text-emerald-500">taller&#64;emergencia.com / Taller1234</span>
+            </button>
+            <button type="button" (click)="usarCredencialDemo('cliente@emergencia.com', 'Cliente1234')"
+                    class="flex items-center gap-2 w-full text-left hover:bg-white px-2 py-1 rounded-lg transition-colors group">
+              <span class="text-xs font-bold text-violet-600 w-28 shrink-0">Cliente:</span>
+              <span class="text-xs text-slate-500 font-mono group-hover:text-violet-500">cliente&#64;emergencia.com / Cliente1234</span>
             </button>
           </div>
-          @if (passwordCtrl.touched && passwordCtrl.hasError('required')) {
-            <p class="text-red-500 text-xs mt-1">Campo requerido</p>
-          } @else if (passwordCtrl.touched && passwordCtrl.hasError('minlength')) {
-            <p class="text-red-500 text-xs mt-1">Mínimo 6 caracteres</p>
+        }
+
+        <!-- Formulario -->
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="space-y-4">
+
+          @if (isRegisterMode()) {
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="field-label">Nombres</label>
+                <input formControlName="nombres" type="text" placeholder="Juan" class="field-input px-3.5"
+                       [class.border-red-300]="nombresCtrl.invalid && nombresCtrl.touched" />
+              </div>
+              <div>
+                <label class="field-label">Apellidos</label>
+                <input formControlName="apellidos" type="text" placeholder="Pérez" class="field-input px-3.5"
+                       [class.border-red-300]="apellidosCtrl.invalid && apellidosCtrl.touched" />
+              </div>
+            </div>
+            <div>
+              <label class="field-label">Teléfono (Opcional)</label>
+              <input formControlName="telefono" type="text" placeholder="70000000" class="field-input px-3.5" />
+            </div>
           }
-        </div>
 
-        <!-- Mensajes de estado -->
-        @if (error()) {
-          <div class="flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mt-3">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            {{ error() }}
+          <div>
+            <label class="field-label">Correo electrónico</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/>
+                </svg>
+              </span>
+              <input formControlName="email" type="email" placeholder="correo@ejemplo.com"
+                     autocomplete="email" class="field-input pl-10"
+                     [class.border-red-300]="emailCtrl.invalid && emailCtrl.touched" />
+            </div>
+            @if (emailCtrl.touched && emailCtrl.hasError('required')) {
+              <p class="text-red-500 text-xs mt-1">Campo requerido</p>
+            } @else if (emailCtrl.touched && emailCtrl.hasError('email')) {
+              <p class="text-red-500 text-xs mt-1">Formato de email inválido</p>
+            }
           </div>
-        }
-        @if (success()) {
-          <div class="flex items-start gap-2.5 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mt-3">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 mt-0.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            {{ success() }}
-          </div>
-        }
 
-        <!-- Botón Submit -->
-        <button type="submit" [disabled]="loading()"
-                class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-xl transition-colors text-sm mt-4">
-          @if (loading()) {
-            <span class="spinner"></span>
-            Procesando...
+          <div>
+            <label class="field-label">Contraseña</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </span>
+              <input formControlName="password" [type]="showPassword() ? 'text' : 'password'"
+                     placeholder="••••••••" autocomplete="current-password"
+                     class="field-input pl-10 pr-11"
+                     [class.border-red-300]="passwordCtrl.invalid && passwordCtrl.touched" />
+              <button type="button" (click)="togglePassword()"
+                      class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                @if (showPassword()) {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+            @if (passwordCtrl.touched && passwordCtrl.hasError('required')) {
+              <p class="text-red-500 text-xs mt-1">Campo requerido</p>
+            } @else if (passwordCtrl.touched && passwordCtrl.hasError('minlength')) {
+              <p class="text-red-500 text-xs mt-1">Mínimo 6 caracteres</p>
+            }
+          </div>
+
+          @if (error()) {
+            <div class="flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              {{ error() }}
+            </div>
+          }
+          @if (success()) {
+            <div class="flex items-start gap-2.5 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 mt-0.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              {{ success() }}
+            </div>
+          }
+
+          <button type="submit" [disabled]="loading()"
+                  class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-xl transition-colors text-sm mt-2">
+            @if (loading()) {
+              <span class="spinner"></span> Procesando...
+            } @else {
+              {{ isRegisterMode() ? 'Registrarse' : 'Iniciar Sesión' }}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            }
+          </button>
+        </form>
+
+        <p class="text-center text-slate-500 text-sm mt-5">
+          @if (isRegisterMode()) {
+            ¿Ya tienes cuenta?
+            <button (click)="toggleFormMode(false)" class="text-blue-600 font-semibold hover:underline ml-1">Inicia sesión</button>
           } @else {
-            {{ isRegisterMode() ? 'Registrarse' : 'Ingresar' }}
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            ¿No tienes cuenta?
+            <button (click)="toggleFormMode(true)" class="text-blue-600 font-semibold hover:underline ml-1">Regístrate como cliente</button>
           }
-        </button>
+        </p>
 
-      </form>
-
-      <!-- Toggle Log In / Register -->
-      <p class="text-center text-slate-500 text-sm mt-6">
-        @if (isRegisterMode()) {
-          ¿Ya tienes cuenta? 
-          <button (click)="toggleFormMode(false)" class="text-blue-600 font-semibold hover:underline">Inicia sesión aquí</button>
-        } @else {
-          ¿No tienes cuenta de cliente? 
-          <button (click)="toggleFormMode(true)" class="text-blue-600 font-semibold hover:underline">Regístrate ahora</button>
-        }
-      </p>
-      
-      <p class="text-center text-slate-400 text-xs mt-6 border-t border-slate-100 pt-6">
-        ¿Eres un Taller? Comunícate con el Administrador para crear tu cuenta institucional.
-      </p>
+        <p class="text-center text-slate-400 text-xs mt-5 border-t border-slate-100 pt-5">
+          ¿Eres un Taller? Comunícate con el Administrador para crear tu cuenta institucional.
+        </p>
+      }
 
     </div>
   </div>
