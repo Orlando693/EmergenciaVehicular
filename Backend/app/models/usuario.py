@@ -46,6 +46,7 @@ class Usuario(Base):
     __tablename__ = "usuarios"
 
     id_usuario = Column(BigInteger, primary_key=True, autoincrement=True)
+    id_tenant = Column(BigInteger, ForeignKey("tenants.id_tenant"), nullable=False)
     nombres = Column(String(100), nullable=False)
     apellidos = Column(String(100), nullable=False)
     email = Column(String(150), nullable=False, unique=True)
@@ -57,6 +58,7 @@ class Usuario(Base):
     updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
     roles = relationship("Rol", secondary="usuario_rol", back_populates="usuarios")
+    tenant = relationship("Tenant")
     cliente = relationship("Cliente", back_populates="usuario", uselist=False)
     taller = relationship("Taller", back_populates="usuario", uselist=False)
 

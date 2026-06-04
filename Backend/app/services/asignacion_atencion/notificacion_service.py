@@ -3,6 +3,7 @@ from sqlalchemy import select, func, update
 
 from app.models.dispositivo_push import DispositivoPush
 from app.models.notificacion import Notificacion
+from app.models.usuario import Usuario
 from app.core.ws_manager import ws_manager
 from app.services.asignacion_atencion.firebase_push_service import enviar_push_token
 import logging
@@ -17,8 +18,18 @@ async def crear_notificacion(
     mensaje: str,
     tipo: str = "INFO",
     id_incidente: int | None = None,
+    id_tenant: int | None = None,
 ) -> Notificacion:
+    if id_tenant is None:
+        usuario_r = await db.execute(select(Usuario).where(Usuario.id_usuario == id_usuario))
+        usuario = usuario_r.scalar_one_or_none()
+        if usuario:
+            id_tenant = usuario.id_tenant
+    if id_tenant is None:
+        raise ValueError("No se pudo determinar el tenant de la notificacion")
+
     notif = Notificacion(
+        id_tenant=id_tenant,
         id_usuario=id_usuario,
         id_incidente=id_incidente,
         titulo=titulo,
@@ -51,21 +62,24 @@ async def crear_notificacion(
 async def registrar_fcm_token(
     db: AsyncSession,
     id_usuario: int,
+    id_tenant: int,
     token: str,
     platform: str | None = None,
 ) -> DispositivoPush:
     result = await db.execute(
-        select(DispositivoPush).where(DispositivoPush.fcm_token == token)
+        select(DispositivoPush).where(DispositivoPush.fcm_token == token, DispositivoPush.id_tenant == id_tenant)
     )
     dispositivo = result.scalar_one_or_none()
 
     if dispositivo:
         dispositivo.id_usuario = id_usuario
+        dispositivo.id_tenant = id_tenant
         dispositivo.platform = platform
         dispositivo.activo = True
     else:
         dispositivo = DispositivoPush(
             id_usuario=id_usuario,
+            id_tenant=id_tenant,
             fcm_token=token,
             platform=platform,
             activo=True,
@@ -81,6 +95,7 @@ async def _enviar_push_fcm(db: AsyncSession, notif: Notificacion) -> None:
     result = await db.execute(
         select(DispositivoPush).where(
             DispositivoPush.id_usuario == notif.id_usuario,
+            DispositivoPush.id_tenant == notif.id_tenant,
             DispositivoPush.activo == True,  # noqa: E712
         )
     )
@@ -129,15 +144,16 @@ async def _enviar_push_fcm(db: AsyncSession, notif: Notificacion) -> None:
     await db.commit()
 
 
-async def listar_notificaciones(db: AsyncSession, id_usuario: int, skip: int = 0, limit: int = 20):
+async def listar_notificaciones(db: AsyncSession, id_usuario: int, id_tenant: int, skip: int = 0, limit: int = 20):
     total_r = await db.execute(
-        select(func.count()).where(Notificacion.id_usuario == id_usuario).select_from(Notificacion)
+        select(func.count()).where(Notificacion.id_usuario == id_usuario, Notificacion.id_tenant == id_tenant).select_from(Notificacion)
     )
     total = total_r.scalar_one()
 
     no_leidas_r = await db.execute(
         select(func.count()).where(
             Notificacion.id_usuario == id_usuario,
+            Notificacion.id_tenant == id_tenant,
             Notificacion.leida == False  # noqa: E712
         ).select_from(Notificacion)
     )
@@ -145,7 +161,7 @@ async def listar_notificaciones(db: AsyncSession, id_usuario: int, skip: int = 0
 
     items_r = await db.execute(
         select(Notificacion)
-        .where(Notificacion.id_usuario == id_usuario)
+        .where(Notificacion.id_usuario == id_usuario, Notificacion.id_tenant == id_tenant)
         .order_by(Notificacion.created_at.desc())
         .offset(skip).limit(limit)
     )
@@ -154,21 +170,23 @@ async def listar_notificaciones(db: AsyncSession, id_usuario: int, skip: int = 0
     return {"items": items, "total": total, "no_leidas": no_leidas}
 
 
-async def contar_no_leidas(db: AsyncSession, id_usuario: int) -> int:
+async def contar_no_leidas(db: AsyncSession, id_usuario: int, id_tenant: int) -> int:
     r = await db.execute(
         select(func.count()).where(
             Notificacion.id_usuario == id_usuario,
+            Notificacion.id_tenant == id_tenant,
             Notificacion.leida == False  # noqa: E712
         ).select_from(Notificacion)
     )
     return r.scalar_one()
 
 
-async def marcar_leida(db: AsyncSession, id_notificacion: int, id_usuario: int) -> bool:
+async def marcar_leida(db: AsyncSession, id_notificacion: int, id_usuario: int, id_tenant: int) -> bool:
     r = await db.execute(
         select(Notificacion).where(
             Notificacion.id_notificacion == id_notificacion,
             Notificacion.id_usuario == id_usuario,
+            Notificacion.id_tenant == id_tenant,
         )
     )
     notif = r.scalar_one_or_none()
@@ -179,10 +197,10 @@ async def marcar_leida(db: AsyncSession, id_notificacion: int, id_usuario: int) 
     return True
 
 
-async def marcar_todas_leidas(db: AsyncSession, id_usuario: int):
+async def marcar_todas_leidas(db: AsyncSession, id_usuario: int, id_tenant: int):
     await db.execute(
         update(Notificacion)
-        .where(Notificacion.id_usuario == id_usuario, Notificacion.leida == False)  # noqa: E712
+        .where(Notificacion.id_usuario == id_usuario, Notificacion.id_tenant == id_tenant, Notificacion.leida == False)  # noqa: E712
         .values(leida=True)
     )
     await db.commit()

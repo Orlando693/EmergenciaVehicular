@@ -26,10 +26,11 @@ def calcular_distancia(lat1, lon1, lat2, lon2) -> float:
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-async def asignar_taller_optimo(id_incidente: int, db: AsyncSession) -> IncidenteOut:
+async def asignar_taller_optimo(id_incidente: int, id_tenant: int, db: AsyncSession) -> IncidenteOut:
     # 1. Obtener incidente disponible
     stmt = select(Incidente).where(
         Incidente.id_incidente == id_incidente,
+        Incidente.id_tenant == id_tenant,
         Incidente.id_taller.is_(None),
         Incidente.estado == "REPORTADO",
     )
@@ -43,7 +44,7 @@ async def asignar_taller_optimo(id_incidente: int, db: AsyncSession) -> Incident
         )
 
     # 2. Talleres disponibles
-    res_talleres = await db.execute(select(Taller).where(Taller.estado_registro == "APROBADO"))
+    res_talleres = await db.execute(select(Taller).where(Taller.estado_registro == "APROBADO", Taller.id_tenant == id_tenant))
     talleres = res_talleres.scalars().all()
 
     if not talleres:
@@ -70,6 +71,7 @@ async def asignar_taller_optimo(id_incidente: int, db: AsyncSession) -> Incident
 
     # Historial: asignacion de taller
     hist = IncidenteHistorial(
+        id_tenant=id_tenant,
         id_incidente=incidente.id_incidente,
         estado_anterior="REPORTADO",
         estado_nuevo="EN_PROCESO",
@@ -80,7 +82,7 @@ async def asignar_taller_optimo(id_incidente: int, db: AsyncSession) -> Incident
 
     # 5. Notificar al cliente
     try:
-        cliente_r = await db.execute(select(Cliente).where(Cliente.id_cliente == incidente.id_cliente))
+        cliente_r = await db.execute(select(Cliente).where(Cliente.id_cliente == incidente.id_cliente, Cliente.id_tenant == id_tenant))
         cliente = cliente_r.scalar_one_or_none()
         if cliente:
             await notificacion_service.crear_notificacion(
@@ -90,6 +92,7 @@ async def asignar_taller_optimo(id_incidente: int, db: AsyncSession) -> Incident
                 mensaje=f"Tu incidente fue asignado al taller: {taller_optimo.razon_social}. Pronto se pondran en contacto contigo.",
                 tipo="ASIGNACION",
                 id_incidente=incidente.id_incidente,
+                id_tenant=id_tenant,
             )
     except Exception as exc:
         logger.warning(f"No se pudo notificar al cliente: {exc}")
@@ -103,15 +106,16 @@ async def asignar_taller_optimo(id_incidente: int, db: AsyncSession) -> Incident
             mensaje=f"Se te asigno un incidente de tipo {incidente.clasificacion_ia or 'vehicular'}. Revisa los detalles en la plataforma.",
             tipo="NUEVO_SERVICIO",
             id_incidente=incidente.id_incidente,
+            id_tenant=id_tenant,
         )
     except Exception as exc:
         logger.warning(f"No se pudo notificar al taller: {exc}")
 
-    return await obtener_detalle_incidente(incidente.id_incidente, 0, es_admin=True, es_taller=False, db=db)
+    return await obtener_detalle_incidente(incidente.id_incidente, 0, es_admin=True, es_taller=False, db=db, id_tenant=id_tenant)
 
 
-async def _obtener_taller_del_usuario(id_usuario: int, db: AsyncSession) -> Taller:
-    res = await db.execute(select(Taller).where(Taller.id_usuario == id_usuario))
+async def _obtener_taller_del_usuario(id_usuario: int, id_tenant: int, db: AsyncSession) -> Taller:
+    res = await db.execute(select(Taller).where(Taller.id_usuario == id_usuario, Taller.id_tenant == id_tenant))
     taller = res.scalar_one_or_none()
     if not taller:
         raise HTTPException(
@@ -126,14 +130,14 @@ async def _obtener_taller_del_usuario(id_usuario: int, db: AsyncSession) -> Tall
     return taller
 
 
-async def aceptar_solicitud(id_incidente: int, id_usuario: int, db: AsyncSession) -> IncidenteOut:
+async def aceptar_solicitud(id_incidente: int, id_usuario: int, id_tenant: int, db: AsyncSession) -> IncidenteOut:
     """CU11/CU12 - El Taller acepta directamente una solicitud disponible.
     - Verifica que el taller esté aprobado.
     - Asigna el incidente al taller solo si sigue REPORTADO y sin taller.
     - Cambia estado a EN_PROCESO, registra historial y notifica al cliente."""
-    taller = await _obtener_taller_del_usuario(id_usuario, db)
+    taller = await _obtener_taller_del_usuario(id_usuario, id_tenant, db)
 
-    stmt = select(Incidente).where(Incidente.id_incidente == id_incidente)
+    stmt = select(Incidente).where(Incidente.id_incidente == id_incidente, Incidente.id_tenant == id_tenant)
     incidente = (await db.execute(stmt)).scalar_one_or_none()
 
     if not incidente:
@@ -155,6 +159,7 @@ async def aceptar_solicitud(id_incidente: int, id_usuario: int, db: AsyncSession
     db.add(incidente)
 
     hist = IncidenteHistorial(
+        id_tenant=id_tenant,
         id_incidente=incidente.id_incidente,
         estado_anterior="REPORTADO",
         estado_nuevo="EN_PROCESO",
@@ -170,7 +175,7 @@ async def aceptar_solicitud(id_incidente: int, id_usuario: int, db: AsyncSession
 
     # Notificar al cliente
     try:
-        cliente_r = await db.execute(select(Cliente).where(Cliente.id_cliente == incidente.id_cliente))
+        cliente_r = await db.execute(select(Cliente).where(Cliente.id_cliente == incidente.id_cliente, Cliente.id_tenant == id_tenant))
         cliente = cliente_r.scalar_one_or_none()
         if cliente:
             await notificacion_service.crear_notificacion(
@@ -180,25 +185,27 @@ async def aceptar_solicitud(id_incidente: int, id_usuario: int, db: AsyncSession
                 mensaje=f"El taller '{taller.razon_social}' aceptó tu solicitud y ya está en camino.",
                 tipo="ASIGNACION",
                 id_incidente=incidente.id_incidente,
+                id_tenant=id_tenant,
             )
     except Exception as exc:
         logger.warning(f"No se pudo notificar al cliente al aceptar solicitud: {exc}")
 
-    return await obtener_detalle_incidente(incidente.id_incidente, 0, es_admin=True, es_taller=False, db=db)
+    return await obtener_detalle_incidente(incidente.id_incidente, 0, es_admin=True, es_taller=False, db=db, id_tenant=id_tenant)
 
 
 async def rechazar_solicitud(
     id_incidente: int,
     id_usuario: int,
+    id_tenant: int,
     observacion: str | None,
     db: AsyncSession,
 ) -> dict:
     """CU11 - El Taller rechaza una solicitud disponible.
     - Solo registra historial; el incidente sigue REPORTADO y disponible para otros.
     - No elimina ni modifica datos del cliente."""
-    taller = await _obtener_taller_del_usuario(id_usuario, db)
+    taller = await _obtener_taller_del_usuario(id_usuario, id_tenant, db)
 
-    stmt = select(Incidente).where(Incidente.id_incidente == id_incidente)
+    stmt = select(Incidente).where(Incidente.id_incidente == id_incidente, Incidente.id_tenant == id_tenant)
     incidente = (await db.execute(stmt)).scalar_one_or_none()
 
     if not incidente:
@@ -212,6 +219,7 @@ async def rechazar_solicitud(
 
     nota = (observacion or "Sin observación").strip()
     hist = IncidenteHistorial(
+        id_tenant=id_tenant,
         id_incidente=incidente.id_incidente,
         estado_anterior=incidente.estado,
         estado_nuevo=incidente.estado,
@@ -227,7 +235,7 @@ async def rechazar_solicitud(
 
     # Notificar al cliente que un taller rechazó (informativo, sin alarma).
     try:
-        cliente_r = await db.execute(select(Cliente).where(Cliente.id_cliente == incidente.id_cliente))
+        cliente_r = await db.execute(select(Cliente).where(Cliente.id_cliente == incidente.id_cliente, Cliente.id_tenant == id_tenant))
         cliente = cliente_r.scalar_one_or_none()
         if cliente:
             await notificacion_service.crear_notificacion(
@@ -237,6 +245,7 @@ async def rechazar_solicitud(
                 mensaje=f"Un taller no pudo tomar tu caso. Seguimos buscando otro disponible.",
                 tipo="ESTADO_CAMBIO",
                 id_incidente=incidente.id_incidente,
+                id_tenant=id_tenant,
             )
     except Exception as exc:
         logger.warning(f"No se pudo notificar al cliente al rechazar solicitud: {exc}")

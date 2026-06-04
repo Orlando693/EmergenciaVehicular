@@ -1,3 +1,4 @@
+from app.models.tenant import Tenant
 from app.models.usuario import Usuario, Rol, Permiso, RolPermiso, UsuarioRol
 from app.models.cliente import Cliente
 from app.models.taller import Taller
@@ -9,10 +10,14 @@ from app.models.notificacion import Notificacion
 from app.models.dispositivo_push import DispositivoPush
 from app.models.mensaje_chat import MensajeChat
 from app.models.pago import Pago
+from app.models.emergencia_offline_sync import EmergenciaOfflineSync
+from app.models.cotizacion_reparacion import CotizacionReparacion
 
 __all__ = [
+    "Tenant",
     "Usuario", "Rol", "Permiso", "RolPermiso", "UsuarioRol",
     "Cliente", "Taller", "Tecnico", "Vehiculo",
     "Incidente", "IncidenteHistorial",
-    "Bitacora", "Notificacion", "DispositivoPush", "MensajeChat", "Pago"
+    "Bitacora", "Notificacion", "DispositivoPush", "MensajeChat", "Pago",
+    "EmergenciaOfflineSync", "CotizacionReparacion",
 ]

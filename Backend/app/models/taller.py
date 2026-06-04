@@ -12,6 +12,7 @@ class Taller(Base):
     __tablename__ = "talleres"
 
     id_taller = Column(BigInteger, primary_key=True, autoincrement=True)
+    id_tenant = Column(BigInteger, ForeignKey("tenants.id_tenant"), nullable=False)
     id_usuario = Column(BigInteger, ForeignKey("usuarios.id_usuario", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, unique=True)
     razon_social = Column(String(150), nullable=False)
     nombre_comercial = Column(String(150), nullable=False)
@@ -30,4 +31,5 @@ class Taller(Base):
     updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
     usuario = relationship("Usuario", back_populates="taller")
+    tenant = relationship("Tenant")
     tecnicos = relationship("Tecnico", back_populates="taller", cascade="all, delete-orphan")

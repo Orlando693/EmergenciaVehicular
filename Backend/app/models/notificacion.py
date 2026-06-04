@@ -8,6 +8,7 @@ class Notificacion(Base):
     __tablename__ = "notificaciones"
 
     id_notificacion = Column(BigInteger, primary_key=True, autoincrement=True)
+    id_tenant        = Column(BigInteger, ForeignKey("tenants.id_tenant"), nullable=False)
     id_usuario      = Column(BigInteger, ForeignKey("usuarios.id_usuario", ondelete="CASCADE"), nullable=False)
     id_incidente    = Column(BigInteger, ForeignKey("incidentes.id_incidente", ondelete="CASCADE"), nullable=True)
 
@@ -20,4 +21,5 @@ class Notificacion(Base):
     created_at = Column(DateTime, nullable=False, default=func.now())
 
     usuario   = relationship("Usuario")
+    tenant    = relationship("Tenant")
     incidente = relationship("Incidente")

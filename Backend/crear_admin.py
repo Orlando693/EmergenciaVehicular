@@ -13,6 +13,7 @@ from sqlalchemy import select, text
 from app.config import settings
 from app.database import Base
 from app.models import *  # noqa – registra todos los modelos
+from app.models.tenant import Tenant
 from app.models.usuario import Usuario, Rol, Permiso, RolPermiso, UsuarioRol
 from app.core.security import hash_password
 
@@ -106,7 +107,15 @@ async def setup():
         await conn.run_sync(Base.metadata.create_all)
         print("[OK] Tablas creadas/verificadas")
 
-    # 2) Insertar roles
+    # 2) Insertar tenant demo
+    async with Session() as db:
+        tenant = (await db.execute(select(Tenant).where(Tenant.slug == "tenant-demo"))).scalar_one_or_none()
+        if not tenant:
+            db.add(Tenant(nombre="Tenant Demo", slug="tenant-demo", estado="ACTIVO"))
+            await db.commit()
+        print("[OK] Tenant demo verificado/creado")
+
+    # 3) Insertar roles
     async with Session() as db:
         for r in ROLES:
             existe = await db.execute(select(Rol).where(Rol.nombre == r["nombre"]))
@@ -115,7 +124,7 @@ async def setup():
         await db.commit()
         print("[OK] Roles verificados/creados")
 
-    # 3) Insertar permisos
+    # 4) Insertar permisos
     async with Session() as db:
         for codigo, desc in PERMISOS:
             existe = await db.execute(select(Permiso).where(Permiso.codigo == codigo))
@@ -124,7 +133,7 @@ async def setup():
         await db.commit()
         print("[OK] Permisos verificados/creados")
 
-    # 4) Asignar permisos a roles
+    # 5) Asignar permisos a roles
     async with Session() as db:
         for rol_nombre, codigos in ROL_PERMISOS.items():
             rol = (await db.execute(select(Rol).where(Rol.nombre == rol_nombre))).scalar_one_or_none()
@@ -142,14 +151,19 @@ async def setup():
         await db.commit()
         print("[OK] Permisos asignados a roles")
 
-    # 5) Crear usuario administrador
+    # 6) Crear usuario administrador
     async with Session() as db:
+        tenant_demo = (await db.execute(select(Tenant).where(Tenant.slug == "tenant-demo"))).scalar_one()
         existe = (await db.execute(select(Usuario).where(Usuario.email == "admin@emergencia.com"))).scalar_one_or_none()
         if existe:
+            if existe.id_tenant is None:
+                existe.id_tenant = tenant_demo.id_tenant
+                await db.commit()
             print("\n[INFO] El administrador ya existe.")
         else:
             rol_admin = (await db.execute(select(Rol).where(Rol.nombre == "ADMINISTRADOR"))).scalar_one()
             admin = Usuario(
+                id_tenant=tenant_demo.id_tenant,
                 nombres="Admin",
                 apellidos="Sistema",
                 email="admin@emergencia.com",

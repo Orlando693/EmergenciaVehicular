@@ -50,7 +50,7 @@ async def upload_file(
     dependencies=[Depends(require_roles("TALLER", "ADMINISTRADOR"))]
 )
 async def actualizar_estado_servicio(id_incidente: int, estado_update: IncidenteEstadoUpdate, db: DBDep, current_user: CurrentUser):
-    return await incidente_service.actualizar_estado_incidente(id_incidente, current_user.id_usuario, estado_update, db)
+    return await incidente_service.actualizar_estado_incidente(id_incidente, current_user.id_usuario, estado_update, db, current_user.id_tenant)
 
 @router.get(
     "/{id_incidente}/historial",
@@ -61,7 +61,7 @@ async def actualizar_estado_servicio(id_incidente: int, estado_update: Incidente
 async def consultar_historial_servicio(id_incidente: int, db: DBDep, current_user: CurrentUser):
     es_admin = any(rol.nombre == "ADMINISTRADOR" for rol in current_user.roles) 
     es_taller = any(rol.nombre == "TALLER" for rol in current_user.roles)       
-    return await incidente_service.consultar_historial_servicio(id_incidente, current_user.id_usuario, es_admin, es_taller, db)
+    return await incidente_service.consultar_historial_servicio(id_incidente, current_user.id_usuario, es_admin, es_taller, db, current_user.id_tenant)
 
 @router.get(
     "/mis-metricas",
@@ -70,7 +70,7 @@ async def consultar_historial_servicio(id_incidente: int, db: DBDep, current_use
 )
 async def mis_metricas_cliente(db: DBDep, current_user: CurrentUser):
     """El cliente consulta el resumen de sus incidentes y pagos."""
-    return await incidente_service.obtener_metricas_cliente(current_user.id_usuario, db)
+    return await incidente_service.obtener_metricas_cliente(current_user.id_usuario, current_user.id_tenant, db)
 
 
 @router.post(
@@ -81,7 +81,7 @@ async def mis_metricas_cliente(db: DBDep, current_user: CurrentUser):
     dependencies=[Depends(require_roles("CLIENTE"))]
 )
 async def registrar_incidente(incidente: IncidenteCreate, db: DBDep, current_user: CurrentUser):
-    return await incidente_service.registrar_incidente_inteligente(incidente, current_user.id_usuario, db)
+    return await incidente_service.registrar_incidente_inteligente(incidente, current_user.id_usuario, current_user.id_tenant, db)
 
 @router.get(
     "",
@@ -92,7 +92,7 @@ async def registrar_incidente(incidente: IncidenteCreate, db: DBDep, current_use
 async def consultar_incidentes(db: DBDep, current_user: CurrentUser):
     es_admin = any(rol.nombre == "ADMINISTRADOR" for rol in current_user.roles) 
     es_taller = any(rol.nombre == "TALLER" for rol in current_user.roles)       
-    return await incidente_service.consultar_historial_incidentes(current_user.id_usuario, es_admin, es_taller, db)
+    return await incidente_service.consultar_historial_incidentes(current_user.id_usuario, es_admin, es_taller, db, current_user.id_tenant)
 
 @router.get(
     "/{id_incidente}",
@@ -103,7 +103,7 @@ async def consultar_incidentes(db: DBDep, current_user: CurrentUser):
 async def obtener_detalle_incidente(id_incidente: int, db: DBDep, current_user: CurrentUser):
     es_admin = any(rol.nombre == "ADMINISTRADOR" for rol in current_user.roles)
     es_taller = any(rol.nombre == "TALLER" for rol in current_user.roles)
-    return await incidente_service.obtener_detalle_incidente(id_incidente, current_user.id_usuario, es_admin, es_taller, db)
+    return await incidente_service.obtener_detalle_incidente(id_incidente, current_user.id_usuario, es_admin, es_taller, db, current_user.id_tenant)
 
 @router.post(
     "/{id_incidente}/asignar-taller",
@@ -113,4 +113,4 @@ async def obtener_detalle_incidente(id_incidente: int, db: DBDep, current_user: 
     dependencies=[Depends(require_roles("ADMINISTRADOR"))]
 )
 async def procesar_asignacion_taller(id_incidente: int, db: DBDep, current_user: CurrentUser):
-    return await asignar_taller_optimo(id_incidente, db)
+    return await asignar_taller_optimo(id_incidente, current_user.id_tenant, db)

@@ -8,6 +8,7 @@ class Pago(Base):
     __tablename__ = "pagos"
 
     id_pago      = Column(BigInteger, primary_key=True, autoincrement=True)
+    id_tenant    = Column(BigInteger, ForeignKey("tenants.id_tenant"), nullable=False)
     id_incidente = Column(BigInteger, ForeignKey("incidentes.id_incidente", ondelete="CASCADE"), nullable=False, unique=True)
     id_cliente   = Column(BigInteger, ForeignKey("clientes.id_cliente",   ondelete="CASCADE"), nullable=False)
 
@@ -28,4 +29,5 @@ class Pago(Base):
     updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
     incidente = relationship("Incidente")
+    tenant    = relationship("Tenant")
     cliente   = relationship("Cliente")

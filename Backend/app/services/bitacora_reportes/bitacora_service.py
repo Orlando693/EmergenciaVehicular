@@ -5,8 +5,9 @@ from app.models.bitacora import Bitacora
 from app.schemas.bitacora import BitacoraCreate
 
 
-async def create_log(db: AsyncSession, log_data: BitacoraCreate) -> Bitacora:
+async def create_log(db: AsyncSession, log_data: BitacoraCreate, id_tenant: int) -> Bitacora:
     db_log = Bitacora(
+        id_tenant=id_tenant,
         modulo=log_data.modulo,
         accion=log_data.accion,
         ip=log_data.ip,
@@ -20,12 +21,13 @@ async def create_log(db: AsyncSession, log_data: BitacoraCreate) -> Bitacora:
     return db_log
 
 
-async def get_logs(db: AsyncSession, skip: int = 0, limit: int = 20):
-    count_result = await db.execute(select(func.count()).select_from(Bitacora))
+async def get_logs(db: AsyncSession, id_tenant: int, skip: int = 0, limit: int = 20):
+    count_result = await db.execute(select(func.count()).where(Bitacora.id_tenant == id_tenant).select_from(Bitacora))
     total = count_result.scalar_one()
 
     result = await db.execute(
         select(Bitacora)
+        .where(Bitacora.id_tenant == id_tenant)
         .order_by(desc(Bitacora.created_at))
         .offset(skip)
         .limit(limit)
@@ -34,9 +36,9 @@ async def get_logs(db: AsyncSession, skip: int = 0, limit: int = 20):
     return {"items": items, "total": total}
 
 
-async def delete_all_logs(db: AsyncSession) -> int:
-    count_result = await db.execute(select(func.count()).select_from(Bitacora))
+async def delete_all_logs(db: AsyncSession, id_tenant: int) -> int:
+    count_result = await db.execute(select(func.count()).where(Bitacora.id_tenant == id_tenant).select_from(Bitacora))
     total = count_result.scalar_one()
-    await db.execute(delete(Bitacora))
+    await db.execute(delete(Bitacora).where(Bitacora.id_tenant == id_tenant))
     await db.commit()
     return total

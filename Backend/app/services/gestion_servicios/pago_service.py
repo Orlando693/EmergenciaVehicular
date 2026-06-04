@@ -45,14 +45,14 @@ def _generar_referencia() -> str:
 # ── Helpers de autorización ───────────────────────────────────────────────────
 
 async def _obtener_incidente_y_cliente(
-    id_incidente: int, id_usuario: int, db: AsyncSession
+    id_incidente: int, id_usuario: int, id_tenant: int, db: AsyncSession
 ) -> tuple[Incidente, Cliente]:
-    r = await db.execute(select(Incidente).where(Incidente.id_incidente == id_incidente))
+    r = await db.execute(select(Incidente).where(Incidente.id_incidente == id_incidente, Incidente.id_tenant == id_tenant))
     incidente = r.scalar_one_or_none()
     if not incidente:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incidente no encontrado")
 
-    cr = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario))
+    cr = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario, Cliente.id_tenant == id_tenant))
     cliente = cr.scalar_one_or_none()
     if not cliente:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo clientes pueden realizar pagos")
@@ -71,15 +71,15 @@ async def _obtener_incidente_y_cliente(
 
 # ── Servicio principal ────────────────────────────────────────────────────────
 
-async def obtener_costo(id_incidente: int, id_usuario: int, db: AsyncSession) -> dict:
-    incidente, cliente = await _obtener_incidente_y_cliente(id_incidente, id_usuario, db)
+async def obtener_costo(id_incidente: int, id_usuario: int, id_tenant: int, db: AsyncSession) -> dict:
+    incidente, cliente = await _obtener_incidente_y_cliente(id_incidente, id_usuario, id_tenant, db)
 
     monto = calcular_monto(incidente.clasificacion_ia)
     comision = (monto * COMISION_PCT).quantize(Decimal("0.01"))
     al_taller = (monto - comision).quantize(Decimal("0.01"))
 
     # ¿Ya existe un pago?
-    pr = await db.execute(select(Pago).where(Pago.id_incidente == id_incidente))
+    pr = await db.execute(select(Pago).where(Pago.id_incidente == id_incidente, Pago.id_tenant == id_tenant))
     pago = pr.scalar_one_or_none()
 
     return {
@@ -95,6 +95,7 @@ async def obtener_costo(id_incidente: int, id_usuario: int, db: AsyncSession) ->
 async def obtener_info_pago(
     id_incidente: int,
     id_usuario: int,
+    id_tenant: int,
     es_admin: bool,
     es_taller: bool,
     es_cliente: bool,
@@ -102,7 +103,7 @@ async def obtener_info_pago(
 ) -> dict:
     """A2 - Devuelve la misma info de costo+pago para CLIENTE dueño, TALLER asignado o ADMIN.
     No exige que el incidente esté en RESUELTO; sirve también para mostrar el pago ya existente."""
-    r = await db.execute(select(Incidente).where(Incidente.id_incidente == id_incidente))
+    r = await db.execute(select(Incidente).where(Incidente.id_incidente == id_incidente, Incidente.id_tenant == id_tenant))
     incidente = r.scalar_one_or_none()
     if not incidente:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incidente no encontrado")
@@ -110,12 +111,12 @@ async def obtener_info_pago(
     if es_admin:
         pass
     elif es_taller:
-        tr = await db.execute(select(Taller).where(Taller.id_usuario == id_usuario))
+        tr = await db.execute(select(Taller).where(Taller.id_usuario == id_usuario, Taller.id_tenant == id_tenant))
         taller = tr.scalar_one_or_none()
         if not taller or incidente.id_taller != taller.id_taller:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a este servicio")
     elif es_cliente:
-        cr = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario))
+        cr = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario, Cliente.id_tenant == id_tenant))
         cliente = cr.scalar_one_or_none()
         if not cliente or incidente.id_cliente != cliente.id_cliente:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a este incidente")
@@ -126,7 +127,7 @@ async def obtener_info_pago(
     comision = (monto * COMISION_PCT).quantize(Decimal("0.01"))
     al_taller = (monto - comision).quantize(Decimal("0.01"))
 
-    pr = await db.execute(select(Pago).where(Pago.id_incidente == id_incidente))
+    pr = await db.execute(select(Pago).where(Pago.id_incidente == id_incidente, Pago.id_tenant == id_tenant))
     pago = pr.scalar_one_or_none()
 
     return {
@@ -143,14 +144,15 @@ async def obtener_info_pago(
 async def iniciar_pago(
     id_incidente: int,
     id_usuario:   int,
+    id_tenant:    int,
     metodo_pago:  str,
     numero_tarjeta: str | None,
     db: AsyncSession,
 ) -> Pago:
-    incidente, cliente = await _obtener_incidente_y_cliente(id_incidente, id_usuario, db)
+    incidente, cliente = await _obtener_incidente_y_cliente(id_incidente, id_usuario, id_tenant, db)
 
     # Solo un pago por incidente
-    pr = await db.execute(select(Pago).where(Pago.id_incidente == id_incidente))
+    pr = await db.execute(select(Pago).where(Pago.id_incidente == id_incidente, Pago.id_tenant == id_tenant))
     pago_existente = pr.scalar_one_or_none()
     if pago_existente and pago_existente.estado == "COMPLETADO":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Este servicio ya fue pagado.")
@@ -184,6 +186,7 @@ async def iniciar_pago(
         pago = pago_existente
     else:
         pago = Pago(
+            id_tenant=id_tenant,
             id_incidente=id_incidente,
             id_cliente=cliente.id_cliente,
             monto_total=monto,
@@ -203,6 +206,7 @@ async def iniciar_pago(
         incidente.estado = "PAGADO"
         db.add(incidente)
         hist = IncidenteHistorial(
+            id_tenant=id_tenant,
             id_incidente=id_incidente,
             estado_anterior="RESUELTO",
             estado_nuevo="PAGADO",
@@ -220,6 +224,7 @@ async def iniciar_pago(
                 mensaje=f"Tu pago de ${monto:.2f} fue procesado exitosamente. Referencia: {referencia}.",
                 tipo="PAGO_REALIZADO",
                 id_incidente=id_incidente,
+                id_tenant=id_tenant,
             )
         except Exception as exc:
             logger.warning(f"[Pago] No se pudo notificar al cliente: {exc}")
@@ -227,7 +232,7 @@ async def iniciar_pago(
         # Notificar al taller asignado (A1 - sincronización pago → taller)
         try:
             if incidente.id_taller is not None:
-                tr = await db.execute(select(Taller).where(Taller.id_taller == incidente.id_taller))
+                tr = await db.execute(select(Taller).where(Taller.id_taller == incidente.id_taller, Taller.id_tenant == id_tenant))
                 taller = tr.scalar_one_or_none()
                 if taller:
                     await notificacion_service.crear_notificacion(
@@ -241,6 +246,7 @@ async def iniciar_pago(
                         ),
                         tipo="PAGO_RECIBIDO",
                         id_incidente=id_incidente,
+                        id_tenant=id_tenant,
                     )
         except Exception as exc:
             logger.warning(f"[Pago] No se pudo notificar al taller: {exc}")
@@ -249,6 +255,7 @@ async def iniciar_pago(
         # También dejar trazabilidad del intento fallido
         try:
             hist_fail = IncidenteHistorial(
+                id_tenant=id_tenant,
                 id_incidente=id_incidente,
                 estado_anterior=incidente.estado,
                 estado_nuevo=incidente.estado,
@@ -262,30 +269,30 @@ async def iniciar_pago(
     return pago
 
 
-async def listar_pagos_cliente(id_usuario: int, db: AsyncSession, skip: int = 0, limit: int = 20) -> dict:
-    cr = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario))
+async def listar_pagos_cliente(id_usuario: int, id_tenant: int, db: AsyncSession, skip: int = 0, limit: int = 20) -> dict:
+    cr = await db.execute(select(Cliente).where(Cliente.id_usuario == id_usuario, Cliente.id_tenant == id_tenant))
     cliente = cr.scalar_one_or_none()
     if not cliente:
         return {"items": [], "total": 0}
 
     total_r = await db.execute(
-        select(func.count()).where(Pago.id_cliente == cliente.id_cliente).select_from(Pago)
+        select(func.count()).where(Pago.id_cliente == cliente.id_cliente, Pago.id_tenant == id_tenant).select_from(Pago)
     )
     total = total_r.scalar_one()
 
     items_r = await db.execute(
         select(Pago)
-        .where(Pago.id_cliente == cliente.id_cliente)
+        .where(Pago.id_cliente == cliente.id_cliente, Pago.id_tenant == id_tenant)
         .order_by(Pago.created_at.desc())
         .offset(skip).limit(limit)
     )
     return {"items": items_r.scalars().all(), "total": total}
 
 
-async def listar_todos_pagos(db: AsyncSession, skip: int = 0, limit: int = 20) -> dict:
-    total_r = await db.execute(select(func.count()).select_from(Pago))
+async def listar_todos_pagos(db: AsyncSession, id_tenant: int, skip: int = 0, limit: int = 20) -> dict:
+    total_r = await db.execute(select(func.count()).where(Pago.id_tenant == id_tenant).select_from(Pago))
     total = total_r.scalar_one()
     items_r = await db.execute(
-        select(Pago).order_by(Pago.created_at.desc()).offset(skip).limit(limit)
+        select(Pago).where(Pago.id_tenant == id_tenant).order_by(Pago.created_at.desc()).offset(skip).limit(limit)
     )
     return {"items": items_r.scalars().all(), "total": total}

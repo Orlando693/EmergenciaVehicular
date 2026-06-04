@@ -38,8 +38,14 @@ def decode_token(token: str) -> TokenData:
         id_usuario: int = payload.get("sub")
         email: str = payload.get("email")
         roles: list[str] = payload.get("roles", [])
+        id_tenant: int | None = payload.get("id_tenant")
         if id_usuario is None:
             raise JWTError("Token invalido")
-        return TokenData(id_usuario=int(id_usuario), email=email, roles=roles)
+        return TokenData(
+            id_usuario=int(id_usuario),
+            email=email,
+            roles=roles,
+            id_tenant=int(id_tenant) if id_tenant is not None else None,
+        )
     except JWTError:
         raise

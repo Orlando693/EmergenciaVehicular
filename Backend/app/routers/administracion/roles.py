@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.core.dependencies import DBDep, require_roles
+from app.core.dependencies import CurrentUser, DBDep, require_roles
 from app.schemas.rol import RolCreate, RolUpdate, RolOut, PermisoOut, AsignarPermisoRequest, AsignarRolRequest, PermisoCreate
 from app.services import rol_service
 
@@ -44,5 +44,5 @@ async def crear_permiso(data: PermisoCreate, db: DBDep):
 
 
 @router.put("/usuarios/{id_usuario}/roles", summary="Asignar roles a usuario")
-async def asignar_roles_usuario(id_usuario: int, data: AsignarRolRequest, db: DBDep):
-    return await rol_service.asignar_roles_a_usuario(id_usuario, data.id_roles, db)
+async def asignar_roles_usuario(id_usuario: int, data: AsignarRolRequest, db: DBDep, current_user: CurrentUser):
+    return await rol_service.asignar_roles_a_usuario(id_usuario, data.id_roles, db, current_user.id_tenant)

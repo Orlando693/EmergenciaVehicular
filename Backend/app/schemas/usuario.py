@@ -32,6 +32,7 @@ class UsuarioEstadoUpdate(BaseModel):
 
 class UsuarioOut(BaseModel):
     id_usuario: int
+    id_tenant: int
     nombres: str
     apellidos: str
     email: str
@@ -47,6 +48,7 @@ class UsuarioOut(BaseModel):
     def from_orm_with_roles(cls, usuario) -> "UsuarioOut":
         data = {
             "id_usuario": usuario.id_usuario,
+            "id_tenant": usuario.id_tenant,
             "nombres": usuario.nombres,
             "apellidos": usuario.apellidos,
             "email": usuario.email,

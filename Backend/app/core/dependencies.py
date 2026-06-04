@@ -39,6 +39,13 @@ async def get_current_user(
     usuario = result.scalar_one_or_none()
     if usuario is None or texto_estado_usuario(usuario.estado) != "ACTIVO":
         raise credentials_exception
+    if usuario.id_tenant is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El usuario autenticado no tiene tenant asignado",
+        )
+    if token_data.id_tenant is not None and int(usuario.id_tenant) != int(token_data.id_tenant):
+        raise credentials_exception
     return usuario
 
 

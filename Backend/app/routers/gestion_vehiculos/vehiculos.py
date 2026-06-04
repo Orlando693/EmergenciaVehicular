@@ -17,7 +17,7 @@ router = APIRouter(
     description="Permite a un cliente autenticado registrar un nuevo vehículo en el sistema"
 )
 async def registrar_vehiculo(vehiculo: VehiculoCreate, db: DBDep, current_user: CurrentUser):
-    return await vehiculo_service.registrar_vehiculo(vehiculo, current_user.id_usuario, db)
+    return await vehiculo_service.registrar_vehiculo(vehiculo, current_user.id_usuario, current_user.id_tenant, db)
 
 @router.get(
     "",
@@ -27,7 +27,7 @@ async def registrar_vehiculo(vehiculo: VehiculoCreate, db: DBDep, current_user: 
     description="Obtiene todos los vehículos asociados al cliente autenticado"
 )
 async def consultar_vehiculos(db: DBDep, current_user: CurrentUser):
-    return await vehiculo_service.consultar_vehiculos_cliente(current_user.id_usuario, db)
+    return await vehiculo_service.consultar_vehiculos_cliente(current_user.id_usuario, current_user.id_tenant, db)
 
 @router.get(
     "/{id_vehiculo}",
@@ -37,7 +37,7 @@ async def consultar_vehiculos(db: DBDep, current_user: CurrentUser):
     description="Obtiene los detalles de un vehículo específico que pertenece al cliente"
 )
 async def obtener_vehiculo(id_vehiculo: int, db: DBDep, current_user: CurrentUser):
-    return await vehiculo_service.obtener_vehiculo(id_vehiculo, current_user.id_usuario, db)
+    return await vehiculo_service.obtener_vehiculo(id_vehiculo, current_user.id_usuario, current_user.id_tenant, db)
 
 @router.patch(
     "/{id_vehiculo}",
@@ -47,4 +47,4 @@ async def obtener_vehiculo(id_vehiculo: int, db: DBDep, current_user: CurrentUse
     description="Permite a un cliente autenticado actualizar la información de su vehículo"
 )
 async def actualizar_vehiculo(id_vehiculo: int, vehiculo_update: VehiculoUpdate, db: DBDep, current_user: CurrentUser):
-    return await vehiculo_service.actualizar_vehiculo(id_vehiculo, vehiculo_update, current_user.id_usuario, db)
+    return await vehiculo_service.actualizar_vehiculo(id_vehiculo, vehiculo_update, current_user.id_usuario, current_user.id_tenant, db)
