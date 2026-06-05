@@ -1,6 +1,6 @@
 export interface Taller {
   id_taller: number;
-  id_usuario: number;
+  id_usuario: number | null;
   razon_social: string;
   nombre_comercial: string;
   nit: string | null;

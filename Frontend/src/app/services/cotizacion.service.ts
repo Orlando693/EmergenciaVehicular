@@ -37,7 +37,7 @@ export interface CotizacionRespuestaUpdate {
   providedIn: 'root'
 })
 export class CotizacionService {
-  private apiUrl = `${environment.apiUrl}/atencion-tiempo-real/cotizaciones`;
+  private apiUrl = `${environment.apiUrl}/cotizaciones`;
 
   constructor(private http: HttpClient) {}
 

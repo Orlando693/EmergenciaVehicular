@@ -62,8 +62,14 @@ export class LoginComponent {
         this.pantalla.set('credenciales');
         this.loadingWorkspace.set(false);
       },
-      error: () => {
-        this.errorWorkspace.set('Workspace no encontrado. Verifica el nombre e intenta de nuevo.');
+      error: (err) => {
+        if (err.status === 0) {
+          this.errorWorkspace.set('No se pudo conectar con el servidor. Verifica que el backend esté corriendo en localhost:8000.');
+        } else if (err.status === 404) {
+          this.errorWorkspace.set('Workspace "' + slug + '" no encontrado. Verifica el nombre e intenta de nuevo.');
+        } else {
+          this.errorWorkspace.set('Error ' + err.status + ': ' + (err.error?.detail ?? 'Error inesperado al verificar el workspace.'));
+        }
         this.loadingWorkspace.set(false);
       }
     });

@@ -32,6 +32,14 @@ async def listar_tecnicos(id_taller: int, id_tenant: int, db: AsyncSession) -> l
     return result.scalars().all()
 
 
+async def listar_todos_tecnicos(id_tenant: int, db: AsyncSession) -> list[TecnicoOut]:
+    """Lista todos los técnicos activos del tenant (uso del ADMINISTRADOR)."""
+    result = await db.execute(
+        select(Tecnico).where(Tecnico.id_tenant == id_tenant, Tecnico.activo == True)
+    )
+    return result.scalars().all()
+
+
 async def obtener_tecnico(id_tecnico: int, id_taller: int, id_tenant: int, db: AsyncSession) -> TecnicoOut:
     result = await db.execute(
         select(Tecnico).where(

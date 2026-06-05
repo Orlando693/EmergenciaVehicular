@@ -13,7 +13,7 @@ class Taller(Base):
 
     id_taller = Column(BigInteger, primary_key=True, autoincrement=True)
     id_tenant = Column(BigInteger, ForeignKey("tenants.id_tenant"), nullable=False)
-    id_usuario = Column(BigInteger, ForeignKey("usuarios.id_usuario", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, unique=True)
+    id_usuario = Column(BigInteger, ForeignKey("usuarios.id_usuario", ondelete="SET NULL", onupdate="CASCADE"), nullable=True)
     razon_social = Column(String(150), nullable=False)
     nombre_comercial = Column(String(150), nullable=False)
     nit = Column(String(30), unique=True)

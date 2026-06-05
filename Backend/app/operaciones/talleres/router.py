@@ -82,8 +82,12 @@ async def registrar_taller(
     current_user: CurrentUser,
     db: DBDep,
 ):
-    """El usuario autenticado registra su taller. Estado inicial: PENDIENTE."""
-    return await taller_service.registrar_taller(current_user.id_usuario, current_user.id_tenant, data, db)
+    """TALLER: registra su propio taller (vinculado a su cuenta).
+    ADMINISTRADOR: registra un taller sin vincular usuario (queda sin dueño hasta ser asignado)."""
+    user_roles = {r.nombre for r in current_user.roles}
+    es_admin = "ADMINISTRADOR" in user_roles
+    id_usuario = None if es_admin else current_user.id_usuario
+    return await taller_service.registrar_taller(id_usuario, current_user.id_tenant, data, db)
 
 
 @router.get("", response_model=list[TallerOut], summary="Listar talleres",

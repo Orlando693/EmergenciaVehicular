@@ -29,6 +29,7 @@ import app.models  # noqa: F401
 from app.administracion.tenants.model import Tenant
 from app.administracion.usuarios.model import Usuario, Rol, UsuarioRol, Cliente
 from app.operaciones.talleres.model import Taller
+from app.gestion_comercial_servicio.planes.model import Plan, TenantSuscripcion
 
 TENANT_NOMBRE = "EmergenciaVehicular"
 TENANT_SLUG   = "emergencia-vehicular"
@@ -157,9 +158,98 @@ async def seed_cliente(db, tenant: Tenant, usuario: Usuario) -> None:
     print(f"  [+] Perfil Cliente creado (id={cliente.id_cliente})")
 
 
+PLANES_DATA = [
+    {
+        "slug": "demo",
+        "nombre": "Demo",
+        "descripcion": "Plan gratuito para talleres que quieren probar la plataforma.",
+        "precio": Decimal("0.00"),
+        "max_incidentes_mes": 5,
+        "max_tecnicos": 2,
+        "max_usuarios": 3,
+        "tiene_ia": False,
+        "tiene_reportes_avanzados": False,
+        "tiene_soporte_prioritario": False,
+        "tiene_notificaciones_push": True,
+        "orden": 1,
+    },
+    {
+        "slug": "basico",
+        "nombre": "Básico",
+        "descripcion": "Plan para talleres pequeños con operación habitual.",
+        "precio": Decimal("99.00"),
+        "max_incidentes_mes": 30,
+        "max_tecnicos": 5,
+        "max_usuarios": 10,
+        "tiene_ia": True,
+        "tiene_reportes_avanzados": False,
+        "tiene_soporte_prioritario": False,
+        "tiene_notificaciones_push": True,
+        "orden": 2,
+    },
+    {
+        "slug": "pro",
+        "nombre": "Pro",
+        "descripcion": "Plan avanzado para talleres con operación completa y soporte prioritario.",
+        "precio": Decimal("199.00"),
+        "max_incidentes_mes": 0,
+        "max_tecnicos": 0,
+        "max_usuarios": 0,
+        "tiene_ia": True,
+        "tiene_reportes_avanzados": True,
+        "tiene_soporte_prioritario": True,
+        "tiene_notificaciones_push": True,
+        "orden": 3,
+    },
+]
+
+
+async def seed_planes(db) -> dict[str, Plan]:
+    planes: dict[str, Plan] = {}
+    for data in PLANES_DATA:
+        res = await db.execute(select(Plan).where(Plan.slug == data["slug"]))
+        plan = res.scalar_one_or_none()
+        if plan:
+            for k, v in data.items():
+                setattr(plan, k, v)
+            print(f"  [OK] Plan actualizado: {data['nombre']}")
+        else:
+            plan = Plan(**data, estado="ACTIVO", moneda="BOB")
+            db.add(plan)
+            await db.flush()
+            print(f"  [+] Plan creado: {data['nombre']} (id={plan.id_plan})")
+        planes[data["slug"]] = plan
+    return planes
+
+
+async def seed_suscripcion(db, tenant: Tenant, plan: Plan) -> None:
+    res = await db.execute(
+        select(TenantSuscripcion).where(
+            TenantSuscripcion.id_tenant == tenant.id_tenant,
+            TenantSuscripcion.estado == "ACTIVO",
+        )
+    )
+    if res.scalar_one_or_none():
+        print(f"  [OK] Suscripción activa ya existe para {tenant.nombre}")
+        return
+    sus = TenantSuscripcion(
+        id_tenant=tenant.id_tenant,
+        id_plan=plan.id_plan,
+        estado="ACTIVO",
+        es_trial=(plan.precio == 0),
+    )
+    db.add(sus)
+    await db.flush()
+    print(f"  [+] Suscripción creada: {tenant.nombre} → Plan {plan.nombre}")
+
+
 async def main() -> None:
     print("\n=== Seed Local — EmergenciaVehicular ===\n")
     async with AsyncSessionLocal() as db:
+        print("Planes:")
+        planes = await seed_planes(db)
+
+        print("\nTenant y usuarios:")
         tenant = await get_or_create_tenant(db)
 
         usuarios_creados: dict[str, Usuario] = {}
@@ -170,6 +260,9 @@ async def main() -> None:
         print()
         await seed_taller(db, tenant, usuarios_creados["TALLER"])
         await seed_cliente(db, tenant, usuarios_creados["CLIENTE"])
+
+        print("\nSuscripción:")
+        await seed_suscripcion(db, tenant, planes["demo"])
 
         await db.commit()
 

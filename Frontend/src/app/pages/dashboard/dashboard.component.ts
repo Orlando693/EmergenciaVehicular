@@ -106,6 +106,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ],
     },
     {
+      section: 'PLANES Y SUSCRIPCIÓN',
+      expanded: true,
+      items: [
+        { label: 'Planes', icon: 'layers', route: '/dashboard/planes', roles: ['TALLER'] },
+      ],
+    },
+    {
       section: 'MI CUENTA',
       expanded: true,
       items: [
@@ -118,6 +125,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       items: [
         { label: 'Bitácora', icon: 'archive', route: '/dashboard/bitacora', roles: ['ADMINISTRADOR'] },
         { label: 'Reportes', icon: 'report',  route: '/dashboard/reportes', roles: ['ADMINISTRADOR'] },
+        { label: 'Backup',   icon: 'backup',  route: '/dashboard/backup',   roles: ['ADMINISTRADOR', 'TALLER'] },
       ],
     },
   ]);
@@ -202,6 +210,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       'wifi-off':   `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`,
       'clipboard':  `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`,
       'credit-card':`<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`,
+      'layers':     `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`,
+      'backup':     `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
     };
     return icons[name] ?? '';
   }

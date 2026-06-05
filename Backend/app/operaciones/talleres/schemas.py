@@ -47,7 +47,7 @@ class TallerEstadoUpdate(BaseModel):
 
 class TallerOut(BaseModel):
     id_taller: int
-    id_usuario: int
+    id_usuario: int | None
     razon_social: str
     nombre_comercial: str
     nit: str | None

@@ -23,6 +23,8 @@ export class TecnicosComponent implements OnInit {
   saving    = signal(false);
   idTaller  = signal(0);
 
+  esAdmin: boolean;
+
   tecnicoEditando = signal<Tecnico | null>(null);
   savingEdit      = signal(false);
   editForm: FormGroup;
@@ -35,6 +37,7 @@ export class TecnicosComponent implements OnInit {
     private auth: AuthService,
     private fb: FormBuilder,
   ) {
+    this.esAdmin = this.auth.rol === 'ADMINISTRADOR';
     this.form = this.fb.group({
       nombres:     ['', Validators.required],
       apellidos:   ['', Validators.required],
@@ -50,9 +53,21 @@ export class TecnicosComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.tallerSrv.miTaller().subscribe({
-      next: (t) => { this.idTaller.set(t.id_taller); this.cargar(); },
-      error: () => { this.error.set('No tienes un taller registrado'); this.loading.set(false); },
+    if (this.esAdmin) {
+      this.cargarTodos();
+    } else {
+      this.tallerSrv.miTaller().subscribe({
+        next: (t) => { this.idTaller.set(t.id_taller); this.cargar(); },
+        error: () => { this.error.set('No tienes un taller registrado'); this.loading.set(false); },
+      });
+    }
+  }
+
+  cargarTodos() {
+    this.loading.set(true);
+    this.srv.listarTodos().subscribe({
+      next: (d) => { this.tecnicos.set(d); this.loading.set(false); },
+      error: () => { this.error.set('Error al cargar técnicos'); this.loading.set(false); },
     });
   }
 
@@ -103,8 +118,8 @@ export class TecnicosComponent implements OnInit {
     if (!t) return;
     this.savingEdit.set(true);
     this.error.set('');
-    
-    this.srv.actualizar(this.idTaller(), t.id_tecnico, this.editForm.value).subscribe({
+
+    this.srv.actualizar(t.id_taller, t.id_tecnico, this.editForm.value).subscribe({
       next: (updated) => {
         this.tecnicos.update(list => list.map(x => x.id_tecnico === t.id_tecnico ? updated : x));
         this.success.set('Técnico actualizado correctamente');
@@ -120,8 +135,8 @@ export class TecnicosComponent implements OnInit {
   }
 
   desactivar(t: Tecnico) {
-    this.srv.desactivar(this.idTaller(), t.id_tecnico).subscribe({
-      next: () => this.cargar(),
+    this.srv.desactivar(t.id_taller, t.id_tecnico).subscribe({
+      next: () => this.esAdmin ? this.cargarTodos() : this.cargar(),
       error: (e) => this.error.set(e.error?.detail ?? 'Error'),
     });
   }

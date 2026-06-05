@@ -24,18 +24,22 @@ class WorkspaceInfo(BaseModel):
     summary="Verificar workspace por slug (público)",
 )
 async def verificar_workspace(slug: str, db: DBDep):
-    """Endpoint público: verifica que el slug de tenant existe y está activo."""
+    """Endpoint público: verifica que el slug de tenant existe."""
     res = await db.execute(
         select(Tenant).where(
-            func.lower(Tenant.slug) == slug.strip().lower(),
-            Tenant.estado == "ACTIVO",
+            func.lower(Tenant.slug) == slug.strip().lower()
         )
     )
     tenant = res.scalar_one_or_none()
     if not tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace no encontrado o inactivo",
+            detail=f"Workspace '{slug}' no encontrado",
+        )
+    if tenant.estado != "ACTIVO":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"El workspace '{tenant.nombre}' está {tenant.estado}",
         )
     return WorkspaceInfo(nombre=tenant.nombre, slug=tenant.slug)
 

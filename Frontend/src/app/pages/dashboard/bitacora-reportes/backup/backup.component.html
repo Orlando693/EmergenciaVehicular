@@ -1,0 +1,246 @@
+<div class="space-y-6">
+
+  <!-- ══ HEADER ══════════════════════════════════════════════════ -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Backup del Sistema</h1>
+      <p class="page-sub">Genera, programa y descarga copias de seguridad de todos los datos del tenant</p>
+    </div>
+  </div>
+
+  @if (successMsg()) { <div class="alert success">{{ successMsg() }}</div> }
+  @if (errorMsg())   { <div class="alert danger">{{ errorMsg() }}</div> }
+
+  <!-- ══ GRID PRINCIPAL (manual | config automática) ══════════════ -->
+  <div class="bkp-grid">
+
+    <!-- ── BACKUP MANUAL ──────────────────────────────────────── -->
+    <div class="bkp-card">
+      <div class="bkp-card-header">
+        <div class="bkp-icon bkp-icon-blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+        <div>
+          <p class="bkp-card-title">Backup Manual</p>
+          <p class="bkp-card-sub">Genera una copia de seguridad ahora mismo</p>
+        </div>
+      </div>
+
+      <div class="bkp-card-body">
+        <div class="bkp-info-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>Se exportará un archivo <strong>.json</strong> con todos los datos del tenant:
+            incidentes, usuarios, talleres, técnicos, vehículos, pagos y bitácora.</span>
+        </div>
+
+        <button
+          class="bkp-btn-primary w-full justify-center mt-4"
+          (click)="generarManual()"
+          [disabled]="loadingManual()">
+          @if (loadingManual()) {
+            <span class="spinner"></span> Generando backup...
+          } @else {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Generar Backup Manual
+          }
+        </button>
+      </div>
+    </div>
+
+    <!-- ── BACKUP AUTOMÁTICO ─────────────────────────────────── -->
+    <div class="bkp-card">
+      <div class="bkp-card-header">
+        <div class="bkp-icon" [class.bkp-icon-green]="cfgForm.activo" [class.bkp-icon-gray]="!cfgForm.activo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div>
+          <p class="bkp-card-title">Backup Automático</p>
+          <p class="bkp-card-sub">Programa copias de seguridad periódicas</p>
+        </div>
+        <!-- Toggle -->
+        <label class="bkp-toggle ml-auto">
+          <input type="checkbox" [(ngModel)]="cfgForm.activo"/>
+          <span class="bkp-toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="bkp-card-body space-y-4">
+
+        @if (config(); as c) {
+          @if (c.ultimo_backup) {
+            <div class="bkp-badge-row">
+              <span class="bkp-badge bkp-badge-green">
+                Último: {{ c.ultimo_backup | date:'dd/MM/yy HH:mm' }}
+              </span>
+            </div>
+          }
+          @if (c.proximo_backup && c.activo) {
+            <div class="bkp-badge-row">
+              <span class="bkp-badge bkp-badge-blue">
+                Próximo: {{ c.proximo_backup | date:'dd/MM/yy HH:mm' }}
+              </span>
+            </div>
+          }
+        }
+
+        <div class="bkp-form-row">
+          <div class="field-group">
+            <label class="field-label">Frecuencia</label>
+            <select [(ngModel)]="cfgForm.frecuencia" class="field-input" [disabled]="!cfgForm.activo">
+              <option value="DIARIO">Diario</option>
+              <option value="SEMANAL">Semanal</option>
+              <option value="MENSUAL">Mensual</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Hora de ejecución</label>
+            <input type="time" [(ngModel)]="cfgForm.hora" class="field-input" [disabled]="!cfgForm.activo"/>
+          </div>
+        </div>
+
+        <div class="bkp-info-row" [class.opacity-50]="!cfgForm.activo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>El backup automático se dispara cuando accedés al panel mientras el tiempo programado ya pasó.</span>
+        </div>
+
+        <button
+          class="bkp-btn-primary w-full justify-center"
+          (click)="guardarConfig()"
+          [disabled]="loadingConfig()">
+          @if (loadingConfig()) {
+            <span class="spinner"></span> Guardando...
+          } @else {
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Guardar configuración
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ HISTORIAL ════════════════════════════════════════════════ -->
+  <div class="table-card">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+      <div>
+        <p class="text-base font-bold text-slate-800">Historial de Backups</p>
+        <p class="text-xs text-slate-500 mt-0.5">Últimos 50 backups generados</p>
+      </div>
+      <button class="btn-secondary text-xs" (click)="cargarLista()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        Actualizar
+      </button>
+    </div>
+
+    @if (loadingList()) {
+      <div class="loading-row"><span class="spinner mr-2"></span>Cargando historial...</div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Archivo</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Tamaño</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (b of backups(); track b.id_backup) {
+            <tr>
+              <td>
+                <div class="flex items-center gap-2">
+                  <div class="bkp-file-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                  </div>
+                  <span class="text-sm font-medium text-slate-700 font-mono">{{ b.nombre_archivo }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [class.badge-blue]="b.tipo==='MANUAL'" [class.badge-green]="b.tipo==='AUTOMATICO'">
+                  {{ b.tipo }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [class.badge-green]="b.estado==='COMPLETADO'" [class.badge-red]="b.estado==='FALLIDO'">
+                  <span class="w-1.5 h-1.5 rounded-full inline-block mr-1"
+                        [class.bg-emerald-500]="b.estado==='COMPLETADO'"
+                        [class.bg-red-500]="b.estado==='FALLIDO'"></span>
+                  {{ b.estado }}
+                </span>
+              </td>
+              <td class="cell-muted font-mono">{{ formatBytes(b.tamano_bytes) }}</td>
+              <td class="cell-muted">{{ b.created_at | date:'dd/MM/yy HH:mm' }}</td>
+              <td>
+                <div class="flex items-center gap-1.5">
+                  <button
+                    class="bkp-action-btn bkp-download-btn"
+                    title="Descargar backup"
+                    (click)="descargar(b)"
+                    [disabled]="b.estado==='FALLIDO'">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Descargar
+                  </button>
+                  <button
+                    class="bkp-action-btn bkp-delete-btn"
+                    title="Eliminar backup"
+                    (click)="eliminar(b)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      <path d="M10 11v6"/><path d="M14 11v6"/>
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-row">
+                <div class="flex flex-col items-center gap-2 py-4">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  <p class="text-slate-400 text-sm">No hay backups generados todavía</p>
+                  <button class="bkp-btn-primary text-sm" (click)="generarManual()">Crear primer backup</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+</div>

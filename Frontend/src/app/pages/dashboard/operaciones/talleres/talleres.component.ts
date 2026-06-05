@@ -68,10 +68,20 @@ export class TalleresComponent implements OnInit {
     });
   }
 
+  private limpiarTallerData(raw: any): TallerCreate {
+    return {
+      ...raw,
+      email_atencion:    raw.email_atencion?.trim()    || null,
+      nit:               raw.nit?.trim()               || null,
+      telefono_atencion: raw.telefono_atencion?.trim() || null,
+      referencia:        raw.referencia?.trim()        || null,
+    };
+  }
+
   guardar() {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.saving.set(true);
-    const data: TallerCreate = this.form.value;
+    const data: TallerCreate = this.limpiarTallerData(this.form.value);
     this.srv.registrar(data).subscribe({
       next: () => {
         this.success.set('Taller registrado. Pendiente de aprobación.');
@@ -111,8 +121,8 @@ export class TalleresComponent implements OnInit {
     if (!t) return;
     this.savingEdit.set(true);
     this.error.set('');
-    const data = this.editForm.value;
-    
+    const data = this.limpiarTallerData(this.editForm.value);
+
     // Si es administrador, usa actualizarTallerAdmin, sino el de taller personal
     const req = this.esAdmin ? this.srv.actualizarTallerAdmin(t.id_taller, data) : this.srv.actualizar(data);
     

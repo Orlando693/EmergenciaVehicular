@@ -147,6 +147,14 @@ export const routes: Routes = [
         path: 'procesar-pago/:id',
         loadComponent: () => import('./pages/dashboard/gestion-comercial-servicio/procesar-pago-pasarela/procesar-pago-checkout/procesar-pago-checkout.component').then(m => m.ProcesarPagoCheckoutComponent),
       },
+      {
+        path: 'planes',
+        loadComponent: () => import('./pages/dashboard/planes/planes-list/planes-list.component').then(m => m.PlanesListComponent),
+      },
+      {
+        path: 'backup',
+        loadComponent: () => import('./pages/dashboard/bitacora-reportes/backup/backup.component').then(m => m.BackupComponent),
+      },
     ],
   },
 

@@ -9,6 +9,10 @@ export class TecnicoService {
 
   constructor(private http: HttpClient) {}
 
+  listarTodos() {
+    return this.http.get<Tecnico[]>(`${this.api}/tecnicos`);
+  }
+
   listar(idTaller: number) {
     return this.http.get<Tecnico[]>(`${this.api}/talleres/${idTaller}/tecnicos`);
   }

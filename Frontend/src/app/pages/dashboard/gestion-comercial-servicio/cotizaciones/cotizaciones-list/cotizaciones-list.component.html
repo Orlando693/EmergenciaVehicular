@@ -1,71 +1,186 @@
 <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+
+  <!-- Encabezado -->
   <div class="sm:flex sm:justify-between sm:items-center mb-8">
     <div class="mb-4 sm:mb-0">
-      <h1 class="text-2xl md:text-3xl text-slate-800 font-bold">Gestión de Cotizaciones 📝</h1>
+      <h1 class="text-2xl md:text-3xl text-slate-800 font-bold">Cotizaciones 📝</h1>
+      <p class="text-slate-500 text-sm mt-1">
+        <ng-container *ngIf="esCliente">Solicita y revisa las cotizaciones de los talleres asignados a tus incidentes.</ng-container>
+        <ng-container *ngIf="esTaller">Responde las solicitudes de cotización de tus clientes.</ng-container>
+      </p>
     </div>
+    <!-- Botón solo para CLIENTE -->
+    <button *ngIf="esCliente"
+            (click)="abrirModal()"
+            class="btn bg-indigo-500 hover:bg-indigo-600 text-white flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      Solicitar Cotización
+    </button>
   </div>
 
+  <!-- Info rol TALLER -->
+  <div *ngIf="esTaller && !loading && cotizaciones.length === 0"
+       class="bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded-lg mb-6 text-sm flex items-start gap-3">
+    <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+    </svg>
+    <span>Aún no tienes cotizaciones. Cuando un cliente solicite una cotización para un incidente asignado a tu taller, aparecerá aquí.</span>
+  </div>
+
+  <!-- Spinner -->
   <div *ngIf="loading" class="text-center py-8">
-      <div class="inline-block animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
-      <p class="mt-2 text-slate-500">Cargando...</p>
+    <div class="inline-block animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+    <p class="mt-2 text-slate-500">Cargando...</p>
   </div>
 
-  <div *ngIf="error" class="bg-rose-100 text-rose-700 p-4 rounded mb-6">
-      {{ error }}
-  </div>
+  <!-- Error -->
+  <div *ngIf="error" class="bg-rose-100 text-rose-700 p-4 rounded mb-6">{{ error }}</div>
 
-  <!-- Contenedor general tabla -->
-  <div *ngIf="!loading && !error" class="bg-white shadow-sm rounded-sm border border-slate-200">
-    <div class="overflow-x-auto">
-      <table class="table-auto w-full">
-        <thead class="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-t border-b border-slate-200">
+  <!-- Tabla -->
+  <div *ngIf="!loading && !error" class="bg-white shadow-sm rounded-xl border border-slate-200">
+
+    <!-- Sin datos CLIENTE -->
+    <div *ngIf="esCliente && cotizaciones.length === 0"
+         class="p-12 text-center">
+      <svg class="w-12 h-12 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <p class="text-slate-500 mb-4">No tienes cotizaciones todavía.</p>
+      <button (click)="abrirModal()" class="btn bg-indigo-500 hover:bg-indigo-600 text-white">
+        Solicitar mi primera cotización
+      </button>
+    </div>
+
+    <div *ngIf="cotizaciones.length > 0" class="overflow-x-auto">
+      <table class="table-auto w-full text-sm">
+        <thead class="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-b border-slate-200">
           <tr>
-            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-left">ID</div></th>
-            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-left">Incidente</div></th>
-            <th *ngIf="esCliente" class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-left">Taller</div></th>
-            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-center">Estado</div></th>
-            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-left">Fecha Solicitud</div></th>
-            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-right">Precio Est.</div></th>
-            <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"></th>
+            <th class="px-4 py-3 text-left">ID</th>
+            <th class="px-4 py-3 text-left">Incidente</th>
+            <th *ngIf="esCliente" class="px-4 py-3 text-left">Taller</th>
+            <th class="px-4 py-3 text-center">Estado</th>
+            <th class="px-4 py-3 text-left">Fecha Solicitud</th>
+            <th class="px-4 py-3 text-right">Precio Est.</th>
+            <th class="px-4 py-3"></th>
           </tr>
         </thead>
-        <tbody class="text-sm divide-y divide-slate-200">
-            <tr *ngIf="cotizaciones.length === 0">
-              <td colspan="7" class="px-2 py-4 text-center text-slate-500">No hay cotizaciones registradas.</td>
-            </tr>
-            <tr *ngFor="let cotizacion of cotizaciones">
-              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
-                <div class="text-slate-800 font-medium">#{{ cotizacion.id_cotizacion }}</div>
-              </td>
-              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
-                <div class="text-slate-500">Incidente #{{ cotizacion.id_incidente }}</div>
-              </td>
-              <td *ngIf="esCliente" class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
-                <div class="text-slate-800">{{ cotizacion.taller_nombre || 'N/A' }}</div>
-              </td>
-              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap text-center">
-                <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                      [ngClass]="{
-                        'bg-amber-100 text-amber-600': cotizacion.estado === 'PENDIENTE',
-                        'bg-emerald-100 text-emerald-600': cotizacion.estado === 'RESPONDIDA',
-                        'bg-blue-100 text-blue-600': cotizacion.estado === 'ACEPTADA',
-                        'bg-rose-100 text-rose-600': cotizacion.estado === 'RECHAZADA'
-                      }">
-                  {{ cotizacion.estado }}
-                </span>
-              </td>
-              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
-                <div class="text-slate-500">{{ cotizacion.created_at | date:'short' }}</div>
-              </td>
-              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap text-right">
-                <div class="font-medium text-slate-800">{{ cotizacion.precio_estimado ? ('Bs ' + cotizacion.precio_estimado) : '-' }}</div>
-              </td>
-              <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap w-px">
-                <a [routerLink]="['/dashboard/cotizaciones/detalle', cotizacion.id_cotizacion]" class="btn border-slate-200 hover:border-slate-300 text-indigo-500">Ver Detalle</a>
-              </td>
-            </tr>
+        <tbody class="divide-y divide-slate-200">
+          <tr *ngFor="let c of cotizaciones" class="hover:bg-slate-50 transition-colors">
+            <td class="px-4 py-3 font-medium text-slate-800">#{{ c.id_cotizacion }}</td>
+            <td class="px-4 py-3 text-slate-500">Incidente #{{ c.id_incidente }}</td>
+            <td *ngIf="esCliente" class="px-4 py-3 text-slate-800">{{ c.taller_nombre || 'N/A' }}</td>
+            <td class="px-4 py-3 text-center">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    [ngClass]="badgeClase(c.estado)">
+                {{ c.estado }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-slate-500">{{ c.created_at | date:'dd/MM/yy HH:mm' }}</td>
+            <td class="px-4 py-3 text-right font-medium text-slate-800">
+              {{ c.precio_estimado ? ('Bs ' + c.precio_estimado) : '—' }}
+            </td>
+            <td class="px-4 py-3 text-right">
+              <a [routerLink]="['/dashboard/cotizaciones/detalle', c.id_cotizacion]"
+                 class="btn border-slate-200 hover:border-slate-300 text-indigo-500 text-xs">
+                {{ esTaller && c.estado === 'PENDIENTE' ? 'Responder' : 'Ver Detalle' }}
+              </a>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
+  </div>
+
+</div>
+
+<!-- ══════════════ MODAL SOLICITAR COTIZACIÓN ══════════════ -->
+<div *ngIf="mostrarModal"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+     (click)="cerrarModal()">
+
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6"
+       (click)="$event.stopPropagation()">
+
+    <!-- Header modal -->
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">Solicitar Cotización</h2>
+        <p class="text-slate-500 text-sm">Selecciona el incidente para el que quieres cotización.</p>
+      </div>
+      <button (click)="cerrarModal()" class="text-slate-400 hover:text-slate-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Spinner carga incidentes -->
+    <div *ngIf="loadingIncidentes" class="text-center py-8">
+      <div class="inline-block animate-spin w-6 h-6 border-4 border-indigo-400 border-t-transparent rounded-full"></div>
+      <p class="mt-2 text-slate-400 text-sm">Cargando incidentes...</p>
+    </div>
+
+    <!-- Sin incidentes disponibles -->
+    <div *ngIf="!loadingIncidentes && incidentesDisponibles.length === 0"
+         class="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-lg text-sm">
+      <p class="font-semibold mb-1">Sin incidentes disponibles</p>
+      <p>Para solicitar una cotización necesitas tener un incidente con un taller ya asignado (estado ASIGNADO o EN_PROCESO) y que aún no tenga cotización solicitada.</p>
+    </div>
+
+    <!-- Selector de incidente -->
+    <ng-container *ngIf="!loadingIncidentes && incidentesDisponibles.length > 0">
+      <div class="space-y-3 mb-4">
+        <label class="block text-sm font-medium text-slate-700">Incidente *</label>
+        <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+          <label *ngFor="let inc of incidentesDisponibles"
+                 class="flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition-colors"
+                 [class.border-indigo-400]="idIncidenteSeleccionado === inc.id_incidente"
+                 [class.bg-indigo-50]="idIncidenteSeleccionado === inc.id_incidente"
+                 [class.border-slate-200]="idIncidenteSeleccionado !== inc.id_incidente">
+            <input type="radio" name="incidente"
+                   [value]="inc.id_incidente"
+                   [(ngModel)]="idIncidenteSeleccionado"
+                   class="mt-0.5 text-indigo-600" />
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-slate-800">Incidente #{{ inc.id_incidente }}</p>
+              <p class="text-xs text-slate-500 truncate">{{ inc.descripcion }}</p>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-xs text-slate-400">{{ inc.estado }}</span>
+                <span *ngIf="inc.taller_nombre" class="text-xs text-slate-400">· {{ inc.taller_nombre }}</span>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-slate-700 mb-1">Descripción adicional <span class="text-slate-400 font-normal">(opcional)</span></label>
+        <textarea [(ngModel)]="descripcionSolicitud" rows="3"
+                  placeholder="Describe el problema o lo que necesitas que el taller revise..."
+                  class="form-textarea w-full rounded-xl border-slate-200 text-sm focus:border-indigo-400 focus:ring-indigo-300 resize-none">
+        </textarea>
+      </div>
+
+      <!-- Error modal -->
+      <div *ngIf="errorModal" class="bg-rose-50 border border-rose-200 text-rose-700 text-sm p-3 rounded-lg mb-4">
+        {{ errorModal }}
+      </div>
+
+      <!-- Botones -->
+      <div class="flex gap-3">
+        <button (click)="cerrarModal()" class="btn flex-1 bg-white border-slate-200 hover:border-slate-300 text-slate-600 justify-center">
+          Cancelar
+        </button>
+        <button (click)="solicitarCotizacion()"
+                [disabled]="!idIncidenteSeleccionado || enviando"
+                class="btn flex-1 bg-indigo-500 hover:bg-indigo-600 text-white justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+          <span *ngIf="enviando" class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+          {{ enviando ? 'Enviando...' : 'Solicitar Cotización' }}
+        </button>
+      </div>
+    </ng-container>
+
   </div>
 </div>

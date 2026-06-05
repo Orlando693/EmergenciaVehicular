@@ -22,7 +22,7 @@ from app.administracion.usuarios.router import router as usuarios_router
 from app.administracion.roles.router import router as roles_router
 from app.administracion.tenants.router import router as tenants_router
 from app.operaciones.talleres.router import router as talleres_router
-from app.operaciones.tecnicos.router import router as tecnicos_router
+from app.operaciones.tecnicos.router import router as tecnicos_router, taller_tecnicos_router
 from app.gestion_vehiculos.vehiculos.router import router as vehiculos_router
 from app.gestion_incidentes.incidentes.router import router as incidentes_router
 from app.asignacion_atencion.notificaciones.router import router as notificaciones_router
@@ -30,12 +30,14 @@ from app.asignacion_atencion.chat.router import router as chat_router
 from app.gestion_servicios.pagos.router import router as pagos_router
 from app.bitacora_reportes.bitacora.router import router as bitacora_router
 from app.bitacora_reportes.reportes.router import router as reportes_router
+from app.bitacora_reportes.backup.router import router as backup_router
 from app.gestion_operativa_atencion.atencion_tiempo_real.router import router as atencion_tiempo_real_router
 from app.gestion_operativa_atencion.sincronizacion_offline.router import router as sincronizacion_offline_router
 from app.gestion_operativa_atencion.cotizaciones.router import router as cotizaciones_router
 from app.gestion_comercial_servicio.seleccionar_taller_servicio.router import router as seleccionar_taller_router
 from app.gestion_operativa_atencion.gestionar_atencion_reparacion.router import router as gestionar_atencion_router
 from app.gestion_comercial_servicio.procesar_pago_pasarela.router import router as procesar_pago_router
+from app.gestion_comercial_servicio.planes.router import router as planes_router
 
 
 logger = logging.getLogger("emergencia.api")
@@ -210,6 +212,7 @@ app.include_router(roles_router)
 app.include_router(tenants_router)
 app.include_router(talleres_router)
 app.include_router(tecnicos_router)
+app.include_router(taller_tecnicos_router)
 app.include_router(vehiculos_router)
 app.include_router(incidentes_router)
 app.include_router(bitacora_router)
@@ -217,12 +220,14 @@ app.include_router(notificaciones_router)
 app.include_router(chat_router)
 app.include_router(pagos_router)
 app.include_router(reportes_router)
+app.include_router(backup_router)
 app.include_router(atencion_tiempo_real_router)
 app.include_router(sincronizacion_offline_router)
 app.include_router(cotizaciones_router)
 app.include_router(seleccionar_taller_router)
 app.include_router(gestionar_atencion_router)
 app.include_router(procesar_pago_router)
+app.include_router(planes_router)
 
 # ── Static uploads ────────────────────────────────────────────────────────────
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)

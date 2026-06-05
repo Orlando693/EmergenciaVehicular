@@ -12,19 +12,23 @@ from app.operaciones.talleres.schemas import TallerCreate, TallerEstadoUpdate, T
 
 
 async def registrar_taller(
-    id_usuario: int,
+    id_usuario: int | None,
     id_tenant: int,
     data: TallerCreate,
     db: AsyncSession,
 ) -> TallerOut:
-    existe = await db.execute(select(Taller).where(Taller.id_usuario == id_usuario, Taller.id_tenant == id_tenant))
-    if existe.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Este usuario ya tiene un taller registrado")
+    # Si hay usuario, verificar que no tenga ya un taller
+    if id_usuario is not None:
+        existe = await db.execute(
+            select(Taller).where(Taller.id_usuario == id_usuario, Taller.id_tenant == id_tenant)
+        )
+        if existe.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="Este usuario ya tiene un taller registrado")
 
     if data.nit:
         dup = await db.execute(select(Taller).where(Taller.nit == data.nit, Taller.id_tenant == id_tenant))
         if dup.scalar_one_or_none():
-            raise HTTPException(status_code=409, detail="El NIT ya esta registrado")
+            raise HTTPException(status_code=409, detail="El NIT ya está registrado")
 
     taller = Taller(id_usuario=id_usuario, id_tenant=id_tenant, **data.model_dump())
     db.add(taller)
