@@ -258,11 +258,11 @@ async def seed_suscripcion(db, tenant: Tenant, plan: Plan) -> None:
     )
     db.add(sus)
     await db.flush()
-    print(f"  [+] Suscripción creada: {tenant.nombre} → Plan {plan.nombre}")
+    print(f"  [+] Suscripcion creada: {tenant.nombre} -> Plan {plan.nombre}")
 
 
 async def main() -> None:
-    print("\n=== Seed Local — EmergenciaVehicular ===\n")
+    print("\n=== Seed Local - EmergenciaVehicular ===\n")
     async with AsyncSessionLocal() as db:
         print("Planes:")
         planes = await seed_planes(db)
@@ -279,7 +279,7 @@ async def main() -> None:
         await seed_taller(db, tenant, usuarios_creados["TALLER"])
         await seed_cliente(db, tenant, usuarios_creados["CLIENTE"])
 
-        print("\nSuscripción:")
+        print("\nSuscripcion:")
         await seed_suscripcion(db, tenant, planes["demo"])
 
         print("\nSuperAdmin:")

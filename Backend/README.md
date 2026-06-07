@@ -90,11 +90,15 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ## Despliegue en Railway
 
+Configura el servicio de Railway con **Root Directory: `Backend`**. Si Railway
+despliega desde la raíz del repositorio, no va a encontrar `requirements.txt`,
+`railway.json` ni `app.main`.
+
 ### 1. Variables de entorno (en Railway → tu servicio → Variables)
 
 | Variable | Valor |
 |----------|-------|
-| `DATABASE_URL` | `postgresql+asyncpg://avnadmin:TU_PASSWORD@pg-3bd64a8c-netcrow.l.aivencloud.com:10829/defaultdb` |
+| `DATABASE_URL` | `postgresql+asyncpg://avnadmin:TU_PASSWORD@pg-c0e64c7-morenocors1998-0719.g.aivencloud.com:14524/defaultdb` |
 | `DB_SSL_REQUIRED` | `True` |
 | `SECRET_KEY` | Generar con `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `ALGORITHM` | `HS256` |
@@ -103,6 +107,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 | `CORS_ORIGINS` | `https://parcial1si2.web.app` (sin `*` con credenciales) |
 | `GEMINI_API_KEY` | Tu clave real de Google AI Studio |
 | `UPLOAD_DIR` | `/data/uploads` (requiere Volume montado en `/data`) |
+
+No agregues `?sslmode=require` a `DATABASE_URL`: el driver `asyncpg` no acepta
+ese parámetro. SSL se activa con `DB_SSL_REQUIRED=True`.
 
 ### 2. Volume persistente para imágenes/audio
 
