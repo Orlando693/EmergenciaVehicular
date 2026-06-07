@@ -117,7 +117,7 @@
     <div class="bg-white border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
       <p class="text-sm font-semibold text-slate-600 mb-3">Método de pago</p>
       <div class="flex flex-wrap gap-3">
-        <label *ngFor="let m of ['TARJETA','TRANSFERENCIA','EFECTIVO']"
+        <label *ngFor="let m of ['TARJETA','TRANSFERENCIA','QR','EFECTIVO']"
                class="flex items-center gap-2 cursor-pointer">
           <input type="radio" name="metodo" [value]="m" [(ngModel)]="metodo" class="text-indigo-600"/>
           <span class="text-sm text-slate-700">{{ m }}</span>
@@ -161,7 +161,26 @@
     </div>
 
     <!-- Info transferencia/efectivo -->
-    <div *ngIf="metodo !== 'TARJETA'"
+    <div *ngIf="metodo === 'QR'"
+         class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5">
+      <div class="flex flex-col sm:flex-row gap-4 items-center">
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="grid gap-[2px]" style="grid-template-columns: repeat(13, minmax(0, 1fr)); width: 156px;">
+            <span *ngFor="let cell of qrCells"
+                  class="w-2.5 h-2.5 rounded-[2px]"
+                  [ngClass]="cell ? 'bg-slate-950' : 'bg-white'"></span>
+          </div>
+        </div>
+        <div class="text-sm text-slate-700">
+          <p class="font-bold text-slate-900 mb-1">Pago por QR</p>
+          <p>Escanea el codigo con tu app bancaria y confirma el pago.</p>
+          <p class="mt-2 text-xs text-slate-500">Referencia: <span class="font-mono font-semibold">{{ qrReferencia }}</span></p>
+          <p class="text-xs text-slate-500">Monto: <strong>${{ info?.monto_total | number:'1.2-2' }}</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="metodo !== 'TARJETA' && metodo !== 'QR'"
          class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-5 text-sm text-blue-700">
       <p *ngIf="metodo === 'TRANSFERENCIA'">
         Se generará una referencia de transferencia bancaria. Sigue las instrucciones para completar el pago.

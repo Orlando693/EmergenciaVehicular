@@ -1,10 +1,10 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PagoService, CostoEstimado, PagoOut } from '../../../../services/pago.service';
 
-type Metodo = 'TARJETA_CREDITO' | 'TARJETA_DEBITO' | 'TRANSFERENCIA' | 'EFECTIVO';
+type Metodo = 'TARJETA_CREDITO' | 'TARJETA_DEBITO' | 'TRANSFERENCIA' | 'QR' | 'EFECTIVO';
 type PasoView = 'COSTO' | 'PAGO' | 'RESULTADO';
 
 @Component({
@@ -28,6 +28,9 @@ export class PagoCheckoutComponent implements OnInit {
   resultado   = signal<PagoOut | null>(null);
 
   metodo      = signal<Metodo>('TARJETA_CREDITO');
+  qrReferencia = computed(() => `EV-${this.idIncidente()}-${Number(this.costo()?.monto_total ?? 0).toFixed(2).replace('.', '')}`);
+  qrPayload = computed(() => `EMERGENCIA_VEHICULAR|INC:${this.idIncidente()}|MONTO:${Number(this.costo()?.monto_total ?? 0).toFixed(2)}|REF:${this.qrReferencia()}`);
+  qrCells = computed(() => this.buildQrCells(this.qrPayload()));
 
   // Campos de tarjeta (solo display / mock)
   numTarjeta  = '';
@@ -109,5 +112,31 @@ export class PagoCheckoutComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     this.numTarjeta = this.formatCard(input.value);
     input.value = this.numTarjeta;
+  }
+
+  private buildQrCells(payload: string): boolean[] {
+    const size = 13;
+    let seed = 0;
+    for (let i = 0; i < payload.length; i++) {
+      seed = (seed * 31 + payload.charCodeAt(i)) >>> 0;
+    }
+    const cells: boolean[] = [];
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const inFinder =
+          (x < 4 && y < 4) ||
+          (x >= size - 4 && y < 4) ||
+          (x < 4 && y >= size - 4);
+        if (inFinder) {
+          const localX = x < 4 ? x : x - (size - 4);
+          const localY = y < 4 ? y : y - (size - 4);
+          cells.push(localX === 0 || localX === 3 || localY === 0 || localY === 3 || (localX === 1 && localY === 1));
+          continue;
+        }
+        const bit = ((seed >> ((x + y * 3) % 24)) ^ (x * 17) ^ (y * 29) ^ seed) & 1;
+        cells.push(bit === 1);
+      }
+    }
+    return cells;
   }
 }

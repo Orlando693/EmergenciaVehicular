@@ -108,6 +108,15 @@
               {{ m.label }}
             </button>
           }
+          <button type="button"
+                  (click)="metodo.set('QR')"
+                  class="flex flex-col items-center gap-1.5 px-3 py-3.5 rounded-xl border-2 text-sm font-semibold transition-all"
+                  [ngClass]="metodo() === 'QR'
+                    ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
+                    : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'">
+            <span class="text-xl leading-none font-black tracking-tight">QR</span>
+            Pago QR
+          </button>
         </div>
       </div>
 
@@ -143,6 +152,26 @@
           <p class="font-bold mb-1">Datos de transferencia</p>
           <p>Banco: Banco Nacional Vehículos · Cuenta: <strong>001-0000-123456</strong></p>
           <p>Beneficiario: <strong>EmergenciaVehicular S.A.</strong></p>
+        </div>
+      }
+
+      @if (metodo() === 'QR') {
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div class="flex flex-col sm:flex-row gap-4 items-center">
+            <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+              <div class="grid gap-[2px]" style="grid-template-columns: repeat(13, minmax(0, 1fr)); width: 156px;">
+                @for (cell of qrCells(); track $index) {
+                  <span class="w-2.5 h-2.5 rounded-[2px]" [ngClass]="cell ? 'bg-slate-950' : 'bg-white'"></span>
+                }
+              </div>
+            </div>
+            <div class="text-sm text-slate-700">
+              <p class="font-bold text-slate-900 mb-1">Pago por QR</p>
+              <p>Escanea el codigo con tu app bancaria y confirma el pago.</p>
+              <p class="mt-2 text-xs text-slate-500">Referencia: <span class="font-mono font-semibold">{{ qrReferencia() }}</span></p>
+              <p class="text-xs text-slate-500">Monto: <strong>${{ costo()!.monto_total | number:'1.2-2' }}</strong></p>
+            </div>
+          </div>
         </div>
       }
 

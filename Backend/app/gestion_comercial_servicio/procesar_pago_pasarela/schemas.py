@@ -15,7 +15,7 @@ class ProcesarPagoRequest(BaseModel):
 
     metodo_pago: str = Field(
         ...,
-        examples=["TARJETA", "TRANSFERENCIA", "EFECTIVO"],
+        examples=["TARJETA", "TRANSFERENCIA", "QR", "EFECTIVO"],
         description="Método de pago seleccionado",
     )
     numero_tarjeta: str | None = Field(

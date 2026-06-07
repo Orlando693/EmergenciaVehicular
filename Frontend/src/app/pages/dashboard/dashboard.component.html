@@ -19,6 +19,34 @@
       </div>
     </div>
 
+    <!-- Search -->
+    <div class="sb-search-wrap px-3 py-3 border-b border-slate-800">
+      <div class="sb-search">
+        <svg class="sb-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="text"
+          [value]="navSearch()"
+          (input)="setNavSearch($event)"
+          placeholder="Buscar paquete o caso de uso"
+          class="sb-search-input"
+          aria-label="Buscar modulo del dashboard" />
+        @if (hasNavSearch()) {
+          <button type="button" (click)="clearNavSearch()" class="sb-search-clear" aria-label="Limpiar busqueda">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        }
+      </div>
+      @if (hasNavSearch()) {
+        <p class="sb-search-hint">Filtra por modulo, paquete, ruta o CU.</p>
+      }
+    </div>
+
     <!-- Nav groups -->
     <nav class="flex-1 overflow-y-auto py-3 px-2.5 space-y-0.5">
       @for (group of visibleGroups(); track group.section) {
@@ -47,6 +75,12 @@
               }
             </div>
           }
+        </div>
+      }
+      @if (visibleGroups().length === 0) {
+        <div class="px-3 py-8 text-center">
+          <p class="text-sm font-semibold text-slate-300">Sin resultados</p>
+          <p class="text-xs text-slate-500 mt-1">Prueba con pagos, incidentes, reportes o CU16.</p>
         </div>
       }
     </nav>

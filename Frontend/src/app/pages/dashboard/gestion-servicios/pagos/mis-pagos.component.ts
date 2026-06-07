@@ -59,6 +59,7 @@ export class MisPagosComponent implements OnInit {
       TARJETA_CREDITO: '💳 Crédito',
       TARJETA_DEBITO:  '💰 Débito',
       TRANSFERENCIA:   '🏦 Transferencia',
+      QR:              'QR Pago QR',
       EFECTIVO:        '💵 Efectivo',
     };
     return map[metodo] ?? metodo;

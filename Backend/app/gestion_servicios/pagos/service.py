@@ -153,7 +153,7 @@ async def iniciar_pago(
     al_taller = (monto - comision).quantize(Decimal("0.01"))
 
     metodo_upper = metodo_pago.upper()
-    if metodo_upper in ("EFECTIVO", "TRANSFERENCIA"):
+    if metodo_upper in ("EFECTIVO", "TRANSFERENCIA", "QR"):
         aprobado = True
         error_msg = None
     else:

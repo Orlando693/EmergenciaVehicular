@@ -9,7 +9,7 @@ Sandbox de prueba (tarjeta):
   - Últimos 4 dígitos "0000"   → RECHAZADO
   - Últimos 4 dígitos "0001"   → PENDIENTE (gateway necesita confirmación)
   - Cualquier otro número/vacío → APROBADO
-TRANSFERENCIA / EFECTIVO → siempre APROBADO.
+TRANSFERENCIA / QR / EFECTIVO → siempre APROBADO.
 """
 
 import asyncio
@@ -41,7 +41,7 @@ ESTADO_ERROR_CONEXION   = "ERROR_CONEXION"
 
 @dataclass
 class DatosPago:
-    metodo_pago:    str              # TARJETA | TRANSFERENCIA | EFECTIVO
+    metodo_pago:    str              # TARJETA | TRANSFERENCIA | QR | EFECTIVO
     monto:          Decimal
     numero_tarjeta: str | None = None
     nombre_titular: str | None = None
@@ -76,7 +76,7 @@ async def _sandbox(datos: DatosPago) -> GatewayRespuesta:
     referencia = _generar_referencia()
     metodo = (datos.metodo_pago or "").upper()
 
-    if metodo in ("TRANSFERENCIA", "EFECTIVO"):
+    if metodo in ("TRANSFERENCIA", "QR", "EFECTIVO"):
         return GatewayRespuesta(
             estado=ESTADO_APROBADO,
             referencia=referencia,

@@ -29,7 +29,7 @@ export class ProcesarPagoCheckoutComponent implements OnInit {
   errorInfo = '';
 
   /* Formulario de pago */
-  metodo: 'TARJETA' | 'TRANSFERENCIA' | 'EFECTIVO' = 'TARJETA';
+  metodo: 'TARJETA' | 'TRANSFERENCIA' | 'QR' | 'EFECTIVO' = 'TARJETA';
   numeroTarjeta = '';
   nombreTitular = '';
   vencimiento = '';
@@ -85,6 +85,16 @@ export class ProcesarPagoCheckoutComponent implements OnInit {
         && this.cvv.trim().length >= 3;
     }
     return true;
+  }
+
+  get qrReferencia(): string {
+    const monto = Number(this.info?.monto_total ?? 0).toFixed(2).replace('.', '');
+    return `EV-${this.idIncidente}-${monto}`;
+  }
+
+  get qrCells(): boolean[] {
+    const payload = `EMERGENCIA_VEHICULAR|INC:${this.idIncidente}|MONTO:${Number(this.info?.monto_total ?? 0).toFixed(2)}|REF:${this.qrReferencia}`;
+    return this.buildQrCells(payload);
   }
 
   confirmarPago(): void {
@@ -154,5 +164,31 @@ export class ProcesarPagoCheckoutComponent implements OnInit {
     if (estado === 'APROBADO' || estado === 'PAGADO') return '✅';
     if (estado === 'RECHAZADO') return '❌';
     return '⏳';
+  }
+
+  private buildQrCells(payload: string): boolean[] {
+    const size = 13;
+    let seed = 0;
+    for (let i = 0; i < payload.length; i++) {
+      seed = (seed * 31 + payload.charCodeAt(i)) >>> 0;
+    }
+    const cells: boolean[] = [];
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const inFinder =
+          (x < 4 && y < 4) ||
+          (x >= size - 4 && y < 4) ||
+          (x < 4 && y >= size - 4);
+        if (inFinder) {
+          const localX = x < 4 ? x : x - (size - 4);
+          const localY = y < 4 ? y : y - (size - 4);
+          cells.push(localX === 0 || localX === 3 || localY === 0 || localY === 3 || (localX === 1 && localY === 1));
+          continue;
+        }
+        const bit = ((seed >> ((x + y * 3) % 24)) ^ (x * 17) ^ (y * 29) ^ seed) & 1;
+        cells.push(bit === 1);
+      }
+    }
+    return cells;
   }
 }

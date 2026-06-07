@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { UsuarioService } from '../../core/services/usuario.service';
 import { BitacoraService } from '../../services/bitacora.service';
+import { environment } from '../../../environments/environment';
 
 type Pantalla = 'workspace' | 'credenciales';
 
@@ -64,7 +65,7 @@ export class LoginComponent {
       },
       error: (err) => {
         if (err.status === 0) {
-          this.errorWorkspace.set('No se pudo conectar con el servidor. Verifica que el backend esté corriendo en localhost:8000.');
+          this.errorWorkspace.set(`No se pudo conectar con el backend (${environment.apiUrl}). Verifica que el deploy de Railway esté activo y que la URL sea correcta.`);
         } else if (err.status === 404) {
           this.errorWorkspace.set('Workspace "' + slug + '" no encontrado. Verifica el nombre e intenta de nuevo.');
         } else {

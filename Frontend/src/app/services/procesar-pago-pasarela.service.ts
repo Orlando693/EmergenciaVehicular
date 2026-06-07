@@ -16,7 +16,7 @@ export interface InfoPagoOut {
 }
 
 export interface ProcesarPagoRequest {
-  metodo_pago: string;             // TARJETA | TRANSFERENCIA | EFECTIVO
+  metodo_pago: string;             // TARJETA | TRANSFERENCIA | QR | EFECTIVO
   numero_tarjeta?: string | null;
   nombre_titular?: string | null;
   vencimiento?: string | null;

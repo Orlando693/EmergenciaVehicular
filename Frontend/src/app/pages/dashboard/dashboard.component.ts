@@ -29,6 +29,7 @@ interface NavGroup {
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   sidebarOpen = signal(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
+  navSearch = signal('');
 
   navGroups = signal<NavGroup[]>([
     {
@@ -142,10 +143,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   visibleGroups = computed(() => {
     const rol = this.auth.rol;
+    const query = this.normalizeSearch(this.navSearch());
     return this.navGroups()
-      .map(g => ({ ...g, items: g.items.filter(i => i.roles.includes(rol)) }))
+      .map(g => ({
+        ...g,
+        expanded: query ? true : g.expanded,
+        items: g.items.filter(i => {
+          if (!i.roles.includes(rol)) return false;
+          if (!query) return true;
+          return this.navItemHaystack(g.section, i).includes(query);
+        }),
+      }))
       .filter(g => g.items.length > 0);
   });
+
+  hasNavSearch = computed(() => this.navSearch().trim().length > 0);
 
   constructor(public auth: AuthService, private router: Router, private bitacora: BitacoraService, public notif: NotificacionesService) {}
 
@@ -184,9 +196,72 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   toggleGroup(group: NavGroup) {
+    if (this.hasNavSearch()) return;
     this.navGroups.update(groups => 
       groups.map(g => g.section === group.section ? { ...g, expanded: !g.expanded } : g)
     );
+  }
+
+  setNavSearch(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.navSearch.set(input.value);
+  }
+
+  clearNavSearch() {
+    this.navSearch.set('');
+  }
+
+  private navItemHaystack(section: string, item: NavItem): string {
+    return this.normalizeSearch([
+      section,
+      item.label,
+      item.route,
+      item.route.split('/').join(' '),
+      item.roles.join(' '),
+      this.searchAliases(item.route),
+    ].join(' '));
+  }
+
+  private searchAliases(route: string): string {
+    const aliases: Record<string, string> = {
+      '/dashboard': 'inicio home principal paquete general',
+      '/dashboard/usuarios': 'usuarios administracion registrar editar bloquear paquete administracion',
+      '/dashboard/roles': 'roles permisos seguridad paquete administracion',
+      '/dashboard/talleres': 'talleres operaciones registro aprobar cu7 cu8 paquete operaciones',
+      '/dashboard/tecnicos': 'tecnicos mecanicos operaciones cu9 paquete operaciones',
+      '/dashboard/vehiculos': 'vehiculos autos movilidad paquete gestion vehiculos',
+      '/dashboard/incidentes/nuevo': 'incidente emergencia reportar crear paquete gestion incidentes',
+      '/dashboard/incidentes': 'incidentes emergencias solicitudes historial paquete gestion incidentes',
+      '/dashboard/solicitudes-disponibles': 'asignacion atencion solicitudes taller paquete asignacion',
+      '/dashboard/servicios': 'servicios atencion reparacion paquete asignacion',
+      '/dashboard/chats': 'chat comunicacion mensajes paquete asignacion',
+      '/dashboard/notificaciones': 'avisos alertas notificaciones paquete asignacion',
+      '/dashboard/sincronizacion-offline': 'offline sincronizacion emergencia sin internet cu19 paquete gestion operativa',
+      '/dashboard/gestionar-atencion': 'estimaciones atencion reparacion tiempo paquete gestion operativa',
+      '/dashboard/cotizaciones': 'cotizaciones presupuesto reparacion cu20 paquete comercial',
+      '/dashboard/seleccionar-taller': 'elegir taller comparar cotizaciones paquete comercial',
+      '/dashboard/procesar-pago': 'pagos pasarela tarjeta transferencia efectivo qr paquete comercial',
+      '/dashboard/pagos': 'pagos historial servicio qr transferencia efectivo cu16 paquete servicios',
+      '/dashboard/dashboard-operacional': 'dashboard operacional metricas paquete analitica',
+      '/dashboard/kpis-atencion': 'kpi indicadores atencion paquete analitica',
+      '/dashboard/incidentes-analisis': 'analisis incidentes estadistica paquete analitica',
+      '/dashboard/multi-tenant-admin': 'multi tenant organizaciones saas paquete analitica',
+      '/dashboard/planes': 'planes suscripcion paquetes membresia saas',
+      '/dashboard/perfil': 'perfil cuenta usuario datos',
+      '/dashboard/bitacora': 'bitacora auditoria acciones paquete reportes',
+      '/dashboard/reportes': 'reportes exportar csv pagos incidentes paquete reportes',
+      '/dashboard/backup': 'backup respaldo exportar datos paquete reportes',
+    };
+    return aliases[route] ?? '';
+  }
+
+  private normalizeSearch(value: string): string {
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
   }
 
   logout() {
