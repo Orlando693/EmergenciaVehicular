@@ -1,0 +1,183 @@
+<!-- Header -->
+<div class="kpi-header">
+  <div>
+    <h1 class="kpi-title">KPIs de Atención</h1>
+    <p class="kpi-sub">Indicadores clave de desempeño · {{ auth.tenantNombre }}</p>
+  </div>
+  <button class="kpi-refresh" (click)="cargar()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+    </svg>
+    Actualizar
+  </button>
+</div>
+
+<!-- Filtros -->
+<div class="kpi-filters">
+  <div class="kpi-ff"><label>Desde</label><input type="date" [(ngModel)]="fechaDesde" /></div>
+  <div class="kpi-ff"><label>Hasta</label><input type="date" [(ngModel)]="fechaHasta" /></div>
+  <div class="kpi-ff"><label>Clasificación IA</label><input type="text" [(ngModel)]="clasificacion" placeholder="Ej: mecánico" /></div>
+  <div class="kpi-fa">
+    <button class="kpi-apply" (click)="aplicar()">Aplicar</button>
+    <button class="kpi-clear" (click)="limpiar()">Limpiar</button>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="kpi-loading"><div class="kpi-spinner"></div><p>Calculando KPIs...</p></div>
+} @else if (error()) {
+  <div class="kpi-error">{{ error() }}</div>
+} @else {
+@if (data(); as d) {
+
+  <!-- ══════════ TOTALES ══════════ -->
+  <div class="kpi-totals">
+    <div class="kpi-total-card kpi-total--blue">
+      <p class="kpi-total-val">{{ d.total_incidentes }}</p>
+      <p class="kpi-total-label">Total incidentes</p>
+    </div>
+    <div class="kpi-total-card kpi-total--indigo">
+      <p class="kpi-total-val">{{ d.total_asignados }}</p>
+      <p class="kpi-total-label">Asignados</p>
+    </div>
+    <div class="kpi-total-card kpi-total--green">
+      <p class="kpi-total-val">{{ d.total_completados }}</p>
+      <p class="kpi-total-label">Completados</p>
+    </div>
+    <div class="kpi-total-card kpi-total--red">
+      <p class="kpi-total-val">{{ d.total_cancelados }}</p>
+      <p class="kpi-total-label">Cancelados</p>
+    </div>
+  </div>
+
+  <!-- ══════════ FILA: SLA + Tasas ══════════ -->
+  <div class="kpi-row-top">
+
+    <!-- SLA Gauge -->
+    <div class="kpi-card kpi-card--sla">
+      <h3 class="kpi-card-title">Cumplimiento SLA</h3>
+      <div class="kpi-sla-wrap">
+        <svg viewBox="0 0 36 36" class="kpi-sla-svg">
+          <path class="kpi-sla-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+          <path class="kpi-sla-ring"
+            [style.stroke]="nivelColor(d.sla.nivel)"
+            [attr.stroke-dasharray]="slaDash(d.sla.porcentaje)"
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+        </svg>
+        <div class="kpi-sla-center">
+          <p class="kpi-sla-pct" [style.color]="nivelColor(d.sla.nivel)">{{ d.sla.porcentaje }}%</p>
+          <p class="kpi-sla-nivel" [style.color]="nivelColor(d.sla.nivel)">{{ d.sla.nivel }}</p>
+        </div>
+      </div>
+      <div class="kpi-sla-meta">
+        <span>Objetivo: <strong>{{ d.sla.objetivo }}%</strong></span>
+        <span>{{ d.sla.completados }} / {{ d.sla.total }}</span>
+      </div>
+    </div>
+
+    <!-- Tasas -->
+    <div class="kpi-card kpi-card--tasas">
+      <h3 class="kpi-card-title">Tasas de servicio</h3>
+
+      <div class="kpi-tasa-item">
+        <div class="kpi-tasa-top">
+          <span class="kpi-tasa-label">Tasa de asignación</span>
+          <span class="kpi-tasa-val" style="color:#3b82f6">{{ d.tasa_asignacion }}%</span>
+        </div>
+        <div class="kpi-tasa-bar-bg">
+          <div class="kpi-tasa-bar" [style.width]="d.tasa_asignacion + '%'" style="background:#3b82f6;"></div>
+        </div>
+        <p class="kpi-tasa-desc">Incidentes que recibieron un taller asignado</p>
+      </div>
+
+      <div class="kpi-tasa-item" style="margin-top:1rem">
+        <div class="kpi-tasa-top">
+          <span class="kpi-tasa-label">Tasa de abandono</span>
+          <span class="kpi-tasa-val" style="color:#ef4444">{{ d.tasa_abandono }}%</span>
+        </div>
+        <div class="kpi-tasa-bar-bg">
+          <div class="kpi-tasa-bar" [style.width]="d.tasa_abandono + '%'" style="background:#ef4444;"></div>
+        </div>
+        <p class="kpi-tasa-desc">Cancelaciones luego de ser asignados</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TIEMPOS PROMEDIO ══════════ -->
+  <div class="kpi-card kpi-card--times">
+    <h3 class="kpi-card-title">Tiempos promedio del ciclo de atención</h3>
+    <div class="kpi-times-grid">
+      @for (t of d.tiempos; track trackLabel($index, t)) {
+        <div class="kpi-time-card">
+          <div class="kpi-time-icon" [style.background]="tiempoColor(t.minutos) + '22'" [style.color]="tiempoColor(t.minutos)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div>
+            <p class="kpi-time-val" [style.color]="tiempoColor(t.minutos)">{{ formatMin(t.minutos) }}</p>
+            <p class="kpi-time-label">{{ t.label }}</p>
+            <p class="kpi-time-desc">{{ t.descripcion }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ══════════ EFICIENCIA POR TALLER ══════════ -->
+  <div class="kpi-card">
+    <h3 class="kpi-card-title">Eficiencia por taller</h3>
+    @if (d.talleres.length === 0) {
+      <p class="kpi-empty">Sin datos de talleres para el período seleccionado</p>
+    } @else {
+      <div class="kpi-taller-table-wrap">
+        <table class="kpi-taller-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Taller</th>
+              <th>Asignados</th>
+              <th>Completados</th>
+              <th>T. resolución prom.</th>
+              <th>Cumplimiento</th>
+              <th>Eficiencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of d.talleres; track trackNombre($index, t); let i = $index) {
+              <tr>
+                <td class="kpi-rank">{{ i + 1 }}</td>
+                <td class="kpi-t-name">{{ t.nombre }}</td>
+                <td>{{ t.total_asignados }}</td>
+                <td class="kpi-green">{{ t.total_completados }}</td>
+                <td>
+                  <span [style.color]="tiempoColor(t.avg_minutos_resolucion)">
+                    {{ formatMin(t.avg_minutos_resolucion) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="kpi-sla-chip"
+                        [style.background]="nivelColor(t.tasa_cumplimiento >= 80 ? 'EXCELENTE' : t.tasa_cumplimiento >= 60 ? 'BUENO' : t.tasa_cumplimiento >= 40 ? 'REGULAR' : 'BAJO') + '22'"
+                        [style.color]="nivelColor(t.tasa_cumplimiento >= 80 ? 'EXCELENTE' : t.tasa_cumplimiento >= 60 ? 'BUENO' : t.tasa_cumplimiento >= 40 ? 'REGULAR' : 'BAJO')">
+                    {{ t.tasa_cumplimiento }}%
+                  </span>
+                </td>
+                <td class="kpi-bar-td">
+                  <div class="kpi-eff-bar-bg">
+                    <div class="kpi-eff-bar"
+                         [style.width]="barW(t.avg_minutos_resolucion, maxAvgTaller())"
+                         [style.background]="tiempoColor(t.avg_minutos_resolucion)">
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+}
+}

@@ -19,6 +19,7 @@ from app.gestion_operativa_atencion.cotizaciones.model import CotizacionReparaci
 from app.gestion_operativa_atencion.gestionar_atencion_reparacion.model import EstimacionAtencion
 from app.gestion_comercial_servicio.procesar_pago_pasarela.model import PagoGatewayTransaccion
 from app.gestion_comercial_servicio.planes.model import Plan, TenantSuscripcion
+from app.plataform_superAdmin.model import SuperAdmin
 
 __all__ = [
     "Tenant",
@@ -30,4 +31,5 @@ __all__ = [
     "EstimacionAtencion",
     "PagoGatewayTransaccion",
     "Plan", "TenantSuscripcion",
+    "SuperAdmin",
 ]

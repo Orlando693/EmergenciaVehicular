@@ -1,0 +1,172 @@
+<!-- ─── Header ─────────────────────────────────────────────────────────── -->
+<div class="ia-header">
+  <div>
+    <h1 class="ia-title">Análisis de Incidentes</h1>
+    <p class="ia-sub">Por tipo · zona · estado · {{ auth.tenantNombre }}</p>
+  </div>
+  <button class="ia-refresh" (click)="cargar()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+    </svg>
+    Actualizar
+  </button>
+</div>
+
+<!-- ─── Filtros ─────────────────────────────────────────────────────────── -->
+<div class="ia-filters">
+  <div class="ia-ff"><label>Desde</label><input type="date" [(ngModel)]="fechaDesde" /></div>
+  <div class="ia-ff"><label>Hasta</label><input type="date" [(ngModel)]="fechaHasta" /></div>
+  <div class="ia-ff"><label>Tipo</label><input type="text" [(ngModel)]="filtroTipo" placeholder="Ej: llanta" /></div>
+  <div class="ia-ff">
+    <label>Estado</label>
+    <select [(ngModel)]="filtroEstado">
+      <option value="">Todos</option>
+      @for (e of estadosOrden; track e) { <option [value]="e">{{ estadoLabel(e) }}</option> }
+    </select>
+  </div>
+  <div class="ia-ff"><label>Zona</label><input type="text" [(ngModel)]="filtroZona" placeholder="Ej: centro" /></div>
+  <div class="ia-fa">
+    <button class="ia-apply" (click)="aplicar()">Aplicar</button>
+    <button class="ia-clear" (click)="limpiar()">Limpiar</button>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="ia-loading"><div class="ia-spinner"></div><p>Analizando incidentes...</p></div>
+} @else if (error()) {
+  <div class="ia-error">{{ error() }}</div>
+} @else {
+@if (data(); as d) {
+
+  <!-- ─── Totales por estado ─────────────────────────────────────────────── -->
+  <div class="ia-estado-grid">
+    @for (e of d.por_estado; track trackNombre($index, e)) {
+      <div class="ia-estado-card" [style.border-left-color]="colorEstado(e.nombre)">
+        <div class="ia-estado-dot" [style.background]="colorEstado(e.nombre)"></div>
+        <div>
+          <p class="ia-estado-val">{{ e.total }}</p>
+          <p class="ia-estado-name">{{ estadoLabel(e.nombre) }}</p>
+          <p class="ia-estado-pct">{{ e.pct }}% del total</p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="ia-cols">
+
+    <!-- ─── Por tipo ───────────────────────────────────────────────────── -->
+    <div class="ia-card">
+      <h3 class="ia-card-title">
+        <span class="ia-card-icon ia-icon--purple">T</span>
+        Incidentes por tipo
+      </h3>
+      @if (d.por_tipo.length === 0) {
+        <p class="ia-empty">Sin datos</p>
+      } @else {
+        <div class="ia-bar-list">
+          @for (t of d.por_tipo; track trackNombre($index, t)) {
+            <div class="ia-bar-row">
+              <span class="ia-bar-label" title="{{ t.nombre }}">{{ t.nombre }}</span>
+              <div class="ia-bar-track">
+                <div class="ia-bar-fill ia-bar--purple" [style.width]="barW(t.total, maxTipo())"></div>
+              </div>
+              <span class="ia-bar-num">{{ t.total }}</span>
+              <span class="ia-bar-pct">{{ t.pct }}%</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- ─── Por zona ───────────────────────────────────────────────────── -->
+    <div class="ia-card">
+      <h3 class="ia-card-title">
+        <span class="ia-card-icon ia-icon--teal">Z</span>
+        Top zonas geográficas
+      </h3>
+      @if (d.por_zona.length === 0) {
+        <p class="ia-empty">Sin datos de zona</p>
+      } @else {
+        <div class="ia-zona-list">
+          @for (z of d.por_zona; track trackZona($index, z); let i = $index) {
+            <div class="ia-zona-row">
+              <span class="ia-zona-rank">{{ i + 1 }}</span>
+              <div class="ia-zona-info">
+                <span class="ia-zona-name" title="{{ z.zona }}">{{ z.zona }}</span>
+                <div class="ia-bar-track">
+                  <div class="ia-bar-fill ia-bar--teal" [style.width]="barW(z.total, maxZona())"></div>
+                </div>
+              </div>
+              <span class="ia-zona-cnt">{{ z.total }} <small>({{ z.pct }}%)</small></span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ─── Tendencia diaria ──────────────────────────────────────────────── -->
+  <div class="ia-card ia-card--wide">
+    <h3 class="ia-card-title">
+      <span class="ia-card-icon ia-icon--blue">~</span>
+      Tendencia diaria de incidentes
+    </h3>
+    @if (d.tendencia.length === 0) {
+      <p class="ia-empty">Sin datos para el período</p>
+    } @else {
+      <div class="ia-trend-wrap">
+        @for (t of d.tendencia; track trackFecha($index, t)) {
+          <div class="ia-trend-col">
+            <span class="ia-trend-num">{{ t.total }}</span>
+            <div class="ia-trend-bar" [style.height]="barW(t.total, maxTendencia())"></div>
+            <span class="ia-trend-day">{{ t.fecha.slice(5) }}</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- ─── Cruce tipo × estado ───────────────────────────────────────────── -->
+  <div class="ia-card ia-card--wide">
+    <h3 class="ia-card-title">
+      <span class="ia-card-icon ia-icon--orange">×</span>
+      Cruce tipo × estado (top 5 tipos)
+    </h3>
+    @if (d.cruce_tipo_estado.length === 0) {
+      <p class="ia-empty">Sin datos</p>
+    } @else {
+      <div class="ia-cruce-list">
+        @for (c of d.cruce_tipo_estado; track trackTipo($index, c)) {
+          <div class="ia-cruce-row">
+            <span class="ia-cruce-tipo" title="{{ c.tipo }}">{{ c.tipo }}</span>
+            <div class="ia-cruce-bars">
+              @for (e of estadosOrden; track e) {
+                @if (cruceVal(c, e) > 0) {
+                  <div class="ia-cruce-seg"
+                       [style.width]="cruceW(cruceVal(c, e), cruceTotalTipo(c))"
+                       [style.background]="colorEstado(e)"
+                       [title]="estadoLabel(e) + ': ' + cruceVal(c, e)">
+                    <span class="ia-cruce-seg-val">{{ cruceVal(c, e) }}</span>
+                  </div>
+                }
+              }
+            </div>
+            <span class="ia-cruce-total">{{ cruceTotalTipo(c) }}</span>
+          </div>
+        }
+      </div>
+      <!-- Leyenda -->
+      <div class="ia-cruce-legend">
+        @for (e of estadosOrden; track e) {
+          <span class="ia-leg-item">
+            <span class="ia-leg-dot" [style.background]="colorEstado(e)"></span>
+            {{ estadoLabel(e) }}
+          </span>
+        }
+      </div>
+    }
+  </div>
+
+}
+}

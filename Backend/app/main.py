@@ -38,6 +38,11 @@ from app.gestion_comercial_servicio.seleccionar_taller_servicio.router import ro
 from app.gestion_operativa_atencion.gestionar_atencion_reparacion.router import router as gestionar_atencion_router
 from app.gestion_comercial_servicio.procesar_pago_pasarela.router import router as procesar_pago_router
 from app.gestion_comercial_servicio.planes.router import router as planes_router
+from app.plataform_superAdmin.router import router as platform_router
+from app.gestion_control_analitica_saas.dashboard_operacional.router import router as dashboard_operacional_router
+from app.gestion_control_analitica_saas.kpis_atencion.router import router as kpis_atencion_router
+from app.gestion_control_analitica_saas.incidentes_analisis.router import router as incidentes_analisis_router
+from app.gestion_control_analitica_saas.multi_tenant_admin.router import router as multi_tenant_admin_router
 
 
 logger = logging.getLogger("emergencia.api")
@@ -228,6 +233,11 @@ app.include_router(seleccionar_taller_router)
 app.include_router(gestionar_atencion_router)
 app.include_router(procesar_pago_router)
 app.include_router(planes_router)
+app.include_router(platform_router)
+app.include_router(dashboard_operacional_router)
+app.include_router(kpis_atencion_router)
+app.include_router(incidentes_analisis_router)
+app.include_router(multi_tenant_admin_router)
 
 # ── Static uploads ────────────────────────────────────────────────────────────
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)

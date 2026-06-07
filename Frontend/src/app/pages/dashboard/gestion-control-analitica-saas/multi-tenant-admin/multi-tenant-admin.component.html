@@ -1,0 +1,273 @@
+<!-- ─── Header ──────────────────────────────────────────────────────────── -->
+<div class="mt-header">
+  <div>
+    <h1 class="mt-title">Administración Multi-Tenant</h1>
+    <p class="mt-sub">Gestión de arquitectura · separación lógica de datos</p>
+  </div>
+  <button class="mt-refresh" (click)="cargar()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+    </svg>
+    Actualizar
+  </button>
+</div>
+
+@if (flash()) {
+  <div class="mt-flash">{{ flash() }}</div>
+}
+
+@if (loading()) {
+  <div class="mt-loading"><div class="mt-spinner"></div><p>Cargando datos del tenant...</p></div>
+} @else if (error()) {
+  <div class="mt-error">{{ error() }}</div>
+} @else {
+@if (data(); as d) {
+
+  <!-- ─── Tabs ─────────────────────────────────────────────────────────── -->
+  <div class="mt-tabs">
+    <button class="mt-tab" [class.active]="tab() === 'overview'"    (click)="tab.set('overview')">Resumen</button>
+    <button class="mt-tab" [class.active]="tab() === 'usuarios'"    (click)="tab.set('usuarios')">Usuarios ({{ d.usuarios.length }})</button>
+    <button class="mt-tab" [class.active]="tab() === 'talleres'"    (click)="tab.set('talleres')">Talleres ({{ d.talleres.length }})</button>
+    <button class="mt-tab" [class.active]="tab() === 'aislamiento'" (click)="tab.set('aislamiento')">Aislamiento</button>
+  </div>
+
+  <!-- ══════════ TAB: OVERVIEW ══════════ -->
+  @if (tab() === 'overview') {
+
+    <!-- Tenant card -->
+    <div class="mt-tenant-card">
+      <div class="mt-tenant-badge">TENANT</div>
+      <div class="mt-tenant-body">
+        <div class="mt-tenant-row">
+          <span class="mt-tenant-nombre">{{ d.tenant.nombre }}</span>
+          <span class="mt-badge" [class]="estadoClass(d.tenant.estado)">{{ d.tenant.estado }}</span>
+        </div>
+        <div class="mt-tenant-meta">
+          <span><strong>Slug:</strong> {{ d.tenant.slug }}</span>
+          <span><strong>ID:</strong> {{ d.tenant.id_tenant }}</span>
+          <span><strong>Creado:</strong> {{ d.tenant.created_at | date:'dd/MM/yyyy' }}</span>
+        </div>
+      </div>
+      <button class="mt-edit-btn" (click)="abrirEdit()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Editar nombre
+      </button>
+    </div>
+
+    <!-- Métricas -->
+    <div class="mt-metrics">
+      <div class="mt-metric-card mt-m--blue">
+        <p class="mt-m-val">{{ d.metricas.total_usuarios }}</p>
+        <p class="mt-m-label">Usuarios</p>
+      </div>
+      <div class="mt-metric-card mt-m--indigo">
+        <p class="mt-m-val">{{ d.metricas.total_talleres }}</p>
+        <p class="mt-m-label">Talleres</p>
+      </div>
+      <div class="mt-metric-card mt-m--green">
+        <p class="mt-m-val">{{ d.metricas.total_clientes }}</p>
+        <p class="mt-m-label">Clientes</p>
+      </div>
+      <div class="mt-metric-card mt-m--orange">
+        <p class="mt-m-val">{{ d.metricas.total_incidentes }}</p>
+        <p class="mt-m-label">Incidentes</p>
+      </div>
+      <div class="mt-metric-card mt-m--yellow">
+        <p class="mt-m-val">{{ d.metricas.incidentes_activos }}</p>
+        <p class="mt-m-label">Activos ahora</p>
+      </div>
+      <div class="mt-metric-card mt-m--teal">
+        <p class="mt-m-val">{{ d.metricas.ingresos_total | currency:'USD':'$':'1.0-0' }}</p>
+        <p class="mt-m-label">Ingresos aprobados</p>
+      </div>
+    </div>
+
+    <!-- Información de aislamiento -->
+    <div class="mt-card mt-iso-preview" [class.mt-iso--ok]="d.aislamiento.aislado" [class.mt-iso--warn]="!d.aislamiento.aislado">
+      <span class="mt-iso-icon">{{ d.aislamiento.aislado ? '🔒' : '⚠️' }}</span>
+      <div>
+        <p class="mt-iso-msg">{{ d.aislamiento.mensaje }}</p>
+        <p class="mt-iso-detail">Tenants detectados en datos: <strong>{{ d.aislamiento.tenants_detectados }}</strong></p>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════ TAB: USUARIOS ══════════ -->
+  @if (tab() === 'usuarios') {
+    <div class="mt-card">
+      <div class="mt-search-row">
+        <input class="mt-search" type="text" [(ngModel)]="usuarioBusq" placeholder="Buscar por nombre o email..." />
+        <span class="mt-count">{{ usuariosFiltrados.length }} usuarios</span>
+      </div>
+      @if (usuariosFiltrados.length === 0) {
+        <p class="mt-empty">Sin usuarios registrados en este tenant</p>
+      } @else {
+        <div class="mt-table-wrap">
+          <table class="mt-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Roles</th>
+                <th>Estado</th>
+                <th>Registrado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of usuariosFiltrados; track u.id_usuario) {
+                <tr>
+                  <td class="mt-user-cell">
+                    <div class="mt-avatar">{{ u.nombres.charAt(0) }}{{ u.apellidos.charAt(0) }}</div>
+                    <div>
+                      <p class="mt-user-name">{{ u.nombres }} {{ u.apellidos }}</p>
+                      <p class="mt-user-id">#{{ u.id_usuario }}</p>
+                    </div>
+                  </td>
+                  <td class="mt-email">{{ u.email }}</td>
+                  <td>{{ u.telefono ?? '—' }}</td>
+                  <td>
+                    <div class="mt-roles">
+                      @for (r of u.roles; track r) {
+                        <span class="mt-rol-chip" [style.background]="rolColor(r) + '22'" [style.color]="rolColor(r)">{{ r }}</span>
+                      }
+                    </div>
+                  </td>
+                  <td><span class="mt-badge" [class]="estadoClass(u.estado)">{{ u.estado }}</span></td>
+                  <td class="mt-date">{{ u.created_at | date:'dd/MM/yy' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ══════════ TAB: TALLERES ══════════ -->
+  @if (tab() === 'talleres') {
+    <div class="mt-card">
+      <div class="mt-search-row">
+        <input class="mt-search" type="text" [(ngModel)]="tallerBusq" placeholder="Buscar taller..." />
+        <span class="mt-count">{{ talleresFiltrados.length }} talleres</span>
+      </div>
+      @if (talleresFiltrados.length === 0) {
+        <p class="mt-empty">Sin talleres registrados en este tenant</p>
+      } @else {
+        <div class="mt-taller-grid">
+          @for (t of talleresFiltrados; track t.id_taller) {
+            <div class="mt-taller-card">
+              <div class="mt-taller-head">
+                <div class="mt-taller-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                  </svg>
+                </div>
+                <div class="mt-taller-info">
+                  <p class="mt-taller-name">{{ t.nombre_comercial }}</p>
+                  <p class="mt-taller-id">#{{ t.id_taller }}</p>
+                </div>
+                <span class="mt-badge" [class]="estadoClass(t.estado)">{{ t.estado }}</span>
+              </div>
+              <div class="mt-taller-meta">
+                @if (t.telefono) { <span>📞 {{ t.telefono }}</span> }
+                @if (t.email)    { <span>✉️ {{ t.email }}</span> }
+                @if (t.direccion){ <span>📍 {{ t.direccion }}</span> }
+              </div>
+              <p class="mt-taller-date">Registrado: {{ t.created_at | date:'dd/MM/yyyy' }}</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ══════════ TAB: AISLAMIENTO ══════════ -->
+  @if (tab() === 'aislamiento') {
+    <div class="mt-card">
+      <h3 class="mt-iso-title">Verificación de aislamiento de datos</h3>
+      <p class="mt-iso-desc">El sistema comprueba que toda la información del tenant esté correctamente separada, evitando accesos cruzados entre organizaciones.</p>
+
+      <div class="mt-iso-status" [class.iso-ok]="d.aislamiento.aislado" [class.iso-warn]="!d.aislamiento.aislado">
+        <div class="mt-iso-icon-big">{{ d.aislamiento.aislado ? '🔒' : '⚠️' }}</div>
+        <div>
+          <p class="mt-iso-status-title">{{ d.aislamiento.aislado ? 'Aislamiento correcto' : 'Posible fuga de datos' }}</p>
+          <p class="mt-iso-status-msg">{{ d.aislamiento.mensaje }}</p>
+        </div>
+      </div>
+
+      <div class="mt-iso-checks">
+        <div class="mt-iso-check">
+          <span class="iso-check-icon" style="color:#10b981">✓</span>
+          <div>
+            <p class="iso-check-title">Filtro por tenant en consultas</p>
+            <p class="iso-check-desc">Todas las consultas aplican <code>WHERE id_tenant = {{ d.tenant.id_tenant }}</code></p>
+          </div>
+        </div>
+        <div class="mt-iso-check">
+          <span class="iso-check-icon" style="color:#10b981">✓</span>
+          <div>
+            <p class="iso-check-title">Validación en JWT</p>
+            <p class="iso-check-desc">El tenant ID se extrae del token JWT y no puede modificarse en el cliente</p>
+          </div>
+        </div>
+        <div class="mt-iso-check">
+          <span class="iso-check-icon" [style.color]="d.aislamiento.aislado ? '#10b981' : '#ef4444'">
+            {{ d.aislamiento.aislado ? '✓' : '✗' }}
+          </span>
+          <div>
+            <p class="iso-check-title">Tenants detectados en datos de incidentes</p>
+            <p class="iso-check-desc">
+              Se detectaron <strong>{{ d.aislamiento.tenants_detectados }}</strong> tenant(s) en los datos.
+              @if (d.aislamiento.aislado) { Correcto: solo el tenant actual. }
+              @else { Advertencia: datos de múltiples tenants detectados. }
+            </p>
+          </div>
+        </div>
+        <div class="mt-iso-check">
+          <span class="iso-check-icon" style="color:#10b981">✓</span>
+          <div>
+            <p class="iso-check-title">Acceso restringido por rol</p>
+            <p class="iso-check-desc">Este módulo es exclusivo del rol <strong>ADMINISTRADOR</strong></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-iso-data">
+        <h4>Datos del tenant actual</h4>
+        <div class="mt-iso-kv">
+          <span class="iso-k">ID Tenant</span><span class="iso-v">{{ d.tenant.id_tenant }}</span>
+          <span class="iso-k">Nombre</span><span class="iso-v">{{ d.tenant.nombre }}</span>
+          <span class="iso-k">Slug</span><span class="iso-v">{{ d.tenant.slug }}</span>
+          <span class="iso-k">Estado</span><span class="iso-v"><span class="mt-badge" [class]="estadoClass(d.tenant.estado)">{{ d.tenant.estado }}</span></span>
+          <span class="iso-k">Usuarios</span><span class="iso-v">{{ d.metricas.total_usuarios }}</span>
+          <span class="iso-k">Talleres</span><span class="iso-v">{{ d.metricas.total_talleres }}</span>
+          <span class="iso-k">Incidentes</span><span class="iso-v">{{ d.metricas.total_incidentes }}</span>
+        </div>
+      </div>
+    </div>
+  }
+
+}
+}
+
+<!-- ─── Modal editar nombre ──────────────────────────────────────────────── -->
+@if (showEdit) {
+  <div class="mt-modal-bg" (click)="cerrarEdit()">
+    <div class="mt-modal" (click)="$event.stopPropagation()">
+      <h3 class="mt-modal-title">Editar nombre del tenant</h3>
+      <label class="mt-modal-label">Nombre</label>
+      <input class="mt-modal-input" type="text" [(ngModel)]="editNombre" placeholder="Nombre del tenant" />
+      <div class="mt-modal-actions">
+        <button class="mt-btn-cancel" (click)="cerrarEdit()">Cancelar</button>
+        <button class="mt-btn-save" (click)="guardarNombre()" [disabled]="saving() || !editNombre.trim()">
+          {{ saving() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

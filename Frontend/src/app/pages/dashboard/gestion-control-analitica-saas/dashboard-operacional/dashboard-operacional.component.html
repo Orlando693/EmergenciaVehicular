@@ -1,0 +1,276 @@
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<div class="do-header">
+  <div>
+    <h1 class="do-title">Dashboard Operacional</h1>
+    <p class="do-subtitle">Métricas filtradas por tenant · {{ auth.tenantNombre }}</p>
+  </div>
+  <button class="do-refresh-btn" (click)="cargar()" title="Actualizar">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+    </svg>
+    Actualizar
+  </button>
+</div>
+
+<!-- ── Filtros ─────────────────────────────────────────────────────────── -->
+<div class="do-filters">
+  <div class="do-filter-field">
+    <label>Desde</label>
+    <input type="date" [(ngModel)]="fechaDesde" />
+  </div>
+  <div class="do-filter-field">
+    <label>Hasta</label>
+    <input type="date" [(ngModel)]="fechaHasta" />
+  </div>
+  <div class="do-filter-field">
+    <label>Clasificación IA</label>
+    <input type="text" [(ngModel)]="clasificacion" placeholder="Ej: mecánico" />
+  </div>
+  <div class="do-filter-actions">
+    <button class="do-btn-apply" (click)="aplicarFiltros()">Aplicar</button>
+    <button class="do-btn-clear" (click)="limpiarFiltros()">Limpiar</button>
+  </div>
+</div>
+
+<!-- ── Estados ─────────────────────────────────────────────────────────── -->
+@if (loading()) {
+  <div class="do-loading">
+    <div class="do-spinner"></div>
+    <p>Cargando métricas...</p>
+  </div>
+} @else if (error()) {
+  <div class="do-error">{{ error() }}</div>
+} @else {
+@if (data(); as d) {
+
+  <!-- ════════════════ KPI CARDS ════════════════ -->
+  <div class="do-kpi-grid">
+    <div class="do-kpi do-kpi--blue">
+      <div class="do-kpi-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <div>
+        <p class="do-kpi-val">{{ d.total_incidentes }}</p>
+        <p class="do-kpi-label">Total incidentes</p>
+        <p class="do-kpi-sub">Período seleccionado</p>
+      </div>
+    </div>
+
+    <div class="do-kpi do-kpi--amber">
+      <div class="do-kpi-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <div>
+        <p class="do-kpi-val">{{ d.incidentes_activos }}</p>
+        <p class="do-kpi-label">Activos ahora</p>
+        <p class="do-kpi-sub">En proceso</p>
+      </div>
+    </div>
+
+    <div class="do-kpi do-kpi--green">
+      <div class="do-kpi-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div>
+        <p class="do-kpi-val">{{ d.incidentes_completados }}</p>
+        <p class="do-kpi-label">Completados</p>
+        <p class="do-kpi-sub">Servicios finalizados</p>
+      </div>
+    </div>
+
+    <div class="do-kpi do-kpi--red">
+      <div class="do-kpi-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      </div>
+      <div>
+        <p class="do-kpi-val">{{ d.incidentes_cancelados }}</p>
+        <p class="do-kpi-label">Cancelados</p>
+        <p class="do-kpi-sub">No completados</p>
+      </div>
+    </div>
+
+    <div class="do-kpi do-kpi--purple">
+      <div class="do-kpi-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="do-kpi-val">{{ d.total_talleres }}</p>
+        <p class="do-kpi-label">Talleres</p>
+        <p class="do-kpi-sub">{{ d.total_tecnicos }} técnicos</p>
+      </div>
+    </div>
+
+    <div class="do-kpi do-kpi--slate">
+      <div class="do-kpi-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div>
+        <p class="do-kpi-val">{{ d.total_clientes }}</p>
+        <p class="do-kpi-label">Clientes</p>
+        <p class="do-kpi-sub">Registrados</p>
+      </div>
+    </div>
+
+    <div class="do-kpi do-kpi--emerald">
+      <div class="do-kpi-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <div>
+        <p class="do-kpi-val">Bs {{ d.ingresos_totales | number:'1.0-0' }}</p>
+        <p class="do-kpi-label">Ingresos</p>
+        <p class="do-kpi-sub">Pagos completados</p>
+      </div>
+    </div>
+
+    <!-- SLA card especial -->
+    <div class="do-kpi do-kpi--sla">
+      <div class="do-sla-ring">
+        <svg viewBox="0 0 36 36" class="do-sla-svg">
+          <path class="do-sla-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+          <path class="do-sla-fill"
+            [style.stroke]="getSlaColor(d.cumplimiento_sla)"
+            [style.strokeDasharray]="d.cumplimiento_sla + ', 100'"
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+          <text x="18" y="20.35" class="do-sla-pct">{{ d.cumplimiento_sla }}%</text>
+        </svg>
+      </div>
+      <div>
+        <p class="do-kpi-label">Cumplimiento SLA</p>
+        <p class="do-kpi-sub">Completados / Total</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ FILA 2: Tendencia + Estados ════════════════ -->
+  <div class="do-row-2">
+
+    <!-- Tendencia 7 días -->
+    <div class="do-card do-card--tend">
+      <h3 class="do-card-title">Tendencia últimos 7 días</h3>
+      <div class="do-bar-chart">
+        @for (item of d.tendencia_7dias; track trackFecha($index, item)) {
+          <div class="do-bar-col">
+            <span class="do-bar-val">{{ item.total }}</span>
+            <div class="do-bar-wrap">
+              <div class="do-bar"
+                   [style.height]="barWidth(item.total, maxTendencia())"
+                   style="background: #3b82f6;">
+              </div>
+            </div>
+            <span class="do-bar-label">{{ formatFecha(item.fecha) }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Por estado -->
+    <div class="do-card">
+      <h3 class="do-card-title">Incidentes por estado</h3>
+      @if (d.por_estado.length === 0) {
+        <p class="do-empty">Sin datos</p>
+      } @else {
+        <div class="do-estado-list">
+          @for (item of d.por_estado; track trackNombre($index, item)) {
+            <div class="do-estado-row">
+              <div class="do-estado-dot" [style.background]="getEstadoColor(item.nombre)"></div>
+              <span class="do-estado-name">{{ item.nombre }}</span>
+              <div class="do-estado-bar-wrap">
+                <div class="do-estado-bar"
+                     [style.width]="barWidth(item.total, d.total_incidentes)"
+                     [style.background]="getEstadoColor(item.nombre)">
+                </div>
+              </div>
+              <span class="do-estado-cnt">{{ item.total }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ════════════════ FILA 3: Clasificación + Talleres ════════════════ -->
+  <div class="do-row-2">
+
+    <!-- Clasificación IA -->
+    <div class="do-card">
+      <h3 class="do-card-title">
+        Clasificación IA
+        <span class="do-card-badge">{{ clasifTotal() }} total</span>
+      </h3>
+      @if (d.por_clasificacion.length === 0) {
+        <p class="do-empty">Sin datos de clasificación IA</p>
+      } @else {
+        <div class="do-clasif-list">
+          @for (item of d.por_clasificacion; track trackNombre($index, item)) {
+            <div class="do-clasif-row">
+              <span class="do-clasif-name">{{ item.nombre }}</span>
+              <div class="do-clasif-bar-wrap">
+                <div class="do-clasif-bar" [style.width]="barWidth(item.total, maxClasificacion())"></div>
+              </div>
+              <span class="do-clasif-cnt">{{ item.total }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Ranking talleres -->
+    <div class="do-card">
+      <h3 class="do-card-title">Rendimiento por taller</h3>
+      @if (d.por_taller.length === 0) {
+        <p class="do-empty">Sin datos de talleres</p>
+      } @else {
+        <div class="do-taller-table-wrap">
+          <table class="do-taller-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Taller</th>
+                <th>Inc.</th>
+                <th>Comp.</th>
+                <th>Canc.</th>
+                <th>SLA</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (t of d.por_taller; track t.nombre; let i = $index) {
+                <tr>
+                  <td class="do-rank">{{ i + 1 }}</td>
+                  <td class="do-t-name">{{ t.nombre }}</td>
+                  <td>{{ t.total_incidentes }}</td>
+                  <td class="do-green">{{ t.completados }}</td>
+                  <td class="do-red">{{ t.cancelados }}</td>
+                  <td>
+                    <span class="do-sla-badge"
+                          [style.background]="getSlaColor(t.tasa_cumplimiento) + '22'"
+                          [style.color]="getSlaColor(t.tasa_cumplimiento)">
+                      {{ t.tasa_cumplimiento }}%
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
+}
+}

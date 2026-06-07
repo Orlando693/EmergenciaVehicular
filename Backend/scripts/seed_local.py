@@ -30,6 +30,7 @@ from app.administracion.tenants.model import Tenant
 from app.administracion.usuarios.model import Usuario, Rol, UsuarioRol, Cliente
 from app.operaciones.talleres.model import Taller
 from app.gestion_comercial_servicio.planes.model import Plan, TenantSuscripcion
+from app.plataform_superAdmin.model import SuperAdmin
 
 TENANT_NOMBRE = "EmergenciaVehicular"
 TENANT_SLUG   = "emergencia-vehicular"
@@ -222,6 +223,23 @@ async def seed_planes(db) -> dict[str, Plan]:
     return planes
 
 
+async def seed_superadmin(db) -> None:
+    res = await db.execute(select(SuperAdmin).where(SuperAdmin.email == "superadmin@emergencia.com"))
+    sa = res.scalar_one_or_none()
+    if sa:
+        print("  [OK] SuperAdmin ya existe")
+        return
+    sa = SuperAdmin(
+        email="superadmin@emergencia.com",
+        password_hash=hash_password("SuperAdmin1234"),
+        nombre="Super Admin",
+        activo=True,
+    )
+    db.add(sa)
+    await db.flush()
+    print(f"  [+] SuperAdmin creado (id={sa.id_superadmin})")
+
+
 async def seed_suscripcion(db, tenant: Tenant, plan: Plan) -> None:
     res = await db.execute(
         select(TenantSuscripcion).where(
@@ -264,6 +282,9 @@ async def main() -> None:
         print("\nSuscripción:")
         await seed_suscripcion(db, tenant, planes["demo"])
 
+        print("\nSuperAdmin:")
+        await seed_superadmin(db)
+
         await db.commit()
 
     print("\n=== Seed completado ===")
@@ -271,6 +292,7 @@ async def main() -> None:
     print("\nCredenciales de acceso:")
     for d in USUARIOS:
         print(f"  {d['rol']:<15}  {d['email']:<30}  {d['password']}")
+    print(f"  {'SUPERADMIN':<15}  {'superadmin@emergencia.com':<30}  SuperAdmin1234")
     print()
 
 

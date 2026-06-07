@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { platformAuthGuard, platformGuestGuard } from './core/guards/platform-auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -154,6 +155,43 @@ export const routes: Routes = [
       {
         path: 'backup',
         loadComponent: () => import('./pages/dashboard/bitacora-reportes/backup/backup.component').then(m => m.BackupComponent),
+      },
+      {
+        path: 'dashboard-operacional',
+        loadComponent: () => import('./pages/dashboard/gestion-control-analitica-saas/dashboard-operacional/dashboard-operacional.component').then(m => m.DashboardOperacionalComponent),
+      },
+      {
+        path: 'kpis-atencion',
+        loadComponent: () => import('./pages/dashboard/gestion-control-analitica-saas/kpis-atencion/kpis-atencion.component').then(m => m.KpisAtencionComponent),
+      },
+      {
+        path: 'incidentes-analisis',
+        loadComponent: () => import('./pages/dashboard/gestion-control-analitica-saas/incidentes-analisis/incidentes-analisis.component').then(m => m.IncidentesAnalisisComponent),
+      },
+      {
+        path: 'multi-tenant-admin',
+        loadComponent: () => import('./pages/dashboard/gestion-control-analitica-saas/multi-tenant-admin/multi-tenant-admin.component').then(m => m.MultiTenantAdminComponent),
+      },
+    ],
+  },
+
+  // ── SaaS SuperAdmin platform ──────────────────────────────────────────────
+  {
+    path: 'platform/login',
+    canActivate: [platformGuestGuard],
+    loadComponent: () =>
+      import('./pages/plataform/login/platform-login.component').then(m => m.PlatformLoginComponent),
+  },
+  {
+    path: 'platform/dashboard',
+    canActivate: [platformAuthGuard],
+    loadComponent: () =>
+      import('./pages/plataform/dashboard/platform-dashboard.component').then(m => m.PlatformDashboardComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./pages/plataform/dashboard/organizaciones/organizaciones.component').then(m => m.OrganizacionesComponent),
       },
     ],
   },

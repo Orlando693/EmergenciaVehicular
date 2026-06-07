@@ -31,8 +31,8 @@ class Settings(BaseSettings):
     FIREBASE_CREDENTIALS_JSON: str = ""
 
     # Carpeta donde se guardan las subidas de imágenes/audio.
-    # Local:   "public/uploads"  (default, persiste mientras esté el repo)
-    # Railway: "/data/uploads"   (montar un Volume en /data para que persista)
+    # Local:   "public/uploads"  (default, sin cambios)
+    # Railway: set UPLOAD_DIR=/data/uploads  + montar Volume en /data
     UPLOAD_DIR: str = "public/uploads"
 
     # Prefijo URL público bajo el que se sirven los archivos subidos.

@@ -1,0 +1,94 @@
+<div class="pd-layout">
+
+  <!-- ── Sidebar ───────────────────────────────────────────────────── -->
+  <aside class="pd-sidebar" [class.pd-sidebar--collapsed]="!sidebarOpen()">
+
+    <!-- Brand -->
+    <div class="pd-brand">
+      <div class="pd-brand-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+      </div>
+      <div class="pd-brand-text">
+        <p class="pd-brand-name">EmergenciaV</p>
+        <p class="pd-brand-role">Plataforma SaaS</p>
+      </div>
+    </div>
+
+    <!-- Role tag -->
+    <div class="pd-role-tag">
+      <span class="pd-role-label">SUPERADMIN</span>
+    </div>
+
+    <!-- Nav -->
+    <nav class="pd-nav">
+      @for (group of navGroups(); track group.section) {
+        <div class="pd-nav-group">
+          <p class="pd-nav-section" (click)="toggleGroup(group)">
+            {{ group.section }}
+          </p>
+          @if (group.expanded) {
+            @for (item of group.items; track item.route) {
+              <a [routerLink]="item.route"
+                 routerLinkActive="pd-active"
+                 [routerLinkActiveOptions]="{ exact: true }"
+                 class="pd-nav-link"
+                 [title]="item.label">
+                <span [innerHTML]="getIcon(item.icon)"></span>
+                <span>{{ item.label }}</span>
+              </a>
+            }
+          }
+        </div>
+      }
+    </nav>
+
+    <!-- Logout -->
+    <div class="pd-sidebar-footer">
+      <button class="pd-logout" (click)="logout()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Salir
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main ──────────────────────────────────────────────────────── -->
+  <div class="pd-main">
+
+    <!-- Topbar -->
+    <header class="pd-topbar">
+      <div class="pd-topbar-left">
+        <button class="pd-toggle" (click)="toggleSidebar()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="pd-topbar-info">
+          <span class="pd-topbar-role">SUPERADMIN</span>
+          <span class="pd-topbar-name">Organizaciones</span>
+        </div>
+      </div>
+      <button class="pd-topbar-exit" (click)="logout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Salir
+      </button>
+    </header>
+
+    <!-- Content -->
+    <main class="pd-content">
+      <router-outlet />
+    </main>
+  </div>
+
+</div>

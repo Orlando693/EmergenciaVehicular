@@ -1,0 +1,187 @@
+/* ── Background ─────────────────────────────────────────────────────────── */
+.pl-bg {
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 40% 30%, #1a0a2e 0%, #0d0d1a 60%, #000 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', system-ui, sans-serif;
+  padding: 1.5rem;
+}
+
+/* ── Card ───────────────────────────────────────────────────────────────── */
+.pl-card {
+  width: 100%;
+  max-width: 420px;
+  background: #111827;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 1.25rem;
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .75rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+}
+
+/* ── Shield icon ────────────────────────────────────────────────────────── */
+.pl-icon-wrap {
+  width: 56px;
+  height: 56px;
+  background: #7c3aed;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: .25rem;
+  box-shadow: 0 4px 20px rgba(124,58,237,.5);
+}
+
+/* ── Labels ─────────────────────────────────────────────────────────────── */
+.pl-overline {
+  font-size: .65rem;
+  letter-spacing: .12em;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.pl-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #f9fafb;
+  margin: 0;
+}
+
+.pl-subtitle {
+  font-size: .8rem;
+  color: #6b7280;
+  text-align: center;
+  margin: 0 0 .5rem;
+  line-height: 1.5;
+}
+
+/* ── Demo button ─────────────────────────────────────────────────────────── */
+.pl-demo-btn {
+  width: 100%;
+  background: transparent;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  color: #d1d5db;
+  padding: .65rem 1rem;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  margin-bottom: .25rem;
+}
+.pl-demo-btn:hover {
+  background: rgba(255,255,255,.05);
+  border-color: #6b7280;
+}
+
+/* ── Error ──────────────────────────────────────────────────────────────── */
+.pl-error {
+  width: 100%;
+  background: rgba(239,68,68,.12);
+  border: 1px solid rgba(239,68,68,.3);
+  color: #fca5a5;
+  border-radius: 8px;
+  padding: .6rem .9rem;
+  font-size: .8rem;
+}
+
+/* ── Fields ─────────────────────────────────────────────────────────────── */
+.pl-field {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.pl-field label {
+  font-size: .78rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.pl-input-wrap {
+  display: flex;
+  align-items: center;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: .6rem .9rem;
+  gap: .6rem;
+  transition: border-color .2s;
+}
+.pl-input-wrap:focus-within {
+  border-color: #7c3aed;
+}
+
+.pl-input-icon {
+  color: #6b7280;
+  font-size: .9rem;
+  flex-shrink: 0;
+}
+
+.pl-input-wrap input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f9fafb;
+  font-size: .88rem;
+}
+.pl-input-wrap input::placeholder { color: #4b5563; }
+
+.pl-eye {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: .9rem;
+  padding: 0;
+  line-height: 1;
+}
+
+/* ── Submit ─────────────────────────────────────────────────────────────── */
+.pl-submit-btn {
+  width: 100%;
+  background: #5b21b6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: .8rem;
+  font-size: .95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: .25rem;
+  transition: background .2s, opacity .2s;
+}
+.pl-submit-btn:hover:not(:disabled) { background: #7c3aed; }
+.pl-submit-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ── Divider & links ────────────────────────────────────────────────────── */
+.pl-divider {
+  width: 100%;
+  border: none;
+  border-top: 1px solid #1f2937;
+  margin: .25rem 0;
+}
+
+.pl-clinic-link,
+.pl-back-link {
+  color: #6b7280;
+  font-size: .8rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  transition: color .2s;
+}
+.pl-clinic-link:hover, .pl-back-link:hover { color: #d1d5db; }
+.pl-back-link { margin-top: -.15rem; }

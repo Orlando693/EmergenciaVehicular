@@ -1,0 +1,65 @@
+<div class="pl-bg">
+  <div class="pl-card">
+    <!-- Icon -->
+    <div class="pl-icon-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="28" height="28">
+        <path d="M12 1L3 5v6c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V5L12 1zm0 4l5 2.18V11c0 3.47-2.34 6.71-5 7.93-2.66-1.22-5-4.46-5-7.93V7.18L12 5z"/>
+      </svg>
+    </div>
+
+    <p class="pl-overline">OPERADOR DEL SAAS</p>
+    <h1 class="pl-title">Acceso plataforma</h1>
+    <p class="pl-subtitle">
+      Gestioná organizaciones y planes.<br>
+      No es el acceso de una clínica.
+    </p>
+
+    <button class="pl-demo-btn" (click)="useDemo()" type="button">
+      <span>&#128273;</span> Usar credenciales demo
+    </button>
+
+    @if (error()) {
+      <div class="pl-error">{{ error() }}</div>
+    }
+
+    <div class="pl-field">
+      <label>Correo</label>
+      <div class="pl-input-wrap">
+        <span class="pl-input-icon">&#9993;</span>
+        <input
+          type="email"
+          [(ngModel)]="email"
+          placeholder="superadmin&#64;emergencia.com"
+          autocomplete="email"
+        />
+      </div>
+    </div>
+
+    <div class="pl-field">
+      <label>Contraseña</label>
+      <div class="pl-input-wrap">
+        <span class="pl-input-icon">&#128274;</span>
+        <input
+          [type]="showPass() ? 'text' : 'password'"
+          [(ngModel)]="password"
+          placeholder="••••••••••"
+          autocomplete="current-password"
+        />
+        <button type="button" class="pl-eye" (click)="showPass.set(!showPass())">
+          @if (showPass()) { &#128065; } @else { &#128065; }
+        </button>
+      </div>
+    </div>
+
+    <button class="pl-submit-btn" [disabled]="loading()" (click)="submit()">
+      @if (loading()) { Ingresando... } @else { Ingresar }
+    </button>
+
+    <hr class="pl-divider" />
+
+    <a class="pl-clinic-link" routerLink="/login">
+      &#127963; Ir al login de la clínica
+    </a>
+    <a class="pl-back-link" routerLink="/">Volver al inicio</a>
+  </div>
+</div>
