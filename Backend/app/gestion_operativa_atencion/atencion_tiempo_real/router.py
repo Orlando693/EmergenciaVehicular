@@ -13,6 +13,8 @@ from app.gestion_operativa_atencion.atencion_tiempo_real.schemas import (
     AtencionEstadoUpdate,
     AtencionEventoOut,
     AtencionSeguimientoOut,
+    UbicacionTecnicoIn,
+    UbicacionTecnicoOut,
 )
 from app.gestion_operativa_atencion.atencion_tiempo_real import service
 from app.gestion_operativa_atencion.atencion_tiempo_real.manager import atencion_realtime_manager
@@ -78,6 +80,20 @@ async def actualizar_estado_atencion(
         payload.estado,
         payload.observacion,
     )
+
+
+@router.post(
+    "/{id_incidente}/ubicacion",
+    response_model=UbicacionTecnicoOut,
+    dependencies=[Depends(require_roles("TALLER"))],
+)
+async def actualizar_ubicacion_tecnico(
+    id_incidente: int,
+    payload: UbicacionTecnicoIn,
+    db: DBDep,
+    current_user: CurrentUser,
+):
+    return await service.actualizar_ubicacion_tecnico(db, id_incidente, current_user, payload)
 
 
 @router.websocket("/{id_incidente}/ws")

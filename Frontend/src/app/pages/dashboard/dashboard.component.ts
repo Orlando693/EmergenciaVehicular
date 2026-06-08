@@ -85,6 +85,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       section: 'GESTIÓN OPERATIVA DE ATENCIÓN',
       expanded: true,
       items: [
+        { label: 'Tiempo real',              icon: 'map-pin',  route: '/dashboard/atencion-tiempo-real', roles: ['CLIENTE', 'TALLER'] },
         { label: 'Sincronización Offline',   icon: 'wifi-off', route: '/dashboard/sincronizacion-offline', roles: ['CLIENTE'] },
         { label: 'Estimaciones de Atención', icon: 'clock',    route: '/dashboard/gestionar-atencion',     roles: ['TALLER', 'CLIENTE'] },
       ],
@@ -237,6 +238,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       '/dashboard/chats': 'chat comunicacion mensajes paquete asignacion',
       '/dashboard/notificaciones': 'avisos alertas notificaciones paquete asignacion',
       '/dashboard/sincronizacion-offline': 'offline sincronizacion emergencia sin internet cu19 paquete gestion operativa',
+      '/dashboard/atencion-tiempo-real': 'tiempo real tracking seguimiento uber tecnico taller gps mapa paquete gestion operativa cu18',
       '/dashboard/gestionar-atencion': 'estimaciones atencion reparacion tiempo paquete gestion operativa',
       '/dashboard/cotizaciones': 'cotizaciones presupuesto reparacion cu20 paquete comercial',
       '/dashboard/seleccionar-taller': 'elegir taller comparar cotizaciones paquete comercial',

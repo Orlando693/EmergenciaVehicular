@@ -1,124 +1,166 @@
 <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
-  <div class="sm:flex sm:justify-between sm:items-center mb-8">
-    <div class="mb-4 sm:mb-0">
-      <h1 class="text-2xl md:text-3xl text-slate-800 font-bold">Seguimiento en Tiempo Real 🚗</h1>
-    </div>
+  <div class="mb-8">
+    <p class="text-sm font-semibold text-blue-600 uppercase tracking-wide">Gestión operativa</p>
+    <h1 class="text-2xl md:text-3xl text-slate-900 font-bold">Tiempo real tipo Uber</h1>
+    <p class="text-slate-500 mt-2">
+      Cliente ve al técnico/taller llegando al vehículo dañado. Taller comparte GPS desde el navegador.
+    </p>
   </div>
 
-  <div *ngIf="loading" class="text-center py-8">
-    <div class="inline-block animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
-    <p class="mt-2 text-slate-500">Cargando datos de atención...</p>
-  </div>
-
-  <div *ngIf="error" class="bg-rose-100 border border-rose-400 text-rose-700 px-4 py-3 rounded relative mb-6">
-    <span class="block sm:inline">{{ error }}</span>
-  </div>
-
-  <div *ngIf="!loading && seguimiento" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <!-- INFO GENERAL -->
-    <div class="bg-white p-6 shadow-sm rounded-lg border border-slate-200">
-      <h2 class="text-lg font-semibold text-slate-800 mb-4">Información del Incidente #{{ seguimiento.id_incidente }}</h2>
-      <div class="space-y-3">
-        <div>
-          <span class="text-sm font-medium text-slate-500">Descripción:</span>
-          <p class="text-slate-800">{{ seguimiento.descripcion }}</p>
-        </div>
-        <div>
-          <span class="text-sm font-medium text-slate-500">Estado Actual:</span>
-          <p>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-              [ngClass]="{
-                'bg-amber-100 text-amber-800': seguimiento.estado === 'PENDIENTE',
-                'bg-blue-100 text-blue-800': seguimiento.estado === 'ASIGNADO' || seguimiento.estado === 'EN_PROCESO',
-                'bg-emerald-100 text-emerald-800': seguimiento.estado === 'RESUELTO',
-                'bg-rose-100 text-rose-800': seguimiento.estado === 'CANCELADO' || seguimiento.estado === 'RECHAZADO'
-              }">
-              {{ seguimiento.estado }}
-            </span>
-          </p>
-        </div>
-        
-        <div *ngIf="seguimiento.taller_asignado" class="mt-4 pt-4 border-t border-slate-200">
-          <h3 class="text-md font-medium text-slate-800 mb-2">Taller Asignado</h3>
-          <p class="text-sm text-slate-600 font-medium">{{ seguimiento.taller_asignado.razon_social }}</p>
-          <p class="text-sm text-slate-500" *ngIf="seguimiento.taller_asignado.telefono">
-            Teléfono: {{ seguimiento.taller_asignado.telefono }}
-          </p>
-        </div>
+  <div class="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-6">
+    <aside class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="p-5 border-b border-slate-100">
+        <h2 class="font-bold text-slate-900">Casos con seguimiento</h2>
+        <p class="text-sm text-slate-500 mt-1">Selecciona un incidente asignado o en proceso.</p>
       </div>
-    </div>
 
-    <!-- ACCIONES TALLER -->
-    <div *ngIf="esTaller" class="bg-white p-6 shadow-sm rounded-lg border border-slate-200">
-      <h2 class="text-lg font-semibold text-slate-800 mb-4">Gestión Operativa (Taller)</h2>
-      
-      <!-- Si está asignado puede aceptar o rechazar -->
-      <div *ngIf="seguimiento.estado === 'ASIGNADO'" class="mb-6">
-        <p class="text-sm text-slate-600 mb-2">Este incidente le fue asignado, por favor acepte o rechace la atención.</p>
-        <div class="flex flex-col gap-3">
-          <textarea [(ngModel)]="observacion" rows="3" class="form-textarea w-full rounded border-slate-300" placeholder="Observaciones (Opcional)"></textarea>
-          <div class="flex gap-2">
-            <button (click)="aceptar()" class="btn bg-indigo-500 hover:bg-indigo-600 text-white flex-1 py-2 px-4 rounded">
-              Aceptar Atención
-            </button>
-            <button (click)="rechazar()" class="btn bg-rose-500 hover:bg-rose-600 text-white flex-1 py-2 px-4 rounded">
-              Rechazar Atención
-            </button>
+      <div *ngIf="loadingList" class="p-5 text-sm text-slate-500">Cargando casos...</div>
+      <div *ngIf="!loadingList && incidentes.length === 0" class="p-5 text-sm text-slate-500">
+        No hay casos activos con taller asignado para seguimiento.
+      </div>
+
+      <div class="divide-y divide-slate-100 max-h-[620px] overflow-y-auto">
+        <button
+          *ngFor="let inc of incidentes"
+          type="button"
+          (click)="seleccionarIncidente(inc.id_incidente)"
+          class="w-full text-left p-4 hover:bg-slate-50 transition"
+          [ngClass]="{ 'bg-blue-50': idIncidente === inc.id_incidente }">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="font-bold text-slate-900">Incidente #{{ inc.id_incidente }}</p>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-2">{{ inc.descripcion }}</p>
+            </div>
+            <span class="text-[11px] font-bold px-2 py-1 rounded-full" [ngClass]="badgeClase(inc.estado)">
+              {{ inc.estado }}
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mt-2" *ngIf="inc.taller_nombre">Taller: {{ inc.taller_nombre }}</p>
+          <p class="text-xs text-slate-400 mt-1" *ngIf="inc.direccion">📍 {{ inc.direccion }}</p>
+        </button>
+      </div>
+    </aside>
+
+    <section class="space-y-6">
+      <div *ngIf="!idIncidente" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
+        <div class="mx-auto w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-3xl">📍</div>
+        <h2 class="font-bold text-slate-900 text-xl mt-4">Selecciona un caso</h2>
+        <p class="text-slate-500 mt-2">Cuando el taller comparta ubicación, verás el marcador moverse en el mapa.</p>
+      </div>
+
+      <div *ngIf="idIncidente && loading" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
+        <div class="inline-block animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+        <p class="mt-3 text-slate-500">Cargando seguimiento...</p>
+      </div>
+
+      <div *ngIf="error" class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl">
+        {{ error }}
+      </div>
+
+      <ng-container *ngIf="idIncidente && !loading && seguimiento">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <p class="text-xs font-semibold text-slate-400 uppercase">Estado</p>
+            <p class="mt-2">
+              <span class="inline-flex text-xs font-bold px-2.5 py-1 rounded-full" [ngClass]="badgeClase(seguimiento.incidente.estado)">
+                {{ seguimiento.incidente.estado }}
+              </span>
+            </p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <p class="text-xs font-semibold text-slate-400 uppercase">Distancia estimada</p>
+            <p class="text-2xl font-black text-slate-900 mt-1">
+              {{ distanciaKm() === null ? '--' : (distanciaKm() | number:'1.1-1') + ' km' }}
+            </p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <p class="text-xs font-semibold text-slate-400 uppercase">Llegada estimada</p>
+            <p class="text-2xl font-black text-slate-900 mt-1">
+              {{ etaMin() === null ? '--' : etaMin() + ' min' }}
+            </p>
           </div>
         </div>
-      </div>
 
-      <!-- Si está en proceso, puede actualizar el estado -->
-      <div *ngIf="seguimiento.estado === 'ABIERTO' || seguimiento.estado === 'EN_PROCESO' || seguimiento.estado === 'ASIGNADO' || seguimiento.estado === 'RESUELTO'" class="pt-4 border-t border-slate-200">
-        <h3 class="text-sm font-medium text-slate-700 mb-3">Actualizar Estado:</h3>
-        <div class="space-y-3">
-          <select [(ngModel)]="nuevoEstado" class="form-select w-full rounded border-slate-300">
-            <option value="">Seleccione el nuevo estado</option>
-            <option *ngFor="let estado of estadosPermitidos" [value]="estado">{{ estado }}</option>
-          </select>
-          <textarea [(ngModel)]="observacion" rows="2" class="form-textarea w-full rounded border-slate-300" placeholder="Observaciones / Novedades"></textarea>
-          <button (click)="actualizarEstado()" class="btn bg-emerald-500 hover:bg-emerald-600 text-white w-full py-2 px-4 rounded" [disabled]="!nuevoEstado">
-            Actualizar Estado
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- HISTORIAL DE EVENTOS -->
-  <div *ngIf="!loading && seguimiento && seguimiento.eventos_recientes?.length" class="mt-6 bg-white p-6 shadow-sm rounded-lg border border-slate-200">
-    <h2 class="text-lg font-semibold text-slate-800 mb-4">Historial de Eventos e Hitos</h2>
-    
-    <div class="flow-root">
-      <ul role="list" class="-mb-8">
-        <li *ngFor="let evento of seguimiento.eventos_recientes; let last = last; let i = index">
-          <div class="relative pb-8">
-            <span *ngIf="!last" class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-200" aria-hidden="true"></span>
-            <div class="relative flex space-x-3">
-              <div>
-                <span class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center ring-8 ring-white">
-                  <svg class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div>
+              <h2 class="font-bold text-slate-900">Seguimiento del técnico</h2>
+              <p class="text-sm text-slate-500">
+                {{ seguimiento.taller?.razon_social || 'Taller asignado' }}
+                <span *ngIf="seguimiento.ubicacion_tecnico">
+                  · actualizado {{ seguimiento.ubicacion_tecnico.updated_at | date:'shortTime' }}
                 </span>
-              </div>
-              <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
-                <div>
-                  <p class="text-sm text-slate-500">
-                    Cambio a estado <span class="font-medium text-slate-900">{{ evento.nuevo_estado }}</span>
-                  </p>
-                  <p *ngIf="evento.observacion" class="mt-1 text-sm text-slate-600">
-                    {{ evento.observacion }}
-                  </p>
-                </div>
-                <div class="whitespace-nowrap text-right text-sm text-slate-500">
-                  <time [attr.datetime]="evento.creado_en">{{ evento.creado_en | date:'short' }}</time>
-                </div>
+              </p>
+            </div>
+            <div *ngIf="esTaller" class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                (click)="aceptar()"
+                *ngIf="seguimiento.incidente.estado === 'ASIGNADO'"
+                class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700">
+                Aceptar atención
+              </button>
+              <button
+                type="button"
+                (click)="iniciarTracking()"
+                *ngIf="!compartiendo"
+                class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700">
+                Compartir GPS
+              </button>
+              <button
+                type="button"
+                (click)="detenerTracking()"
+                *ngIf="compartiendo"
+                class="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-bold hover:bg-rose-700">
+                Detener GPS
+              </button>
+            </div>
+          </div>
+
+          <div id="tracking-map" class="tracking-map"></div>
+
+          <div *ngIf="!seguimiento.ubicacion_tecnico" class="p-4 bg-amber-50 border-t border-amber-100 text-sm text-amber-800">
+            Aún no hay ubicación en vivo del técnico. El taller debe presionar “Compartir GPS”.
+          </div>
+          <div *ngIf="gpsError" class="p-4 bg-rose-50 border-t border-rose-100 text-sm text-rose-700">
+            {{ gpsError }}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <h3 class="font-bold text-slate-900 mb-3">Datos del incidente</h3>
+            <p class="text-sm text-slate-700">{{ seguimiento.incidente.descripcion }}</p>
+            <div class="mt-4 text-sm text-slate-500 space-y-1">
+              <p *ngIf="seguimiento.incidente.direccion">Dirección: {{ seguimiento.incidente.direccion }}</p>
+              <p *ngIf="seguimiento.incidente.vehiculo_placa">
+                Vehículo: {{ seguimiento.incidente.vehiculo_marca }} {{ seguimiento.incidente.vehiculo_modelo }}
+                · {{ seguimiento.incidente.vehiculo_placa }}
+              </p>
+              <p>Participantes en línea: {{ seguimiento.participantes_en_linea }}</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5" *ngIf="esTaller">
+            <h3 class="font-bold text-slate-900 mb-3">Actualizar servicio</h3>
+            <div class="space-y-3">
+              <select [(ngModel)]="nuevoEstado" class="w-full rounded-xl border-slate-300">
+                <option value="">Seleccione nuevo estado</option>
+                <option *ngFor="let estado of estadosPermitidos" [value]="estado">{{ estado }}</option>
+              </select>
+              <textarea [(ngModel)]="observacion" rows="3" class="w-full rounded-xl border-slate-300" placeholder="Observación para el cliente"></textarea>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button (click)="actualizarEstado()" class="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold" [disabled]="!nuevoEstado">
+                  Actualizar estado
+                </button>
+                <button (click)="rechazar()" class="px-4 py-2 rounded-xl border border-rose-200 text-rose-700 font-bold">
+                  Rechazar
+                </button>
               </div>
             </div>
           </div>
-        </li>
-      </ul>
-    </div>
+        </div>
+      </ng-container>
+    </section>
   </div>
 </div>

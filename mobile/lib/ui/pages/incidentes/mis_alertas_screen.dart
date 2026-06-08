@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/services/incidente_service.dart';
 import '../../shared/colors.dart';
 import '../chat/chat_screen.dart';
@@ -40,11 +41,14 @@ class _MisAlertasScreenState extends State<MisAlertasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final rol = AuthService.currentUser?.rol;
+    final title = rol == 'CLIENTE' ? 'Mis Alertas y Chat' : 'Casos y Chat';
+
     return Scaffold(
       backgroundColor: AppColors.slate900,
       appBar: widget.showAppBar
           ? AppBar(
-              title: const Text('Mis Alertas y Chat'),
+              title: Text(title),
               backgroundColor: AppColors.slate800,
               elevation: 0,
             )
@@ -72,23 +76,26 @@ class _MisAlertasScreenState extends State<MisAlertasScreen> {
   }
 
   Widget _vacio() {
+    final esCliente = AuthService.currentUser?.rol == 'CLIENTE';
     return ListView(
-      children: const [
-        SizedBox(height: 120),
-        Icon(Icons.check_circle_outline, size: 80, color: AppColors.slate500),
-        SizedBox(height: 16),
+      children: [
+        const SizedBox(height: 120),
+        const Icon(Icons.check_circle_outline, size: 80, color: AppColors.slate500),
+        const SizedBox(height: 16),
         Text(
-          'No tienes alertas activas.',
+          esCliente ? 'No tienes alertas activas.' : 'No hay casos disponibles.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white, fontSize: 18),
+          style: const TextStyle(color: Colors.white, fontSize: 18),
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Text(
-            'Si ocurre una emergencia, usa el botón "S.O.S IA" de la pantalla principal.',
+            esCliente
+                ? 'Si ocurre una emergencia, usa el boton "S.O.S IA" de la pantalla principal.'
+                : 'Cuando existan casos asignados o reportados apareceran aqui.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.slate400),
+            style: const TextStyle(color: AppColors.slate400),
           ),
         ),
       ],
@@ -123,7 +130,7 @@ class _MisAlertasScreenState extends State<MisAlertasScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Alerta #${item['id_incidente']}',
+                    '${AuthService.currentUser?.rol == 'CLIENTE' ? 'Alerta' : 'Caso'} #${item['id_incidente']}',
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,

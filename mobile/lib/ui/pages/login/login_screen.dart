@@ -17,12 +17,32 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _showPassword = false;
 
+  static const _demoAccounts = [
+    ('ADMINISTRADOR', 'admin@emergencia.com', 'Admin1234', Icons.admin_panel_settings),
+    ('TALLER', 'taller@emergencia.com', 'Taller1234', Icons.handyman_outlined),
+    ('CLIENTE', 'cliente@emergencia.com', 'Cliente1234', Icons.person_outline),
+  ];
+
   @override
   void initState() {
     super.initState();
     // Autocompletar como en el frontend
     _emailController.text = 'admin@emergencia.com';
     _passwordController.text = 'Admin1234';
+  }
+
+  void _useDemoAccount((String, String, String, IconData) account) {
+    setState(() {
+      _emailController.text = account.$2;
+      _passwordController.text = account.$3;
+    });
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   void _submit() async {
@@ -126,6 +146,39 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const Text(
+                      'Accesos rápidos',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ..._demoAccounts.map((account) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: OutlinedButton.icon(
+                            onPressed: _isLoading
+                                ? null
+                                : () => _useDemoAccount(account),
+                            icon: Icon(account.$4, size: 18),
+                            label: Text('${account.$1}  ·  ${account.$2}'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.orange400,
+                              side: BorderSide(
+                                color: AppColors.orange500.withOpacity(0.45),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        )),
+                    const SizedBox(height: 12),
                     const Text('Correo Electrónico', style: TextStyle(color: AppColors.slate400, fontSize: 14)),
                     const SizedBox(height: 8),
                     TextField(
@@ -227,7 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(width: 8),
                             const Text(
-                              'Credenciales Administrador Cargadas',
+                              'Toca un rol para cargar sus credenciales',
                               style: TextStyle(
                                 color: AppColors.orange400,
                                 fontSize: 12,

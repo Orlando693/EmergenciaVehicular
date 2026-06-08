@@ -13,6 +13,8 @@ from app.gestion_operativa_atencion.atencion_tiempo_real.schemas import (
     AtencionEventoOut,
     AtencionSeguimientoOut,
     TallerSeguimientoOut,
+    UbicacionTecnicoIn,
+    UbicacionTecnicoOut,
 )
 from app.gestion_incidentes.incidentes.schemas import IncidenteHistorialOut, IncidenteOut
 from app.asignacion_atencion.notificaciones import service as notificacion_service
@@ -93,12 +95,47 @@ async def obtener_seguimiento(db: AsyncSession, id_incidente: int, usuario: Usua
     historial = await _historial(db, incidente)
     inc_out = _incidente_out(incidente)
     taller_out = TallerSeguimientoOut.model_validate(incidente.taller) if incidente.taller else None
+    ubicacion = _ubicacion_out(atencion_realtime_manager.get_location(id_incidente))
     return AtencionSeguimientoOut(
         incidente=inc_out,
         taller=taller_out,
+        ubicacion_tecnico=ubicacion,
         historial=historial,
         participantes_en_linea=atencion_realtime_manager.participantes_en_linea(id_incidente),
     )
+
+
+async def actualizar_ubicacion_tecnico(
+    db: AsyncSession,
+    id_incidente: int,
+    usuario: Usuario,
+    payload: UbicacionTecnicoIn,
+) -> UbicacionTecnicoOut:
+    incidente = await _incidente_asignado_al_taller(db, id_incidente, usuario)
+    location = atencion_realtime_manager.set_location(
+        id_incidente,
+        {
+            "id_incidente": id_incidente,
+            "id_usuario": usuario.id_usuario,
+            "lat": payload.lat,
+            "lng": payload.lng,
+            "precision": payload.precision,
+            "velocidad": payload.velocidad,
+            "rumbo": payload.rumbo,
+        },
+    )
+    out = _ubicacion_out(location)
+    assert out is not None
+    await atencion_realtime_manager.broadcast(
+        id_incidente,
+        {
+            "tipo": "UBICACION_TECNICO",
+            "id_incidente": incidente.id_incidente,
+            "data": out.model_dump(mode="json"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    return out
 
 
 async def aceptar_atencion(
@@ -303,3 +340,13 @@ def _evento(tipo: str, incidente: Incidente, observacion: str | None) -> Atencio
         observacion=observacion,
         created_at=datetime.now(timezone.utc),
     )
+
+
+def _ubicacion_out(data: dict | None) -> UbicacionTecnicoOut | None:
+    if not data:
+        return None
+    normalized = dict(data)
+    updated_at = normalized.get("updated_at")
+    if isinstance(updated_at, str):
+        normalized["updated_at"] = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+    return UbicacionTecnicoOut(**normalized)

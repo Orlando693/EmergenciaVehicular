@@ -90,7 +90,7 @@ class _PagoCheckoutScreenState extends State<PagoCheckoutScreen> {
           backgroundColor: AppColors.slate800,
           title: const Text('Pago registrado', style: TextStyle(color: Colors.white)),
           content: Text(
-            'Estado: ${pago['estado'] ?? 'COMPLETADO'}\nReferencia: ${pago['referencia'] ?? '-'}',
+            'Metodo elegido: $_metodo\nEstado: ${pago['estado'] ?? 'COMPLETADO'}\nReferencia: ${pago['referencia'] ?? '-'}',
             style: const TextStyle(color: Colors.white70),
           ),
           actions: [
@@ -170,6 +170,7 @@ class _PagoCheckoutScreenState extends State<PagoCheckoutScreen> {
           _metodosCard(),
           const SizedBox(height: 16),
           if (_metodo == 'TARJETA') _tarjetaForm(),
+          if (_metodo == 'QR') _qrCard(),
           const SizedBox(height: 20),
           SizedBox(
             height: 52,
@@ -185,7 +186,13 @@ class _PagoCheckoutScreenState extends State<PagoCheckoutScreen> {
                       ),
                     )
                   : const Icon(Icons.lock_outline),
-              label: Text(_paying ? 'Procesando...' : 'Confirmar pago'),
+              label: Text(
+                _paying
+                    ? 'Procesando...'
+                    : _metodo == 'QR'
+                        ? 'Confirmar pago QR'
+                        : 'Confirmar pago',
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.orange500,
                 foregroundColor: Colors.white,
@@ -302,6 +309,7 @@ class _PagoCheckoutScreenState extends State<PagoCheckoutScreen> {
     final methods = [
       ('TARJETA', Icons.credit_card, 'Tarjeta'),
       ('TRANSFERENCIA', Icons.account_balance, 'Transferencia'),
+      ('QR', Icons.qr_code_2, 'Pago QR'),
       ('EFECTIVO', Icons.payments_outlined, 'Efectivo'),
     ];
 
@@ -417,6 +425,87 @@ class _PagoCheckoutScreenState extends State<PagoCheckoutScreen> {
     );
   }
 
+  Widget _qrCard() {
+    final referencia =
+        'EV-${widget.idIncidente}-${_money(_info?['monto_total']).replaceAll('.', '')}';
+    final payload =
+        'EMERGENCIA_VEHICULAR|INC:${widget.idIncidente}|MONTO:${_money(_info?['monto_total'])}|REF:$referencia';
+    final cells = _qrCells(payload);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.slate800,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.slate700),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.qr_code_2, color: AppColors.orange500),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Pago por QR',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: SizedBox(
+              width: 156,
+              height: 156,
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 13,
+                  mainAxisSpacing: 2,
+                  crossAxisSpacing: 2,
+                ),
+                itemCount: cells.length,
+                itemBuilder: (_, index) {
+                  return DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: cells[index] ? Colors.black : Colors.white,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Escanea el codigo con tu app bancaria y confirma el pago.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.slate400),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Referencia: $referencia',
+            style: const TextStyle(
+              color: AppColors.orange400,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _input({
     required TextEditingController controller,
     required String label,
@@ -448,5 +537,35 @@ class _PagoCheckoutScreenState extends State<PagoCheckoutScreen> {
   String _money(dynamic value) {
     final n = num.tryParse(value?.toString() ?? '0') ?? 0;
     return n.toStringAsFixed(2);
+  }
+
+  List<bool> _qrCells(String payload) {
+    const size = 13;
+    var seed = 0;
+    for (var i = 0; i < payload.length; i++) {
+      seed = (seed * 31 + payload.codeUnitAt(i)) & 0x7fffffff;
+    }
+
+    final cells = <bool>[];
+    for (var y = 0; y < size; y++) {
+      for (var x = 0; x < size; x++) {
+        final inFinder = (x < 4 && y < 4) ||
+            (x >= size - 4 && y < 4) ||
+            (x < 4 && y >= size - 4);
+        if (inFinder) {
+          final localX = x < 4 ? x : x - (size - 4);
+          final localY = y < 4 ? y : y - (size - 4);
+          cells.add(localX == 0 ||
+              localX == 3 ||
+              localY == 0 ||
+              localY == 3 ||
+              (localX == 1 && localY == 1));
+          continue;
+        }
+        final bit = ((seed >> ((x + y * 3) % 24)) ^ x * 17 ^ y * 29 ^ seed) & 1;
+        cells.add(bit == 1);
+      }
+    }
+    return cells;
   }
 }

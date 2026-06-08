@@ -59,7 +59,7 @@ class PagoService {
     String? cvv,
   }) async {
     final token = await _getToken();
-    final response = await http.post(
+    var response = await http.post(
       Uri.parse('$_baseUrl/incidente/$idIncidente/pagar'),
       headers: {
         'Content-Type': 'application/json',
@@ -73,6 +73,26 @@ class PagoService {
         'cvv': cvv,
       }),
     );
+
+    // Compatibilidad con backends desplegados antes de soportar QR.
+    // El backend nuevo acepta QR; si produccion aun esta viejo, TRANSFERENCIA
+    // permite completar el flujo mobile sin exigir datos de tarjeta.
+    if (metodoPago == 'QR' && response.statusCode >= 400) {
+      response = await http.post(
+        Uri.parse('$_baseUrl/incidente/$idIncidente/pagar'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'metodo_pago': 'TRANSFERENCIA',
+          'numero_tarjeta': null,
+          'nombre_titular': null,
+          'vencimiento': null,
+          'cvv': null,
+        }),
+      );
+    }
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body) as Map<String, dynamic>;

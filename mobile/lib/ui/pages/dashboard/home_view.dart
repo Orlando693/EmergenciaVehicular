@@ -9,6 +9,8 @@ class HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = AuthService.currentUser;
     final esCliente = user?.rol == 'CLIENTE';
+    final esTaller = user?.rol == 'TALLER';
+    final esAdmin = user?.rol == 'ADMINISTRADOR';
 
     return Center(
       child: Padding(
@@ -50,7 +52,11 @@ class HomeView extends StatelessWidget {
             Text(
               esCliente
                   ? 'Usa el menu inferior o el sidebar para abrir Diagnostico IA, Chat y Notificaciones.'
-                  : 'Navega desde el menu inferior para usar las opciones de tu plan.',
+                  : esTaller
+                      ? 'Revisa tus casos asignados, chat con clientes y notificaciones desde el menu mobile.'
+                      : esAdmin
+                          ? 'Administra usuarios, casos y reportes. En Reportes puedes enviar observaciones por audio.'
+                          : 'Navega desde el menu inferior para usar las opciones de tu plan.',
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.slate500, fontSize: 14),
             ),

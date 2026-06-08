@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from typing import Dict, List
 
 from fastapi import WebSocket
@@ -11,6 +12,7 @@ class AtencionRealtimeManager:
 
     def __init__(self) -> None:
         self._rooms: Dict[int, Dict[int, WebSocket]] = {}
+        self._last_locations: Dict[int, dict] = {}
 
     async def join(self, ws: WebSocket, id_incidente: int, id_usuario: int) -> None:
         await ws.accept()
@@ -39,6 +41,14 @@ class AtencionRealtimeManager:
 
     def participantes_en_linea(self, id_incidente: int) -> int:
         return len(self._rooms.get(id_incidente, {}))
+
+    def set_location(self, id_incidente: int, data: dict) -> dict:
+        data = {**data, "updated_at": datetime.now(timezone.utc).isoformat()}
+        self._last_locations[id_incidente] = data
+        return data
+
+    def get_location(self, id_incidente: int) -> dict | None:
+        return self._last_locations.get(id_incidente)
 
 
 atencion_realtime_manager = AtencionRealtimeManager()

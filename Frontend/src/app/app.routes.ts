@@ -109,6 +109,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/dashboard/bitacora-reportes/reportes/reportes.component').then(m => m.ReportesComponent),
       },
       {
+        path: 'atencion-tiempo-real',
+        loadComponent: () => import('./pages/dashboard/gestion-operativa-atencion/atencion-tiempo-real/atencion-tiempo-real.component').then(m => m.AtencionTiempoRealComponent),
+      },
+      {
         path: 'atencion-tiempo-real/:id',
         loadComponent: () => import('./pages/dashboard/gestion-operativa-atencion/atencion-tiempo-real/atencion-tiempo-real.component').then(m => m.AtencionTiempoRealComponent),
       },

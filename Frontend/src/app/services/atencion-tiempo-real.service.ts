@@ -2,31 +2,42 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { IncidenteHistorialOut, IncidenteOut } from '../core/services/incidente.service';
 
 export interface TallerSeguimiento {
   id_taller: number;
   razon_social: string;
-  telefono?: string;
+  nombre_comercial?: string;
+  telefono_atencion?: string;
   latitud?: number;
   longitud?: number;
+}
+
+export interface UbicacionTecnico {
+  id_incidente: number;
+  id_usuario: number;
+  lat: number;
+  lng: number;
+  precision?: number;
+  velocidad?: number;
+  rumbo?: number;
+  updated_at: string;
 }
 
 export interface AtencionSeguimientoOut {
-  id_incidente: number;
-  descripcion: string;
-  estado: string;
-  latitud?: number;
-  longitud?: number;
-  taller_asignado?: TallerSeguimiento;
-  eventos_recientes: AtencionEventoOut[];
+  incidente: IncidenteOut;
+  taller?: TallerSeguimiento | null;
+  ubicacion_tecnico?: UbicacionTecnico | null;
+  historial: IncidenteHistorialOut[];
+  participantes_en_linea: number;
 }
 
 export interface AtencionEventoOut {
-  id_historial: number;
+  tipo: string;
   id_incidente: number;
-  nuevo_estado: string;
+  estado: string;
   observacion?: string;
-  creado_en: string;
+  created_at: string;
 }
 
 @Injectable({
@@ -54,6 +65,16 @@ export class AtencionTiempoRealService {
 
   actualizarEstado(idIncidente: number, estado: string, observacion?: string): Observable<AtencionEventoOut> {
     return this.http.patch<AtencionEventoOut>(`${this.apiUrl}/${idIncidente}/estado`, { estado, observacion });
+  }
+
+  enviarUbicacion(idIncidente: number, data: {
+    lat: number;
+    lng: number;
+    precision?: number | null;
+    velocidad?: number | null;
+    rumbo?: number | null;
+  }): Observable<UbicacionTecnico> {
+    return this.http.post<UbicacionTecnico>(`${this.apiUrl}/${idIncidente}/ubicacion`, data);
   }
 
   conectarWebSocket(idIncidente: number, token: string): void {

@@ -9,6 +9,7 @@ import '../vehiculos/mis_vehiculos_screen.dart';
 import 'home_view.dart';
 import 'notificaciones_view.dart';
 import 'perfil_view.dart';
+import 'reportes_view.dart';
 import 'usuarios_view.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -22,6 +23,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
 
   bool get _isCliente => AuthService.currentUser?.rol == 'CLIENTE';
+  bool get _isTaller => AuthService.currentUser?.rol == 'TALLER';
+  bool get _isAdmin => AuthService.currentUser?.rol == 'ADMINISTRADOR';
+  bool get _canSeeCasos => _isCliente || _isTaller || _isAdmin;
 
   Future<void> _logout(BuildContext context) async {
     await AuthService.logout();
@@ -44,16 +48,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = AuthService.currentUser;
-    final isAdmin = user?.rol == 'ADMINISTRADOR';
+    final isAdmin = _isAdmin;
+
+    var nextIndex = 0;
+    final homeIndex = nextIndex++;
+    final int? vehiculosIndex = _isCliente ? nextIndex++ : null;
+    final int? casosIndex = _canSeeCasos ? nextIndex++ : null;
+    final int? notificacionesIndex = _canSeeCasos ? nextIndex++ : null;
+    final int? pagosIndex = _isCliente ? nextIndex++ : null;
+    final int? usuariosIndex = isAdmin ? nextIndex++ : null;
+    final int? reportesIndex = isAdmin ? nextIndex++ : null;
+    final perfilIndex = nextIndex++;
 
     final pages = <Widget>[
       const HomeView(),
       if (_isCliente) const MisVehiculosScreen(showAppBar: false),
-      if (_isCliente) const MisAlertasScreen(showAppBar: false),
-      if (_isCliente) const NotificacionesView(),
+      if (_canSeeCasos) const MisAlertasScreen(showAppBar: false),
+      if (_canSeeCasos) const NotificacionesView(),
       if (_isCliente) const MisPagosScreen(showAppBar: false),
       if (isAdmin) const UsuariosView(),
+      if (isAdmin) const ReportesView(),
       const PerfilView(),
     ];
 
@@ -67,9 +81,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (_isCliente)
         const BottomNavigationBarItem(
           icon: Icon(Icons.chat_bubble_outline),
-          label: 'Chat',
+          label: 'Casos',
         ),
-      if (_isCliente)
+      if (_isTaller)
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.handyman_outlined),
+          label: 'Casos',
+        ),
+      if (isAdmin)
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.warning_amber_rounded),
+          label: 'Casos',
+        ),
+      if (_canSeeCasos)
         const BottomNavigationBarItem(
           icon: Icon(Icons.notifications_none),
           label: 'Avisos',
@@ -81,6 +105,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       if (isAdmin)
         const BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Usuarios'),
+      if (isAdmin)
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.analytics_outlined),
+          label: 'Reportes',
+        ),
       const BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
     ];
 
@@ -93,7 +122,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       drawer: _DashboardDrawer(
         selectedIndex: _currentIndex,
         isCliente: _isCliente,
+        isTaller: _isTaller,
         isAdmin: isAdmin,
+        homeIndex: homeIndex,
+        vehiculosIndex: vehiculosIndex,
+        casosIndex: casosIndex,
+        notificacionesIndex: notificacionesIndex,
+        pagosIndex: pagosIndex,
+        usuariosIndex: usuariosIndex,
+        reportesIndex: reportesIndex,
+        perfilIndex: perfilIndex,
         onSelect: (index) {
           Navigator.of(context).pop();
           setState(() => _currentIndex = index);
@@ -122,11 +160,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               tooltip: 'Diagnostico IA',
               onPressed: _abrirSos,
             ),
-          if (_isCliente)
+          if (_canSeeCasos)
             IconButton(
               icon: const Icon(Icons.notifications_none, color: Colors.white),
               tooltip: 'Notificaciones',
-              onPressed: () => setState(() => _currentIndex = 3),
+              onPressed: notificacionesIndex == null
+                  ? null
+                  : () => setState(() => _currentIndex = notificacionesIndex),
             ),
           IconButton(
             icon: const Icon(Icons.logout, color: AppColors.red500),
@@ -153,7 +193,16 @@ class _DashboardDrawer extends StatelessWidget {
   const _DashboardDrawer({
     required this.selectedIndex,
     required this.isCliente,
+    required this.isTaller,
     required this.isAdmin,
+    required this.homeIndex,
+    required this.vehiculosIndex,
+    required this.casosIndex,
+    required this.notificacionesIndex,
+    required this.pagosIndex,
+    required this.usuariosIndex,
+    required this.reportesIndex,
+    required this.perfilIndex,
     required this.onSelect,
     required this.onSos,
     required this.onLogout,
@@ -161,7 +210,16 @@ class _DashboardDrawer extends StatelessWidget {
 
   final int selectedIndex;
   final bool isCliente;
+  final bool isTaller;
   final bool isAdmin;
+  final int homeIndex;
+  final int? vehiculosIndex;
+  final int? casosIndex;
+  final int? notificacionesIndex;
+  final int? pagosIndex;
+  final int? usuariosIndex;
+  final int? reportesIndex;
+  final int perfilIndex;
   final ValueChanged<int> onSelect;
   final VoidCallback onSos;
   final VoidCallback onLogout;
@@ -169,9 +227,6 @@ class _DashboardDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = AuthService.currentUser;
-    var perfilIndex = 1;
-    if (isCliente) perfilIndex = 5;
-    if (isAdmin) perfilIndex = 2;
 
     return Drawer(
       backgroundColor: AppColors.slate900,
@@ -219,8 +274,8 @@ class _DashboardDrawer extends StatelessWidget {
             _drawerItem(
               icon: Icons.home,
               label: 'Inicio',
-              index: 0,
-              onTap: () => onSelect(0),
+              index: homeIndex,
+              onTap: () => onSelect(homeIndex),
             ),
             if (isCliente) ...[
               _drawerItem(
@@ -232,34 +287,43 @@ class _DashboardDrawer extends StatelessWidget {
               _drawerItem(
                 icon: Icons.directions_car,
                 label: 'Mis vehiculos',
-                index: 1,
-                onTap: () => onSelect(1),
-              ),
-              _drawerItem(
-                icon: Icons.chat_bubble_outline,
-                label: 'Alertas y chat',
-                index: 2,
-                onTap: () => onSelect(2),
-              ),
-              _drawerItem(
-                icon: Icons.notifications_none,
-                label: 'Notificaciones',
-                index: 3,
-                onTap: () => onSelect(3),
+                index: vehiculosIndex ?? -99,
+                onTap: () => onSelect(vehiculosIndex ?? homeIndex),
               ),
               _drawerItem(
                 icon: Icons.receipt_long,
                 label: 'Mis pagos',
-                index: 4,
-                onTap: () => onSelect(4),
+                index: pagosIndex ?? -99,
+                onTap: () => onSelect(pagosIndex ?? homeIndex),
               ),
             ],
-            if (isAdmin)
+            if (casosIndex != null)
+              _drawerItem(
+                icon: isTaller ? Icons.handyman_outlined : Icons.chat_bubble_outline,
+                label: isTaller ? 'Servicios y chat' : 'Casos y chat',
+                index: casosIndex!,
+                onTap: () => onSelect(casosIndex!),
+              ),
+            if (notificacionesIndex != null)
+              _drawerItem(
+                icon: Icons.notifications_none,
+                label: 'Notificaciones',
+                index: notificacionesIndex!,
+                onTap: () => onSelect(notificacionesIndex!),
+              ),
+            if (isAdmin && usuariosIndex != null)
               _drawerItem(
                 icon: Icons.group,
                 label: 'Usuarios',
-                index: 1,
-                onTap: () => onSelect(1),
+                index: usuariosIndex!,
+                onTap: () => onSelect(usuariosIndex!),
+              ),
+            if (isAdmin && reportesIndex != null)
+              _drawerItem(
+                icon: Icons.analytics_outlined,
+                label: 'Reportes con audio',
+                index: reportesIndex!,
+                onTap: () => onSelect(reportesIndex!),
               ),
             _drawerItem(
               icon: Icons.person,
