@@ -90,3 +90,11 @@ class ReportePagos(BaseModel):
     comision_total: Decimal
     por_metodo:     Dict[str, int]
     por_estado:     Dict[str, int]
+
+
+class ReporteAudioOut(BaseModel):
+    url: str
+    filename: str
+    content_type: str
+    size_bytes: int
+    mensaje: str

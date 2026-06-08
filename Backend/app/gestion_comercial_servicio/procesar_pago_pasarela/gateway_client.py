@@ -74,7 +74,9 @@ async def _sandbox(datos: DatosPago) -> GatewayRespuesta:
     await asyncio.sleep(0.15)
 
     referencia = _generar_referencia()
-    metodo = (datos.metodo_pago or "").upper()
+    metodo = (datos.metodo_pago or "").upper().replace(" ", "_")
+    if metodo in ("PAGO_QR", "QR_BANCARIO"):
+        metodo = "QR"
 
     if metodo in ("TRANSFERENCIA", "QR", "EFECTIVO"):
         return GatewayRespuesta(

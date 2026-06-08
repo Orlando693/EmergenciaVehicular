@@ -152,7 +152,9 @@ async def iniciar_pago(
     comision = (monto * COMISION_PCT).quantize(Decimal("0.01"))
     al_taller = (monto - comision).quantize(Decimal("0.01"))
 
-    metodo_upper = metodo_pago.upper()
+    metodo_upper = (metodo_pago or "").upper().replace(" ", "_")
+    if metodo_upper in ("PAGO_QR", "QR_BANCARIO"):
+        metodo_upper = "QR"
     if metodo_upper in ("EFECTIVO", "TRANSFERENCIA", "QR"):
         aprobado = True
         error_msg = None
