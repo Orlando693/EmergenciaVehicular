@@ -103,11 +103,16 @@ async def subir_reporte_audio(
         f.write(data)
 
     url = f"{settings.UPLOAD_URL_PREFIX}/{current_user.id_tenant}/reportes/audio/{filename}"
+    analisis_ia = await reporte_service.analizar_audio_reporte(file_location)
     await bitacora_service.create_log(
         db,
         BitacoraCreate(
             modulo="Reportes",
-            accion=f"Envio reporte por audio: {url}",
+            accion=(
+                f"Envio reporte por audio: {url}. "
+                f"Intencion IA: {analisis_ia.get('intencion', 'desconocido')}. "
+                f"Transcripcion: {analisis_ia.get('transcripcion') or 'N/D'}"
+            ),
             rol="ADMINISTRADOR",
             usuario_email=current_user.email,
             id_usuario=current_user.id_usuario,
@@ -121,4 +126,7 @@ async def subir_reporte_audio(
         content_type=content_type,
         size_bytes=len(data),
         mensaje="Audio de reporte recibido correctamente.",
+        intencion=str(analisis_ia.get("intencion") or "desconocido"),
+        transcripcion=analisis_ia.get("transcripcion"),
+        respuesta_ia=analisis_ia.get("respuesta_ia"),
     )

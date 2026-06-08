@@ -1,3 +1,7 @@
+import asyncio
+import logging
+import os
+import time
 from datetime import datetime
 from decimal import Decimal
 
@@ -5,6 +9,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.gestion_incidentes.incidentes.model import Incidente
 from app.operaciones.talleres.model import Taller
 from app.administracion.usuarios.model import Cliente, Usuario
@@ -15,6 +20,10 @@ from app.bitacora_reportes.reportes.schemas import (
     ReporteTalleres, ItemTaller,
     ReportePagos, ItemPago,
 )
+from google import genai
+
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_dt(s: str | None) -> datetime | None:
@@ -24,6 +33,116 @@ def _parse_dt(s: str | None) -> datetime | None:
         return datetime.fromisoformat(s)
     except ValueError:
         return None
+
+
+def _audio_intencion_local(texto: str | None) -> str:
+    value = (texto or "").lower()
+    if any(w in value for w in ("usuario", "usuarios", "cliente", "clientes", "admin", "administrador")):
+        return "usuarios"
+    if any(w in value for w in ("pago", "pagos", "cobro", "cobros", "ingreso", "ingresos", "qr")):
+        return "pagos"
+    if any(w in value for w in ("incidente", "incidentes", "caso", "casos", "alerta", "alertas")):
+        return "incidentes"
+    if any(w in value for w in ("taller", "talleres", "mecanico", "mecanicos")):
+        return "talleres"
+    if any(w in value for w in ("resumen", "general", "principal", "dashboard")):
+        return "resumen"
+    return "desconocido"
+
+
+def _upload_and_wait_audio(client: genai.Client, audio_path: str):
+    try:
+        audio_file = client.files.upload(file=audio_path)
+        deadline = time.time() + 60
+        while (
+            getattr(audio_file, "state", None)
+            and str(audio_file.state) in ("FileState.PROCESSING", "PROCESSING")
+            and time.time() < deadline
+        ):
+            time.sleep(2)
+            audio_file = client.files.get(name=audio_file.name)
+
+        state_str = str(getattr(audio_file, "state", "ACTIVE"))
+        if "ACTIVE" in state_str:
+            return audio_file
+    except Exception as exc:
+        logger.warning("No se pudo subir audio de reporte a Gemini: %s", exc)
+    return None
+
+
+async def analizar_audio_reporte(audio_path: str) -> dict[str, str | None]:
+    api_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return {
+            "intencion": "desconocido",
+            "transcripcion": None,
+            "respuesta_ia": "GEMINI_API_KEY no esta configurada; no se pudo interpretar el audio.",
+        }
+
+    try:
+        client = genai.Client(api_key=api_key)
+        audio_ref = await asyncio.to_thread(_upload_and_wait_audio, client, audio_path)
+        if not audio_ref:
+            return {
+                "intencion": "desconocido",
+                "transcripcion": None,
+                "respuesta_ia": "No se pudo preparar el audio para IA.",
+            }
+
+        prompt = """Transcribe el audio del administrador y detecta que reporte quiere abrir.
+
+Intenciones validas:
+- usuarios
+- pagos
+- incidentes
+- talleres
+- resumen
+- desconocido
+
+Ejemplos:
+"quiero el reporte de usuario" => usuarios
+"mostrame pagos" => pagos
+"reporte de casos" => incidentes
+"reporte de talleres" => talleres
+
+Responde solo en este formato, sin markdown:
+INTENCION: <una intencion valida>
+TRANSCRIPCION: <texto escuchado>
+RESPUESTA: <mensaje breve para mostrar en la app>"""
+
+        response = await asyncio.to_thread(
+            client.models.generate_content,
+            model="gemini-2.5-flash",
+            contents=[audio_ref, prompt],
+        )
+        text = (response.text or "").strip()
+        parsed: dict[str, str | None] = {
+            "intencion": "desconocido",
+            "transcripcion": None,
+            "respuesta_ia": text or "Audio analizado.",
+        }
+        for line in text.splitlines():
+            clean = line.strip().replace("*", "")
+            if clean.upper().startswith("INTENCION:"):
+                parsed["intencion"] = clean.split(":", 1)[1].strip().lower()
+            elif clean.upper().startswith("TRANSCRIPCION:"):
+                parsed["transcripcion"] = clean.split(":", 1)[1].strip()
+            elif clean.upper().startswith("RESPUESTA:"):
+                parsed["respuesta_ia"] = clean.split(":", 1)[1].strip()
+
+        parsed["intencion"] = _audio_intencion_local(parsed.get("intencion")) if parsed.get("intencion") not in {
+            "usuarios", "pagos", "incidentes", "talleres", "resumen", "desconocido"
+        } else parsed.get("intencion")
+        if parsed["intencion"] == "desconocido":
+            parsed["intencion"] = _audio_intencion_local(parsed.get("transcripcion"))
+        return parsed
+    except Exception as exc:
+        logger.warning("No se pudo interpretar audio de reporte con IA: %s", exc)
+        return {
+            "intencion": "desconocido",
+            "transcripcion": None,
+            "respuesta_ia": f"No se pudo interpretar el audio con IA: {exc}",
+        }
 
 
 async def resumen_general(db: AsyncSession, id_tenant: int) -> ResumenGeneral:

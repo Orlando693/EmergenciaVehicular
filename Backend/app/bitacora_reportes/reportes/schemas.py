@@ -98,3 +98,6 @@ class ReporteAudioOut(BaseModel):
     content_type: str
     size_bytes: int
     mensaje: str
+    intencion: str = "desconocido"
+    transcripcion: Optional[str] = None
+    respuesta_ia: Optional[str] = None
