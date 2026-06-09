@@ -39,6 +39,11 @@ def _firebase_ready() -> bool:
         return False
 
 
+def firebase_ready() -> bool:
+    """Indica si el servidor puede enviar FCM sin exponer credenciales."""
+    return _firebase_ready()
+
+
 async def enviar_push_token(
     token: str,
     titulo: str,

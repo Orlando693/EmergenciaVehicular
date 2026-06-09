@@ -47,6 +47,30 @@ async def contar_no_leidas(db: DBDep, current_user: CurrentUser):
     return {"count": count}
 
 
+@router.get("/push-status")
+async def push_status(db: DBDep, current_user: CurrentUser):
+    return await notificacion_service.estado_push(db, current_user.id_usuario, current_user.id_tenant)
+
+
+@router.post("/push-prueba", status_code=status.HTTP_201_CREATED)
+async def push_prueba(db: DBDep, current_user: CurrentUser):
+    notif = await notificacion_service.crear_notificacion(
+        db,
+        current_user.id_usuario,
+        "Notificaciones push habilitadas",
+        "Esta es una notificación de prueba enviada desde Emergencia Vehicular.",
+        tipo="PRUEBA_PUSH",
+        id_tenant=current_user.id_tenant,
+    )
+    return {"message": "Prueba enviada", "id_notificacion": notif.id_notificacion}
+
+
+@router.patch("/leer-todas")
+async def marcar_todas_leidas(db: DBDep, current_user: CurrentUser):
+    await notificacion_service.marcar_todas_leidas(db, current_user.id_usuario, current_user.id_tenant)
+    return {"message": "Todas las notificaciones marcadas como leidas"}
+
+
 @router.patch("/{id_notificacion}/leer", response_model=NotificacionOut)
 async def marcar_leida(id_notificacion: int, db: DBDep, current_user: CurrentUser):
     ok = await notificacion_service.marcar_leida(db, id_notificacion, current_user.id_usuario, current_user.id_tenant)
@@ -58,12 +82,6 @@ async def marcar_leida(id_notificacion: int, db: DBDep, current_user: CurrentUse
         select(Notificacion).where(Notificacion.id_notificacion == id_notificacion, Notificacion.id_tenant == current_user.id_tenant)
     )
     return r.scalar_one()
-
-
-@router.patch("/leer-todas")
-async def marcar_todas_leidas(db: DBDep, current_user: CurrentUser):
-    await notificacion_service.marcar_todas_leidas(db, current_user.id_usuario, current_user.id_tenant)
-    return {"message": "Todas las notificaciones marcadas como leidas"}
 
 
 @router.websocket("/ws")

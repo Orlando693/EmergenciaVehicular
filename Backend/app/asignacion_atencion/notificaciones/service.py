@@ -4,7 +4,7 @@ from sqlalchemy import select, func, update
 from app.asignacion_atencion.notificaciones.model import DispositivoPush, Notificacion
 from app.administracion.usuarios.model import Usuario
 from app.core.ws_manager import ws_manager
-from app.asignacion_atencion.notificaciones.push_service import enviar_push_token
+from app.asignacion_atencion.notificaciones.push_service import enviar_push_token, firebase_ready
 import logging
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ async def registrar_fcm_token(
     platform: str | None = None,
 ) -> DispositivoPush:
     result = await db.execute(
-        select(DispositivoPush).where(DispositivoPush.fcm_token == token, DispositivoPush.id_tenant == id_tenant)
+        select(DispositivoPush).where(DispositivoPush.fcm_token == token)
     )
     dispositivo = result.scalar_one_or_none()
 
@@ -88,6 +88,22 @@ async def registrar_fcm_token(
     await db.commit()
     await db.refresh(dispositivo)
     return dispositivo
+
+
+async def estado_push(db: AsyncSession, id_usuario: int, id_tenant: int) -> dict:
+    result = await db.execute(
+        select(func.count()).where(
+            DispositivoPush.id_usuario == id_usuario,
+            DispositivoPush.id_tenant == id_tenant,
+            DispositivoPush.activo == True,  # noqa: E712
+        ).select_from(DispositivoPush)
+    )
+    dispositivos = int(result.scalar_one() or 0)
+    return {
+        "servidor_firebase": firebase_ready(),
+        "dispositivos_activos": dispositivos,
+        "habilitado": firebase_ready() and dispositivos > 0,
+    }
 
 
 async def _enviar_push_fcm(db: AsyncSession, notif: Notificacion) -> None:
