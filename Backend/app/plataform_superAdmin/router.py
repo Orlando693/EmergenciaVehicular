@@ -94,3 +94,11 @@ async def editar_plan(
     _: dict = Depends(get_current_superadmin),
 ):
     return await service.actualizar_plan(id_plan, body, db)
+
+
+@router.get("/reportes/predictivos")
+async def get_reporte_predictivo(
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(get_current_superadmin),
+):
+    return await service.reporte_predictivo(db)

@@ -95,9 +95,9 @@ export class OrganizacionesComponent implements OnInit {
       next: t => {
         this.tenants.update(arr => [t, ...arr]);
         this.showNuevoTenant.set(false);
-        this.flash('Organización creada correctamente');
+        this.flash('Nuevo SaaS creado correctamente');
       },
-      error: e => this.error.set(e?.error?.detail ?? 'Error al crear organización'),
+      error: e => this.error.set(this.errorDetail(e, 'Error al crear el nuevo SaaS')),
     });
   }
 
@@ -183,8 +183,16 @@ export class OrganizacionesComponent implements OnInit {
   }
 
   private flash(msg: string) {
+    this.error.set('');
     this.msg.set(msg);
     setTimeout(() => this.msg.set(''), 3000);
+  }
+
+  private errorDetail(error: any, fallback: string): string {
+    const detail = error?.error?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) return detail.map(item => item?.msg ?? String(item)).join(', ');
+    return fallback;
   }
 
   formatLimites(p: PlanPlatform): string {

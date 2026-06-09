@@ -51,6 +51,27 @@ export interface PlanCreate {
   orden:                      number;
 }
 
+export interface ReportePredictivo {
+  modelo: string;
+  modo: string;
+  registros_entrenamiento: number;
+  total_organizaciones: number;
+  prediccion_total_proximo_mes: number;
+  organizaciones_riesgo_alto: number;
+  historico_global: { periodo: string; incidentes: number }[];
+  importancia_variables: { nombre: string; porcentaje: number }[];
+  predicciones: {
+    id_tenant: number;
+    nombre: string;
+    plan_nombre: string;
+    incidentes_mes_actual: number;
+    prediccion_proximo_mes: number;
+    crecimiento_pct: number;
+    riesgo: 'ALTO' | 'MEDIO' | 'BAJO';
+    recomendacion: string;
+  }[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class PlatformService {
   private readonly base = `${environment.apiUrl}/platform`;
@@ -99,5 +120,9 @@ export class PlatformService {
 
   editarPlan(id: number, data: PlanCreate) {
     return this.http.put<PlanPlatform>(`${this.base}/planes/${id}`, data, { headers: this.headers });
+  }
+
+  getReportePredictivo() {
+    return this.http.get<ReportePredictivo>(`${this.base}/reportes/predictivos`, { headers: this.headers });
   }
 }

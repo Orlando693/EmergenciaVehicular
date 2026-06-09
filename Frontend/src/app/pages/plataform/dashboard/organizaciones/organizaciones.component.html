@@ -16,7 +16,7 @@
       <p class="org-section-sub">Gestión central (solo metadatos). Los datos clínicos siguen en el schema de cada organización.</p>
     </div>
     <div class="org-section-actions">
-      <button class="btn-primary" (click)="abrirNuevoTenant()">+ Nueva clínica</button>
+      <button class="btn-primary" (click)="abrirNuevoTenant()">+ Nuevo SaaS</button>
       <button class="btn-outline" (click)="cargar()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         Actualizar
@@ -155,7 +155,7 @@
 @if (showNuevoTenant()) {
   <div class="org-modal-bg" (click)="showNuevoTenant.set(false)">
     <div class="org-modal" (click)="$event.stopPropagation()">
-      <h3 class="org-modal-title">Nueva organización</h3>
+      <h3 class="org-modal-title">Nuevo SaaS</h3>
 
       <div class="org-form-field">
         <label>Nombre</label>
@@ -168,9 +168,9 @@
       <div class="org-form-field">
         <label>Plan inicial</label>
         <select [(ngModel)]="nuevoTenantForm.id_plan">
-          <option [value]="undefined">Sin plan</option>
+          <option [ngValue]="undefined">Sin plan</option>
           @for (p of planes(); track p.id_plan) {
-            <option [value]="p.id_plan">{{ p.nombre }}</option>
+            <option [ngValue]="p.id_plan">{{ p.nombre }}</option>
           }
         </select>
       </div>
@@ -195,7 +195,7 @@
         <label>Plan</label>
         <select [(ngModel)]="asignarPlanId">
           @for (p of planes(); track p.id_plan) {
-            <option [value]="p.id_plan">{{ p.nombre }} — {{ p.precio | number:'1.2-2' }} BOB</option>
+            <option [ngValue]="p.id_plan">{{ p.nombre }} — {{ p.precio | number:'1.2-2' }} BOB</option>
           }
         </select>
       </div>

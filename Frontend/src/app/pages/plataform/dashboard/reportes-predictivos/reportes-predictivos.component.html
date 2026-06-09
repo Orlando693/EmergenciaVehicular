@@ -1,0 +1,79 @@
+<section class="rp-header">
+  <div>
+    <span class="rp-eyebrow">INTELIGENCIA SAAS</span>
+    <h1>Reportes predictivos</h1>
+    <p>Proyección de demanda por organización usando Random Forest y el historial real de incidentes.</p>
+  </div>
+  <button (click)="cargar()" [disabled]="loading()">Actualizar modelo</button>
+</section>
+
+@if (loading()) {
+  <div class="rp-state">Entrenando modelo y calculando predicciones...</div>
+} @else if (error()) {
+  <div class="rp-state rp-state--error">{{ error() }}</div>
+} @else {
+@if (reporte(); as r) {
+  <div class="rp-model">
+    <div><strong>{{ r.modelo }}</strong><span>{{ r.modo }}</span></div>
+    <small>{{ r.registros_entrenamiento }} registros de entrenamiento</small>
+  </div>
+
+  <div class="rp-kpis">
+    <article><span>Organizaciones</span><strong>{{ r.total_organizaciones }}</strong><small>SaaS monitoreados</small></article>
+    <article><span>Demanda proyectada</span><strong>{{ r.prediccion_total_proximo_mes }}</strong><small>Incidentes próximo mes</small></article>
+    <article class="rp-risk-card"><span>Riesgo alto</span><strong>{{ r.organizaciones_riesgo_alto }}</strong><small>Requieren atención</small></article>
+    <article><span>Modelo</span><strong class="rp-model-name">RF</strong><small>35 árboles de regresión</small></article>
+  </div>
+
+  <div class="rp-grid">
+    <article class="rp-card">
+      <div class="rp-card-title"><h2>Demanda histórica</h2><span>Últimos 7 meses</span></div>
+      <div class="rp-chart">
+        @for (item of r.historico_global; track item.periodo) {
+          <div class="rp-bar-column">
+            <span>{{ item.incidentes }}</span>
+            <div class="rp-bar" [style.height.%]="barHeight(item.incidentes)"></div>
+            <small>{{ item.periodo.slice(5) }}</small>
+          </div>
+        }
+      </div>
+    </article>
+
+    <article class="rp-card">
+      <div class="rp-card-title"><h2>Variables del modelo</h2><span>Importancia relativa</span></div>
+      <div class="rp-importance">
+        @for (item of r.importancia_variables; track item.nombre) {
+          <div>
+            <p><span>{{ item.nombre }}</span><strong>{{ item.porcentaje }}%</strong></p>
+            <div class="rp-track"><i [style.width.%]="item.porcentaje"></i></div>
+          </div>
+        }
+      </div>
+    </article>
+  </div>
+
+  <article class="rp-card rp-table-card">
+    <div class="rp-card-title"><h2>Predicción por SaaS</h2><span>Próximo mes</span></div>
+    <div class="rp-table-wrap">
+      <table>
+        <thead><tr><th>Organización</th><th>Plan</th><th>Actual</th><th>Predicción</th><th>Cambio</th><th>Riesgo</th><th>Recomendación</th></tr></thead>
+        <tbody>
+          @for (item of r.predicciones; track item.id_tenant) {
+            <tr>
+              <td><strong>{{ item.nombre }}</strong></td>
+              <td>{{ item.plan_nombre }}</td>
+              <td>{{ item.incidentes_mes_actual }}</td>
+              <td class="rp-prediction">{{ item.prediccion_proximo_mes }}</td>
+              <td [class.rp-positive]="item.crecimiento_pct > 0">{{ item.crecimiento_pct > 0 ? '+' : '' }}{{ item.crecimiento_pct }}%</td>
+              <td><span class="rp-badge" [class.rp-high]="item.riesgo === 'ALTO'" [class.rp-medium]="item.riesgo === 'MEDIO'">{{ item.riesgo }}</span></td>
+              <td>{{ item.recomendacion }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="rp-empty">Crea una organización para comenzar a generar predicciones.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </article>
+}
+}

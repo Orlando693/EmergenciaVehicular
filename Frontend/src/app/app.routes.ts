@@ -197,6 +197,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/plataform/dashboard/organizaciones/organizaciones.component').then(m => m.OrganizacionesComponent),
       },
+      {
+        path: 'reportes',
+        loadComponent: () =>
+          import('./pages/plataform/dashboard/reportes-predictivos/reportes-predictivos.component').then(m => m.ReportesPredictivosComponent),
+      },
     ],
   },
 
