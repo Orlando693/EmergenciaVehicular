@@ -1,8 +1,8 @@
 """
 CU25 – Analizar KPIs de atención del servicio.
 
-Calcula tiempos promedio basados en transiciones de estado en incidente_historial.
-Flujo típico: REPORTADO → ASIGNADO → EN_CAMINO → EN_ATENCION → COMPLETADO
+Calcula indicadores sobre el flujo real:
+REPORTADO → EN_PROCESO → RESUELTO → PAGADO, con CANCELADO como salida.
 """
 from datetime import datetime, timedelta
 
@@ -42,8 +42,8 @@ async def obtener_kpis(
     res_tot = await db.execute(
         select(
             func.count(Incidente.id_incidente).label("total"),
-            func.sum(case((Incidente.estado.in_(["ASIGNADO", "EN_CAMINO", "EN_ATENCION", "COMPLETADO"]), 1), else_=0)).label("asignados"),
-            func.sum(case((Incidente.estado == "COMPLETADO", 1), else_=0)).label("completados"),
+            func.sum(case((Incidente.id_taller.is_not(None), 1), else_=0)).label("asignados"),
+            func.sum(case((Incidente.estado.in_(["RESUELTO", "PAGADO"]), 1), else_=0)).label("completados"),
             func.sum(case((Incidente.estado == "CANCELADO", 1), else_=0)).label("cancelados"),
         ).where(and_(*filtros_inc))
     )
@@ -53,24 +53,13 @@ async def obtener_kpis(
     total_comp   = int(row.completados or 0)
     total_canc   = int(row.cancelados  or 0)
 
-    # ── Tiempo promedio REPORTADO → ASIGNADO ─────────────────────────────
-    # Busca el primer IncidenteHistorial con estado_nuevo = 'ASIGNADO' por incidente
-    avg_asig = await _avg_transicion(db, id_tenant, filtros_inc, "ASIGNADO")
-
-    # ── Tiempo promedio ASIGNADO → EN_CAMINO ─────────────────────────────
-    avg_camino = await _avg_transicion(db, id_tenant, filtros_inc, "EN_CAMINO")
-
-    # ── Tiempo promedio EN_CAMINO → EN_ATENCION ───────────────────────────
-    avg_atencion = await _avg_transicion(db, id_tenant, filtros_inc, "EN_ATENCION")
-
-    # ── Tiempo promedio REPORTADO → COMPLETADO (resolución total) ─────────
+    # El sistema registra EN_PROCESO cuando el taller acepta/inicia la atención.
+    avg_inicio = await _avg_transicion(db, id_tenant, filtros_inc, ["EN_PROCESO"])
     avg_resolucion = await _avg_resolucion_total(db, id_tenant, filtros_inc)
 
     tiempos = [
-        {"label": "Asignación",           "minutos": avg_asig,       "descripcion": "Desde el reporte hasta la asignación a un taller"},
-        {"label": "Llegada al lugar",     "minutos": avg_camino,     "descripcion": "Desde asignado hasta en camino"},
-        {"label": "Inicio de atención",   "minutos": avg_atencion,   "descripcion": "Desde en camino hasta inicio de atención"},
-        {"label": "Resolución total",     "minutos": avg_resolucion, "descripcion": "Tiempo total desde reporte hasta completado"},
+        {"label": "Inicio de atención", "minutos": avg_inicio, "descripcion": "Desde que se reporta hasta que el taller inicia el servicio"},
+        {"label": "Resolución total", "minutos": avg_resolucion, "descripcion": "Desde que se reporta hasta que queda resuelto o pagado"},
     ]
 
     # ── SLA: objetivo 80 % completados ───────────────────────────────────
@@ -94,14 +83,12 @@ async def obtener_kpis(
 
     # ── Tasas ─────────────────────────────────────────────────────────────
     tasa_asignacion = round(total_asig / total_inc * 100, 1) if total_inc > 0 else 0
-    # abandono = cancelados que estuvieron en ASIGNADO
+    # Abandono: incidentes cancelados después de tener un taller asignado.
     res_aband = await db.execute(
-        select(func.count(func.distinct(IncidenteHistorial.id_incidente))).where(
-            IncidenteHistorial.id_tenant == id_tenant,
-            IncidenteHistorial.estado_anterior == "ASIGNADO",
-            IncidenteHistorial.estado_nuevo == "CANCELADO",
-            IncidenteHistorial.created_at >= fecha_desde,
-            IncidenteHistorial.created_at <= fecha_hasta,
+        select(func.count(Incidente.id_incidente)).where(
+            and_(*filtros_inc),
+            Incidente.id_taller.is_not(None),
+            Incidente.estado == "CANCELADO",
         )
     )
     abandono_cnt = int(res_aband.scalar() or 0)
@@ -112,7 +99,7 @@ async def obtener_kpis(
         select(
             Taller.nombre_comercial,
             func.count(Incidente.id_incidente).label("total"),
-            func.sum(case((Incidente.estado == "COMPLETADO", 1), else_=0)).label("comp"),
+            func.sum(case((Incidente.estado.in_(["RESUELTO", "PAGADO"]), 1), else_=0)).label("comp"),
         )
         .join(Incidente, Incidente.id_taller == Taller.id_taller, isouter=True)
         .where(
@@ -160,11 +147,11 @@ async def _avg_transicion(
     db: AsyncSession,
     id_tenant: int,
     filtros_inc: list,
-    estado_nuevo: str,
+    estados_nuevos: list[str],
 ) -> float | None:
     """
     Calcula el tiempo promedio (en minutos) desde la creación del incidente
-    hasta que alcanzó el estado `estado_nuevo` por primera vez.
+    hasta que alcanzó cualquiera de los estados indicados por primera vez.
     """
     # Subconsulta: min(created_at) de historial donde estado_nuevo = X para cada incidente del tenant
     sub = (
@@ -174,7 +161,7 @@ async def _avg_transicion(
         )
         .where(
             IncidenteHistorial.id_tenant == id_tenant,
-            IncidenteHistorial.estado_nuevo == estado_nuevo,
+            IncidenteHistorial.estado_nuevo.in_(estados_nuevos),
         )
         .group_by(IncidenteHistorial.id_incidente)
         .subquery()
@@ -205,7 +192,7 @@ async def _avg_resolucion_total(
         )
         .where(
             IncidenteHistorial.id_tenant == id_tenant,
-            IncidenteHistorial.estado_nuevo == "COMPLETADO",
+            IncidenteHistorial.estado_nuevo.in_(["RESUELTO", "PAGADO"]),
         )
         .group_by(IncidenteHistorial.id_incidente)
         .subquery()
@@ -239,7 +226,7 @@ async def _avg_resolucion_taller(
         )
         .where(
             IncidenteHistorial.id_tenant == id_tenant,
-            IncidenteHistorial.estado_nuevo == "COMPLETADO",
+            IncidenteHistorial.estado_nuevo.in_(["RESUELTO", "PAGADO"]),
             IncidenteHistorial.created_at >= fecha_desde,
             IncidenteHistorial.created_at <= fecha_hasta,
         )
